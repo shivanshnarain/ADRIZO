@@ -1,0 +1,106 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getAdminClient } from '@/lib/supabase/admin';
+import { verifyRazorpayWebhookSignature } from '@/lib/razorpay';
+import { resolveOrderFromSupabase } from '@/lib/order-resolver';
+import { sendOrderConfirmationEmail } from '@/lib/order-email';
+import { autoSyncOrderToShiprocket } from '@/lib/shiprocket-auto-sync';
+
+export async function POST(req: NextRequest) {
+  try {
+    const rawBody = await req.text();
+    const signature = req.headers.get('x-razorpay-signature');
+
+    if (!signature) {
+      return NextResponse.json({ error: 'Missing webhook signature' }, { status: 400 });
+    }
+
+    // 1. Verify Webhook Signature
+    const isValid = verifyRazorpayWebhookSignature(rawBody, signature);
+    if (!isValid) {
+      console.warn('[Razorpay Webhook] Invalid signature rejected');
+      return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 400 });
+    }
+
+    const event = JSON.parse(rawBody);
+    const eventType = event.event;
+
+    console.log(`[Razorpay Webhook Event] ${eventType}`);
+
+    const supabase = getAdminClient();
+
+    if (eventType === 'payment.captured' || eventType === 'order.paid') {
+      const paymentEntity = event.payload?.payment?.entity;
+      const orderEntity = event.payload?.order?.entity;
+
+      const razorpayOrderId = paymentEntity?.order_id || orderEntity?.id;
+      const razorpayPaymentId = paymentEntity?.id;
+
+      if (razorpayOrderId) {
+        // Fetch Order from Supabase
+        const { data: supaOrders } = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('razorpay_order_id', razorpayOrderId);
+
+        const order = supaOrders?.[0];
+
+        // Idempotency check
+        if (order && order.payment_status === 'PAID') {
+          return NextResponse.json({ status: 'ok', received: true, alreadyProcessed: true }, { status: 200 });
+        }
+
+        // Update Supabase
+        await supabase
+          .from('orders')
+          .update({
+            payment_status: 'PAID',
+            order_status: 'CONFIRMED',
+            razorpay_payment_id: razorpayPaymentId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('razorpay_order_id', razorpayOrderId);
+
+        console.log(`[Razorpay Webhook] Order ${order?.order_number || razorpayOrderId} successfully marked PAID`);
+
+        // Trigger Automated Order Confirmation Email with PDF invoice attached
+        resolveOrderFromSupabase(order?.id || razorpayOrderId)
+          .then(resolved => {
+            if (resolved) {
+              resolved.paymentStatus = 'PAID';
+              resolved.orderStatus = 'CONFIRMED';
+              sendOrderConfirmationEmail(resolved);
+            }
+          })
+          .catch(err => console.error('[Razorpay Webhook Email Error]', err));
+
+        // Automatically sync confirmed prepaid order to Shiprocket
+        await autoSyncOrderToShiprocket(order?.id || razorpayOrderId).catch(err =>
+          console.error('[Automatic Shiprocket Sync Error in Webhook]', err)
+        );
+      }
+    } else if (eventType === 'payment.failed') {
+      const paymentEntity = event.payload?.payment?.entity;
+      const razorpayOrderId = paymentEntity?.order_id;
+
+      if (razorpayOrderId) {
+        // Update Supabase
+        await supabase
+          .from('orders')
+          .update({
+            payment_status: 'FAILED',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('razorpay_order_id', razorpayOrderId);
+
+        console.log(`[Razorpay Webhook] Order ${razorpayOrderId} marked FAILED`);
+      }
+    }
+
+    return NextResponse.json({ status: 'ok', received: true }, { status: 200 });
+
+  } catch (error: any) {
+    console.error('[Razorpay Webhook Handler Error]', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

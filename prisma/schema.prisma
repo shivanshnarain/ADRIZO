@@ -1,0 +1,239 @@
+// Prisma Schema for ADRIZO - MongoDB Atlas Production Database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String?  @unique
+  passwordHash String?
+  phone        String?  @unique
+  address      String?
+  city         String?
+  state        String?
+  pincode      String?
+  role         String   @default("CUSTOMER")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
+}
+
+model Category {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String        @unique
+  code        String?       @default("")
+  description String?
+  image       String?
+  sortOrder   Int           @default(0)
+  status      String        @default("ACTIVE")
+  products    Product[]
+  productTypes ProductType[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model ProductType {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  categoryId  String    @db.ObjectId
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name        String
+  code        String
+  slug        String
+  sortOrder   Int       @default(0)
+  status      String    @default("ACTIVE")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ProductColor {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  code      String
+  hex       String?
+  isCustom  Boolean  @default(false)
+  sortOrder Int      @default(0)
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductSize {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  code      String
+  sortOrder Int      @default(0)
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StoreSetting {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String           @unique
+  description String
+  categoryId  String?          @db.ObjectId
+  category    Category?        @relation(fields: [categoryId], references: [id])
+  price       Float
+  salePrice   Float?
+  originalPrice Float?
+  productType String?
+  color       String?
+  showSizeChart Boolean        @default(false)
+  sizeChart   String?          // JSON mapping { S: { length, chest, shoulder }, ... }
+  sizeFit     String?
+  washCare    String?
+  freeShippingText String?
+  dispatchText String?
+  deliveryText String?
+  returnPolicyText String?
+  freeExchangesText String?
+  easyReturnsText String?
+  exchangeElseText String?
+  reviewsCount Int?            @default(0)
+  rating      Float?           @default(5.0)
+  sizesRaw    String?          @map("sizes")  // JSON array of available sizes: ["S", "M", "L", "XL", "XXL"]
+  colorsRaw   String?          @map("colors") // Legacy JSON fallback (read-only, new products do not write this)
+  sku         String           @unique
+  configKey   String?          @unique        // Canonical normalized config: `${categoryId}:${normalizedProductType}:${normalizedColor}`
+  status      String           @default("ACTIVE")
+  featured    Boolean          @default(false)
+  newArrival  Boolean          @default(false)
+  onSale      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  orderItems  OrderItem[]
+  images      ProductImage[]
+  variants    ProductVariant[]
+
+  @@unique([categoryId, productType, color])
+}
+
+model ProductImage {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId   String   @db.ObjectId
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url         String
+  publicId    String?  // Cloudinary Public ID for permanent asset tracking and deletion
+  altText     String?
+  isPrimary   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model ProductVariant {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId       String   @db.ObjectId
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size            String?
+  color           String?
+  sku             String?
+  createdAt       DateTime @default(now())
+}
+
+model Order {
+  id                String      @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber       String?     @unique
+  userId            String?     @db.ObjectId
+  user              User?       @relation(fields: [userId], references: [id])
+  customerName      String
+  customerEmail     String
+  customerPhone     String
+  shippingAddress   String
+  city              String?
+  state             String?
+  pincode           String?
+  landmark          String?
+  subtotal          Float?
+  shippingCharge    Float?      @default(0)
+  codCharge         Float?      @default(0)
+  discount          Float?      @default(0)
+  couponCode        String?
+  total             Float
+  paymentMethod     String      @default("COD") // COD | ONLINE_RAZORPAY
+  paymentStatus     String      @default("PENDING") // PENDING | PAID | FAILED | REFUNDED
+  orderStatus       String      @default("PLACED") // PLACED | CONFIRMED | PROCESSING | SHIPPED | DELIVERED | CANCELLED
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  deliveryPartner   String?
+  trackingId        String?
+  trackingStatus    String?     @default("ORDER_RECEIVED")
+  shiprocketOrderId String?
+  shiprocketShipmentId String?
+  pickupId          String?
+  shiprocketStatus  String?
+  shiprocketSyncStatus String?     @default("PENDING")
+  shiprocketSyncError String?
+  shiprocketSyncedAt DateTime?
+  labelUrl          String?
+  invoiceUrl        String?
+  manifestUrl       String?
+  courierCompanyId  String?
+  cancellationSource String?
+  cancellationReason String?
+  cancelledAt       DateTime?
+  items             OrderItem[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model OrderItem {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId      String   @db.ObjectId
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String   @db.ObjectId
+  product      Product  @relation(fields: [productId], references: [id])
+  productName  String?  // Historical snapshot name
+  productImage String?  // Historical snapshot Cloudinary URL
+  sku          String?  // Historical snapshot SKU
+  size         String?  // Selected size (e.g. S, M, L, XL)
+  color        String?  // Selected color
+  quantity     Int
+  price        Float    // Selling price at time of purchase
+  mrp          Float?   // MRP at time of purchase
+}
+
+model Enquiry {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductDraft {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  data      String
+  updatedAt DateTime @updatedAt
+}
+
+model OtpVerification {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  phoneOrEmail String
+  code         String
+  verified     Boolean  @default(false)
+  attempts     Int      @default(0)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

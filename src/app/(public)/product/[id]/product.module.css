@@ -1,0 +1,1063 @@
+/* ==========================================================================
+   PRODUCT DETAIL PAGE — 1:1 REFERENCE LUXURY DESIGN SYSTEM
+   ========================================================================== */
+
+.pageContainer {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem 1.5rem;
+  background-color: #FFFFFF;
+}
+
+.productLayout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .productLayout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 3.5rem;
+    align-items: start;
+  }
+}
+
+/* ==========================================================================
+   1. MAIN PRODUCT GALLERY — LEFT SIDE (COMPLETELY FIXED ON DESKTOP)
+   ========================================================================== */
+
+.gallerySection {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  width: 100%;
+}
+
+@media (min-width: 992px) {
+  .gallerySection {
+    position: sticky;
+    top: 90px;
+    height: 680px;
+    align-self: start;
+    align-items: stretch;
+  }
+}
+
+/* Far-Left Vertical Thumbnail Strip */
+.thumbnailColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80px;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.thumbnailList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.thumbnailCard {
+  width: 76px;
+  height: 96px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1.5px solid #E5E7EB;
+  background-color: transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbnailCard:hover {
+  border-color: #9CA3AF;
+}
+
+.thumbnailActive {
+  border: 2px solid #F6D060 !important;
+  box-shadow: 0 0 0 1px #F6D060;
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Large Hero Main Image Container (Fixed Frame, Smooth Internal Zoom) */
+.mainImageWrapper {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.mainImageCard {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  background: #F3F4F6;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-in;
+  overflow: hidden !important; /* Strictly clips zoomed image inside fixed frame */
+  transform: translateZ(0); /* Hardware accelerated clipping boundary */
+  backface-visibility: hidden;
+}
+
+.mainHeroImg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  padding: 0;
+  display: block;
+  transform: scale(1);
+  transform-origin: center center;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.mainHeroImgActive {
+  opacity: 1;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.mainHeroImgHidden {
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Subtle internal image zoom strictly inside the fixed frame (no frame enlargement, no aspect ratio change) */
+.mainImageCard:hover .mainHeroImgActive {
+  transform: scale(1.06);
+}
+
+/* ==========================================================================
+   2. PRODUCT INFORMATION — RIGHT SIDE (NATURAL CONTINUOUS FLOW)
+   ========================================================================== */
+
+.productInfoSection {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 992px) {
+  .productInfoSection {
+    height: 680px;
+    max-height: 680px;
+    position: sticky;
+    top: 90px;
+  }
+}
+
+.topInfoSection {
+  flex-shrink: 0;
+}
+
+/* Breadcrumbs */
+.breadcrumbNav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #6B7280;
+  margin-bottom: 0.65rem;
+}
+
+.breadcrumbLink {
+  color: #6B7280;
+  transition: color 0.15s ease;
+}
+
+.breadcrumbLink:hover {
+  color: #111111;
+}
+
+.breadcrumbDivider {
+  color: #9CA3AF;
+  font-size: 11px;
+}
+
+.breadcrumbActive {
+  color: #111111;
+  font-weight: 500;
+}
+
+/* Status Badge */
+.statusBadgeWrap {
+  margin-bottom: 0.5rem;
+}
+
+.statusBadge {
+  display: inline-block;
+  background-color: #111111;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* Product Title */
+.productTitle {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: #111111;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.65rem 0;
+  text-transform: uppercase;
+}
+
+/* Pricing Row */
+.priceRow {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.mainPrice {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: -0.01em;
+}
+
+.originalPrice {
+  font-size: 1.1rem;
+  color: #9CA3AF;
+  text-decoration: line-through;
+  font-weight: 500;
+}
+
+.discountBadge {
+  background-color: #DC2626;
+  color: #FFFFFF;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   3. SIZE + SIZE CHART SECTION
+   ========================================================================== */
+
+.sizeSection {
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
+.selectorHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  min-height: 20px;
+}
+
+.selectorTitle {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.activeColorLabel {
+  font-weight: 500;
+  color: #6B7280;
+  margin-left: 4px;
+}
+
+.sizeGuideTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #111111;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.sizeGuideTrigger:hover {
+  color: #6B7280;
+}
+
+/* Size Boxes Wrap */
+.sizeBoxesWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sizeBox {
+  min-width: 48px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 4px;
+  border: 1.5px solid #E5E7EB;
+  background-color: #FFFFFF;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #111111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sizeBox:hover {
+  border-color: #9CA3AF;
+}
+
+.sizeBoxSelected {
+  border-color: #111111 !important;
+  background-color: #111111 !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
+/* Fit / Model Information subtle text style directly below size buttons */
+.fitModelNote {
+  margin-top: 0.55rem;
+  font-size: 12.5px;
+  color: #6B7280;
+  line-height: 1.4;
+}
+
+/* ==========================================================================
+   4. DEDICATED SCROLLABLE ACCORDION AREA
+   ========================================================================== */
+
+.accordionScrollArea {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+  margin-top: 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: #D1D5DB transparent;
+}
+
+.accordionScrollArea::-webkit-scrollbar {
+  width: 4px;
+}
+
+.accordionScrollArea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.accordionScrollArea::-webkit-scrollbar-thumb {
+  background-color: #D1D5DB;
+  border-radius: 4px;
+}
+
+.accordionScrollArea::-webkit-scrollbar-thumb:hover {
+  background-color: #9CA3AF;
+}
+
+.accordionContainer {
+  border-top: 1px solid #E5E7EB;
+  margin-bottom: 0.5rem;
+}
+
+.accordionItem {
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.accordionHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s ease;
+}
+
+.accordionTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111111;
+}
+
+.accordionIconLeft {
+  color: #F6D060;
+  flex-shrink: 0;
+}
+
+.accordionToggleIcon {
+  font-size: 16px;
+  font-weight: 600;
+  color: #6B7280;
+  width: 16px;
+  text-align: center;
+}
+
+.accordionBody {
+  padding: 0.25rem 0 1rem 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #4B5563;
+  animation: accordionExpand 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes accordionExpand {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.accordionBody p {
+  margin: 0;
+}
+
+.deliveryDetailsContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.deliveryDetailsContent strong {
+  color: #111111;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   5. FIXED BOTTOM PURCHASE AREA (BUY 1 GET 2 FREE OFFER + ACTION BUTTONS)
+   ========================================================================== */
+
+.bottomPurchaseSection {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 1.25rem;
+  width: 100%;
+  background: #FFFFFF;
+}
+
+.offerCardPurchaseArea {
+  width: 100%;
+  margin-bottom: 0.85rem;
+}
+
+.offerCard {
+  width: 100%;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 0.55rem 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  box-sizing: border-box;
+}
+
+.offerCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.offerIconWrap {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #FFC800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000000;
+  flex-shrink: 0;
+}
+
+.offerTextWrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.offerBadgeTitle {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #92400e;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.offerBadgeSubtitle {
+  font-size: 0.7rem;
+  color: #78350f;
+  margin-top: 1px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.offerCtaBtn {
+  background: #09090b;
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.offerCtaBtn:hover {
+  opacity: 0.88;
+}
+
+/* ==========================================================================
+   6. PURCHASE ACTION BUTTONS + SHARE BUTTON
+   ========================================================================== */
+
+.actionButtonsRow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.addToCartBtn {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border-radius: 4px;
+  background-color: #FFFFFF;
+  color: #111111;
+  border: 2px solid #111111;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.addToCartBtn:hover:not(:disabled) {
+  background-color: #F3F4F6;
+  border-color: #000000;
+}
+
+.buyNowBtn {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border-radius: 4px;
+  background-color: #111111;
+  color: #FFFFFF;
+  border: 2px solid #111111;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.buyNowBtn:hover:not(:disabled) {
+  background-color: #222222;
+  border-color: #222222;
+}
+
+.shareBtn {
+  height: 48px;
+  padding: 0 1rem;
+  border-radius: 4px;
+  background-color: #FFFFFF;
+  color: #111111;
+  border: 1.5px solid #E5E7EB;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.shareBtn:hover {
+  background-color: #F9FAFB;
+  border-color: #111111;
+  color: #111111;
+}
+
+.shareBtnSuccess {
+  border-color: #16a34a !important;
+  color: #16a34a !important;
+  background-color: #F0FDF4 !important;
+}
+
+.addToCartBtn:disabled,
+.buyNowBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+/* ==========================================================================
+   6. "YOU MAY ALSO LIKE" RELATED PRODUCTS CAROUSEL
+   ========================================================================== */
+
+.relatedSection {
+  width: 100%;
+  margin-top: 3.5rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid #E5E7EB;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.relatedHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.relatedTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.relatedTitle {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #09090B;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.relatedSubtitle {
+  font-size: 0.85rem;
+  color: #71717A;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.carouselControls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.carouselNavBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid #E4E4E7;
+  background-color: #FFFFFF;
+  color: #18181B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.carouselNavBtn:hover:not(:disabled) {
+  background-color: #09090B;
+  color: #FFFFFF;
+  border-color: #09090B;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.carouselNavBtnDisabled,
+.carouselNavBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: #E4E4E7;
+  color: #A1A1AA;
+  background-color: #F4F4F5;
+  box-shadow: none;
+  transform: none;
+}
+
+.carouselTrack {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  padding: 0.5rem 0.25rem 1.5rem 0.25rem; /* Room for card elevation shadow */
+}
+
+.carouselTrack::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.carouselItem {
+  flex: 0 0 calc(25% - 1.125rem); /* Exactly 4 cards visible on desktop */
+  min-width: 250px;
+  max-width: 320px;
+  scroll-snap-align: start;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1200px) {
+  .carouselItem {
+    flex: 0 0 calc(33.333% - 1rem); /* 3 cards on tablet landscape */
+  }
+}
+
+/* ==========================================================================
+   8. FULLSCREEN LIGHTBOX / ZOOM MODAL
+   ========================================================================== */
+
+.lightboxBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.lightboxContent {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightboxImg {
+  max-width: 85vw;
+  max-height: 75vh;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #FFFFFF;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.lightboxCloseBtn {
+  position: absolute;
+  top: -48px;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lightboxCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.lightboxNavBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lightboxPrevBtn {
+  left: -60px;
+}
+
+.lightboxNextBtn {
+  right: -60px;
+}
+
+.lightboxNavBtn:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.lightboxThumbnailStrip {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  overflow-x: auto;
+  max-width: 85vw;
+  padding: 4px;
+}
+
+.lightboxThumbBtn {
+  width: 50px;
+  height: 64px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: #FFFFFF;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.lightboxThumbBtn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lightboxThumbActive {
+  border-color: #F6D060 !important;
+  opacity: 1 !important;
+}
+
+/* Keyframe Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==========================================================================
+   9. RESPONSIVE MOBILE & TABLET STYLES
+   ========================================================================== */
+
+@media (max-width: 991px) {
+  .productInfoSection {
+    height: auto;
+    max-height: none;
+    position: static;
+  }
+
+  .accordionScrollArea {
+    overflow-y: visible;
+    max-height: none;
+    padding-right: 0;
+  }
+
+  .bottomPurchaseSection {
+    margin-top: 1.25rem;
+    padding-top: 0;
+  }
+
+  .relatedSection {
+    margin-top: 2.5rem;
+    padding-top: 1.75rem;
+  }
+
+  .carouselItem {
+    flex: 0 0 calc(50% - 0.75rem);
+    min-width: 220px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pageContainer {
+    padding: 0.75rem 14px 3rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .gallerySection {
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .mainImageWrapper {
+    width: 100%;
+    height: auto;
+  }
+
+  .mainImageCard {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    min-height: 280px;
+    border-radius: 8px;
+  }
+
+  .thumbnailColumn {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .thumbnailList {
+    flex-direction: row;
+    max-height: none;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .thumbnailList::-webkit-scrollbar {
+    display: none;
+  }
+
+  .thumbnailCard {
+    width: 58px;
+    height: 72px;
+  }
+
+  .thumbScrollDownBtn {
+    display: none;
+  }
+
+  .productTitle {
+    font-size: clamp(1.35rem, 5vw, 1.75rem);
+    word-break: break-word;
+  }
+
+  .relatedTitle {
+    font-size: 1.2rem;
+  }
+
+  .carouselItem {
+    flex: 0 0 72vw;
+    min-width: 200px;
+    max-width: 270px;
+  }
+
+  .actionButtonsRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    width: 100%;
+  }
+
+  .addToCartBtn,
+  .buyNowBtn {
+    flex: 1 1 calc(50% - 0.35rem);
+    min-width: 130px;
+  }
+
+  .offerCard {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .offerCtaBtn {
+    width: 100%;
+    text-align: center;
+    padding: 0.55rem 0;
+  }
+
+  .lightboxPrevBtn {
+    left: 8px;
+  }
+
+  .lightboxNextBtn {
+    right: 8px;
+  }
+}
+
+@media (max-width: 440px) {
+  .pageContainer {
+    padding: 0.5rem 10px 2.5rem;
+  }
+
+  .actionButtonsRow {
+    flex-direction: column;
+  }
+
+  .addToCartBtn,
+  .buyNowBtn,
+  .shareBtn {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}

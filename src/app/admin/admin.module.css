@@ -1,0 +1,557 @@
+/* ==========================================================================
+   ADRIZO ADMIN - LUXURY WHITE, BLACK & YELLOW THEME
+   Matches the exact visual hierarchy of the reference dashboard
+   ========================================================================== */
+
+.adminLayout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f4f5f7;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+/* ==========================================================================
+   SIDEBAR (Clean White #ffffff with Luxury Yellow #FFC800 Accents)
+   ========================================================================== */
+.sidebar {
+  width: 250px;
+  background-color: #ffffff;
+  color: #09090b;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  z-index: 50;
+  border-right: 1px solid #e4e4e7;
+  transition: transform 0.2s ease;
+}
+
+.brand {
+  padding: 1.25rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid #e4e4e7;
+  background-color: #ffffff;
+}
+
+.brandLogoWrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.brandLogo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(0);
+}
+
+.brandTextGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.brandWordmark {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  color: #000000;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.brandSubText {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #71717a;
+  margin-top: 3px;
+}
+
+/* Navigation List */
+.nav {
+  flex: 1;
+  padding: 1rem 0.75rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  color: #18181b;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  width: 100%;
+}
+
+.navItem:hover {
+  background: #f4f4f5;
+  color: #000000;
+}
+
+/* Active Navigation Item (Yellow Pill Accent) */
+.navItemActive {
+  background: #fffbeb !important;
+  border-color: #FFC800 !important;
+  color: #000000 !important;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(255, 200, 0, 0.15);
+}
+
+.navItemActive svg {
+  color: #000000 !important;
+}
+
+.navGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.navGroupHeader {
+  justify-content: space-between;
+}
+
+.navItemLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.navSubMenu {
+  display: flex;
+  flex-direction: column;
+  padding-left: 1.5rem;
+  margin-top: 0.15rem;
+  margin-bottom: 0.35rem;
+  gap: 0.15rem;
+  border-left: 2px solid #f4f4f5;
+  margin-left: 1.25rem;
+}
+
+.navSubItem {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.8125rem;
+  color: #71717a;
+  font-weight: 500;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.12s ease;
+}
+
+.navSubItem:hover {
+  color: #000000;
+  background: #f4f4f5;
+}
+
+.navSubItemActive {
+  color: #000000 !important;
+  background: #fffbeb !important;
+  font-weight: 800;
+}
+
+/* Help Box */
+.helpBox {
+  margin: 0.75rem;
+  padding: 0.85rem;
+  background: #fafafa;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+}
+
+.helpBoxHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.5rem;
+}
+
+.helpIcon {
+  color: #000000;
+}
+
+.helpBoxTitle {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #09090b;
+}
+
+.helpBoxText {
+  font-size: 0.725rem;
+  color: #71717a;
+  margin: 0 0 0.65rem 0;
+  line-height: 1.35;
+}
+
+.helpBtn {
+  width: 100%;
+  padding: 0.45rem;
+  background: #FFC800;
+  color: #000000;
+  font-weight: 700;
+  font-size: 0.75rem;
+  border: 1px solid #eab308;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.helpBtn:hover {
+  background: #f5b700;
+}
+
+/* User Profile (Bottom of Sidebar) */
+.userProfile {
+  padding: 0.85rem 1rem;
+  border-top: 1px solid #e4e4e7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafafa;
+}
+
+.profileAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #000000;
+  color: #FFC800;
+  font-weight: 800;
+  font-size: 0.8125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profileInfo {
+  flex: 1;
+  margin-left: 0.65rem;
+}
+
+.profileName {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #09090b;
+  line-height: 1.2;
+}
+
+.profileRole {
+  font-size: 0.675rem;
+  color: #71717a;
+}
+
+.logoutBtn {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.12s ease;
+}
+
+.logoutBtn:hover {
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* ==========================================================================
+   MAIN CONTENT AREA & TOPBAR
+   ========================================================================== */
+.mainContent {
+  flex: 1;
+  margin-left: 250px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background-color: #f4f5f7;
+}
+
+.header {
+  height: 64px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e4e4e7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.menuToggleBtn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.headerSearch {
+  position: relative;
+  width: 320px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.headerSearchInput {
+  width: 100%;
+  height: 38px;
+  padding: 0 3.75rem 0 2.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #0f172a;
+}
+
+.headerSearchInput:focus {
+  outline: none;
+  border-color: #FFC800;
+  box-shadow: 0 0 0 2px rgba(255, 200, 0, 0.2);
+}
+
+.searchShortcut {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.iconBtn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.iconBtn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.yellowBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #FFC800;
+  color: #000000;
+  font-size: 0.65rem;
+  font-weight: 900;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+}
+
+.userCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid #e2e8f0;
+}
+
+.userAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #FFC800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  overflow: hidden;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.userRole {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.pageContent {
+  padding: 1.5rem 1.75rem;
+  flex: 1;
+}
+
+.pageTitle {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.5rem;
+}
+
+/* ==========================================================================
+   STAT CARDS & METRICS (YELLOW THEMED)
+   ========================================================================== */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.statCard {
+  background-color: #ffffff;
+  padding: 1.25rem 1.35rem;
+  border-radius: 8px;
+  border: 1px solid #e4e4e7;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.statCard:hover {
+  border-color: #FFC800;
+}
+
+.statIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #000000;
+  border: 1px solid #fde68a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statInfo {
+  flex: 1;
+}
+
+.statInfo h3 {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.25rem 0;
+}
+
+.statInfo p {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+/* ==========================================================================
+   RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 220px;
+  }
+  .mainContent {
+    margin-left: 220px;
+  }
+  .headerSearch {
+    width: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebarMobileOpen {
+    transform: translateX(0);
+  }
+  .mainContent {
+    margin-left: 0;
+  }
+  .menuToggleBtn {
+    display: block;
+  }
+  .headerSearch {
+    display: none;
+  }
+  .pageContent {
+    padding: 1rem;
+  }
+}

@@ -1,0 +1,224 @@
+.authContainer {
+  min-height: calc(100vh - 80px); /* Adjust based on navbar height */
+  display: flex;
+  align-items: stretch;
+  background-color: #000; /* Dark premium background for the page */
+}
+
+.authLayout {
+  display: flex;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.authImageSection {
+  flex: 1;
+  position: relative;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .authImageSection {
+    display: block;
+  }
+}
+
+.authImageWrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+/* Fallback for image wrapper gradient if needed */
+.authImageWrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0) 50%, rgba(0,0,0,0.8) 100%);
+  pointer-events: none;
+}
+
+.authCardSection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: #111;
+  position: relative;
+  z-index: 10;
+}
+
+.authCard {
+  width: 100%;
+  max-width: 440px;
+  background: rgba(30, 30, 30, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2.5rem;
+  color: white;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.authHeader {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.authTitle {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: white;
+  letter-spacing: -0.5px;
+}
+
+.authSubtitle {
+  font-size: 0.95rem;
+  color: #a1a1aa;
+}
+
+.authError {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  text-align: center;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.authOptionBtn {
+  width: 100%;
+  display: block;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.authOptionBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.authInput {
+  width: 100%;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.authInput:focus {
+  border-color: var(--primary); /* ADRIZO yellow */
+}
+
+.authPrimaryBtn {
+  width: 100%;
+  padding: 1rem;
+  background: var(--primary); /* ADRIZO yellow */
+  color: black;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 1rem;
+}
+
+.authPrimaryBtn:hover:not(:disabled) {
+  background: white;
+  color: black;
+}
+
+.authPrimaryBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.authBackBtn {
+  width: 100%;
+  background: none;
+  border: none;
+  color: #a1a1aa;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0.5rem;
+}
+
+.authBackBtn:hover {
+  color: white;
+}
+
+.otpContainer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.otpInput {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.otpInput:focus {
+  border-color: var(--primary);
+}
+
+.authResendBtn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.authResendBtn:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .otpInput {
+    width: 40px;
+    height: 48px;
+    font-size: 1.25rem;
+  }
+  
+  .authCard {
+    padding: 1.5rem;
+  }
+}

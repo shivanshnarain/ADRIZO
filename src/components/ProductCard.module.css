@@ -1,0 +1,417 @@
+/* =========================================
+   REFERENCE-ACCURATE PRODUCT CARD STYLES
+   ========================================= */
+
+.productCard {
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border: 1px solid #eaeaea;
+  border-radius: 26px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s ease;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.productCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 32px -4px rgba(0, 0, 0, 0.09), 0 2px 6px rgba(0, 0, 0, 0.03);
+  border-color: #dedede;
+}
+
+/* =========================================
+   1. IMAGE CONTAINER & TOP CONTROLS
+   ========================================= */
+.imageContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.96;
+  background-color: #f4f4f6;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.imageLink {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+}
+
+.productImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  animation: fadeIn 0.35s ease-in-out;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.productCard:hover .productImage {
+  transform: scale(1.04);
+}
+
+/* Top-Left Dynamic Badge */
+.badgeWrapper {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.badgePill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #1f2937;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 9999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  line-height: 1.2;
+}
+
+/* Top-Right Wishlist Heart Button */
+.wishlistBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.2s ease,
+              box-shadow 0.2s ease;
+  padding: 0;
+}
+
+.wishlistBtn:hover {
+  background-color: #ffffff;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.heartDefault {
+  color: #4b5563;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.wishlistBtn:hover .heartDefault {
+  color: #ef4444;
+}
+
+.heartActive {
+  color: #ef4444;
+  fill: #ef4444;
+}
+
+/* Bottom-Center Image Indicators */
+.slideIndicators {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px;
+  background-color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.indicatorDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #cbd5e1;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.indicatorDotActive {
+  background-color: #059669;
+  width: 14px;
+  border-radius: 4px;
+}
+
+/* =========================================
+   2. PRODUCT INFORMATION SECTION
+   ========================================= */
+.cardInfo {
+  padding: 12px 4px 4px 4px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Brand / Category */
+.brandCategory {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #059669; /* Theme green accent matching reference */
+  text-transform: capitalize;
+  margin-bottom: 3px;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+/* Product Title */
+.productTitleLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.productTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.55em;
+  transition: color 0.15s ease;
+}
+
+.productTitle:hover {
+  color: #374151;
+}
+
+/* Pricing & Discount Row */
+.pricingRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.sellingPrice {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+}
+
+.mrpPrice {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  text-decoration: line-through;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.saveBadge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #15803d;
+  background-color: #dcfce7;
+  padding: 2px 7px;
+  border-radius: 4px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+/* =========================================
+   3. FULL-WIDTH BUY NOW BUTTON
+   ========================================= */
+.buyNowBtn {
+  margin-top: auto;
+  width: 100%;
+  background-color: #18181b;
+  color: #ffffff;
+  border: 1px solid #18181b;
+  padding: 0.75rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  user-select: none;
+}
+
+.buyNowBtn:hover {
+  background-color: #27272a;
+  border-color: #27272a;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.buyNowBtn:active {
+  transform: translateY(0);
+}
+
+.buyNowBtnSuccess {
+  background-color: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+/* =========================================
+   4. RESPONSIVE ADJUSTMENTS
+   ========================================= */
+@media (max-width: 640px) {
+  .productCard {
+    padding: 8px;
+    border-radius: 16px;
+    min-width: 0;
+  }
+
+  .imageContainer {
+    border-radius: 12px;
+    aspect-ratio: 1 / 1;
+  }
+
+  .badgeWrapper {
+    top: 6px;
+    left: 6px;
+    max-width: calc(100% - 38px);
+  }
+
+  .badgePill {
+    font-size: 0.65rem;
+    padding: 2px 7px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .wishlistBtn {
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .cardInfo {
+    padding: 8px 2px 2px 2px;
+    min-width: 0;
+  }
+
+  .brandCategory {
+    font-size: 0.6875rem;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .productTitle {
+    font-size: 0.8125rem;
+    line-height: 1.25;
+    margin-bottom: 6px;
+    min-height: 2.5em;
+    word-break: break-word;
+  }
+
+  .pricingRow {
+    gap: 4px 6px;
+    margin-bottom: 8px;
+  }
+
+  .sellingPrice {
+    font-size: 0.875rem;
+  }
+
+  .mrpPrice {
+    font-size: 0.72rem;
+  }
+
+  .saveBadge {
+    font-size: 0.625rem;
+    padding: 1px 5px;
+  }
+
+  .buyNowBtn {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.75rem;
+    min-height: 34px;
+    gap: 0.35rem;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 360px) {
+  .productCard {
+    padding: 6px;
+    border-radius: 14px;
+  }
+
+  .imageContainer {
+    border-radius: 10px;
+  }
+
+  .productTitle {
+    font-size: 0.75rem;
+    min-height: 2.4em;
+  }
+
+  .sellingPrice {
+    font-size: 0.8125rem;
+  }
+
+  .mrpPrice {
+    font-size: 0.6875rem;
+  }
+
+  .buyNowBtn {
+    padding: 0.45rem 0.35rem;
+    font-size: 0.7rem;
+    min-height: 32px;
+  }
+}

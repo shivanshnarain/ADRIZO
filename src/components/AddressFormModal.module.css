@@ -1,0 +1,316 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  padding: 1rem;
+}
+
+.modalContainer {
+  background: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e4e4e7;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 10;
+}
+
+.modalTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #09090b;
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: #71717a;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.closeBtn:hover {
+  color: #09090b;
+  background-color: #f4f4f5;
+}
+
+.modalBody {
+  padding: 1.5rem;
+}
+
+.tagGroup {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.tagBtn {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  background: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #52525b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.15s;
+}
+
+.tagBtn:hover {
+  border-color: #09090b;
+  color: #09090b;
+}
+
+.tagBtnActive {
+  background: #09090b;
+  color: #ffffff;
+  border-color: #09090b;
+}
+
+.formGrid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.formGrid3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.formGrid4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .modalOverlay {
+    padding: 0.5rem;
+  }
+
+  .modalContainer {
+    max-height: 94vh;
+    border-radius: 10px;
+  }
+
+  .modalHeader {
+    padding: 1rem;
+  }
+
+  .modalBody {
+    padding: 1rem;
+  }
+
+  .modalFooter {
+    padding: 0.85rem 1rem;
+  }
+
+  .formGrid2,
+  .formGrid3,
+  .formGrid4 {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #09090b;
+  margin-bottom: 0.35rem;
+}
+
+.formInput,
+.formSelect {
+  width: 100%;
+  height: 42px;
+  padding: 0 0.85rem;
+  font-size: 0.875rem;
+  border: 1px solid #d4d4d8;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #09090b;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.formInput:focus,
+.formSelect:focus {
+  border-color: #09090b;
+  box-shadow: 0 0 0 1px #09090b;
+}
+
+.phoneInputWrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d4d4d8;
+  border-radius: 6px;
+  overflow: hidden;
+  height: 42px;
+}
+
+.phonePrefix {
+  background: #f4f4f5;
+  padding: 0 0.65rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #52525b;
+  border-right: 1px solid #d4d4d8;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.phoneInput {
+  flex: 1;
+  height: 100%;
+  border: none;
+  padding: 0 0.85rem;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #52525b;
+  cursor: pointer;
+  user-select: none;
+  margin-top: 0.5rem;
+}
+
+.checkboxInput {
+  accent-color: #09090b;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.errorBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 0.65rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modalFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #e4e4e7;
+  background: #fafafa;
+  position: sticky;
+  bottom: 0;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.cancelBtn {
+  padding: 0.65rem 1.25rem;
+  border: 1px solid #d4d4d8;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #52525b;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: #f4f4f5;
+  color: #09090b;
+}
+
+.submitBtn {
+  padding: 0.65rem 1.75rem;
+  border: none;
+  border-radius: 6px;
+  background: #09090b;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.submitBtn:hover {
+  opacity: 0.9;
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pinChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.pinChip {
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.725rem;
+  font-weight: 600;
+  color: #52525b;
+  cursor: pointer;
+}
+
+.pinChipActive {
+  background: #09090b;
+  color: #ffffff;
+  border-color: #09090b;
+}

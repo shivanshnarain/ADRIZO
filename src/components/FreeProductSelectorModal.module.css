@@ -1,0 +1,1259 @@
+/* =========================================================================
+   AD(R)IZO — BUY X GET Y FREE OFFER-SELECTION MODAL
+   Strictly matches the visual reference image & prompt specifications
+   ========================================================================= */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 999999 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalContainer {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 1060px;
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  animation: scaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.97); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* =========================================================================
+   1. HEADER SECTION (REQUIREMENT 1 & 6)
+   ========================================================================= */
+.modalHeader {
+  padding: 1.25rem 1.5rem 0.75rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #ffffff;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* REQUIREMENT 1: Polished ecommerce offer badge */
+.specialOfferBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #f3f4f6; /* light contrasting grey/off-white */
+  border: 1px solid #e5e7eb; /* subtle outline */
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px; /* slightly rounded corners, NOT pill-shaped */
+  width: fit-content;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.colorfulGiftIcon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.badgeSpecialOfferText {
+  color: #111827; /* "SPECIAL OFFER" text must be black */
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badgeDash {
+  color: #9ca3af;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.offerTagPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #111827; /* dark container for high contrast */
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.tagWordWhite {
+  color: #ffffff; /* "BUY", "GET" and "FREE" must be white */
+}
+
+.tagNumPaid {
+  background: #ffffff;
+  color: #111827; /* The number 1 remains black */
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 900;
+  font-size: 0.725rem;
+  line-height: 1.1;
+}
+
+.tagNumFree {
+  color: #facc15; /* The number 2 must be yellow */
+  font-weight: 900;
+  font-size: 0.75rem;
+  line-height: 1.1;
+}
+
+.modalTitle {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0.15rem 0 0.1rem 0;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.modalSubtitle {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* REQUIREMENT 6: Selected counter strictly dynamic and GREEN */
+.selectedCounterBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.825rem;
+  font-weight: 800;
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #86efac;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.selectedCounterBadge svg {
+  color: #16a34a;
+}
+
+.selectedCounterComplete {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #4ade80;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.15);
+}
+
+.counterShaking {
+  animation: counterShake 0.4s ease-in-out;
+}
+
+@keyframes counterShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.15s ease, color 0.15s ease;
+  font-size: 1.25rem;
+}
+
+.closeBtn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* =========================================================================
+   SCROLLABLE MODAL BODY
+   ========================================================================= */
+.modalBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1.5rem 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* =========================================================================
+   TOP SECTION: MAIN PRODUCT (PAID) + OPTION A + OR + OPTION B
+   ========================================================================= */
+.dualOptionCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mainProductSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex: 1.1;
+  min-width: 250px;
+}
+
+.mainProductBadge {
+  background: #111827;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mainProductBody {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.mainProductThumb {
+  width: 54px;
+  height: 68px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  background: #f9fafb;
+  flex-shrink: 0;
+}
+
+.mainProductThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mainProductDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.mainProductTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.mainProductMeta {
+  font-size: 0.775rem;
+  color: #6b7280;
+}
+
+.mainProductPrice {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+/* REQUIREMENT 3: Option A - Increase Quantity */
+.optionASection {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 1rem;
+  border-left: 1px solid #e5e7eb;
+  flex: 1;
+  min-height: 72px; /* aligned height with option B */
+}
+
+.optionATitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.optionASubtitle {
+  font-size: 0.725rem;
+  color: #6b7280;
+  margin-top: -0.15rem;
+}
+
+.optionAControls {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.2rem;
+}
+
+.qtyStepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  overflow: hidden;
+  height: 28px;
+}
+
+.qtyBtn {
+  background: none;
+  border: none;
+  width: 26px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #374151;
+  transition: background 0.15s ease;
+}
+
+.qtyBtn:hover:not(:disabled) {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.qtyBtn:disabled {
+  color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.qtyVal {
+  min-width: 22px;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.addFreeWithThisBtn {
+  background: #facc15;
+  color: #111827;
+  border: none;
+  font-size: 0.775rem;
+  font-weight: 700;
+  height: 28px;
+  padding: 0 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.addFreeWithThisBtn:hover {
+  background: #eab308;
+}
+
+.addFreeWithThisBtn:active {
+  transform: scale(0.98);
+}
+
+/* OR Divider */
+.orDivider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  align-self: stretch;
+  padding: 0 0.5rem;
+}
+
+.orDivider::before {
+  content: '';
+  position: absolute;
+  top: 10%;
+  bottom: 10%;
+  left: 50%;
+  width: 1px;
+  background: #e5e7eb;
+  transform: translateX(-50%);
+}
+
+.orCircle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #4b5563;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 1;
+}
+
+/* REQUIREMENT 4: Option B - Select Different Products (clean minimal, NO yellow card) */
+.optionBSection {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex: 1.1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 72px; /* aligned height with option A */
+}
+
+.optionBSection:hover {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.optionBIcon {
+  color: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.optionBText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.optionBTitle {
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.25;
+}
+
+.optionBSubtitle {
+  font-size: 0.725rem;
+  color: #6b7280;
+}
+
+/* =========================================================================
+   REQUIREMENT 13: PRICING SUMMARY BAR
+   Exact Order: 1. CATALOG VALUE -> 2. YOU SAVE -> 3. PAYABLE PRICE
+   ========================================================================= */
+.pricingBanner {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pricingMetrics {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+}
+
+.pricingMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pricingDivider {
+  width: 1px;
+  height: 32px;
+  background: #e5e7eb;
+}
+
+.metricLabel {
+  font-size: 0.685rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metricPayable {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #111827;
+  line-height: 1.1;
+}
+
+.metricSavings {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #16a34a;
+  line-height: 1.1;
+}
+
+.metricCatalog {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-decoration: line-through;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  line-height: 1.1;
+}
+
+.infoIcon {
+  color: #9ca3af;
+  cursor: help;
+  display: inline-flex;
+}
+
+/* REQUIREMENT 14: Offer Status Badge (slightly rounded, not pill) */
+.offerPillBadge {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 0.775rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px; /* Refined medium radius, not full capsule */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+/* =========================================================================
+   REQUIREMENT 10 & 12: SEARCH & FILTERS TOOLBAR
+   ========================================================================= */
+.filterToolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.searchInputWrap {
+  position: relative;
+  flex: 1;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: 38px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem 0.5rem 2.25rem;
+  font-size: 0.8125rem;
+  color: #111827;
+  outline: none;
+  background: #ffffff;
+  transition: border-color 0.15s ease;
+}
+
+.searchInput:focus {
+  border-color: #111827;
+}
+
+.searchInput::placeholder {
+  color: #9ca3af;
+}
+
+.selectWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.filterSelect {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  height: 38px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.5rem 1.85rem 0.5rem 0.85rem;
+  font-size: 0.8125rem;
+  color: #374151;
+  background: #ffffff;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  min-width: 105px;
+}
+
+.filterSelect:focus {
+  border-color: #111827;
+}
+
+.selectChevron {
+  position: absolute;
+  right: 0.65rem;
+  pointer-events: none;
+  color: #6b7280;
+}
+
+/* =========================================================================
+   PRODUCT SELECTION GRID (REQUIREMENT 7 & 8)
+   ========================================================================= */
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+}
+
+.productCard {
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.productCard:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* REQUIREMENT 7: Selected state green border & elevation */
+.productCardActive {
+  border: 2px solid #16a34a !important;
+  box-shadow: 0 0 0 1px #16a34a, 0 4px 12px rgba(22, 163, 74, 0.18) !important;
+}
+
+.freeRibbon {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #facc15;
+  color: #000000;
+  font-size: 0.65rem;
+  font-weight: 900;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  letter-spacing: 0.03em;
+  z-index: 2;
+  text-transform: uppercase;
+}
+
+/* REQUIREMENT 7: Square Checkbox Top Right with Green Checkmark */
+.cardCheckbox {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1.5px solid #d1d5db;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.cardCheckboxChecked {
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+/* REQUIREMENT 8: Product Image Slider */
+.cardImageWrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.productCard:hover .cardImage {
+  transform: scale(1.02);
+}
+
+.imgSliderBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111827;
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease;
+  opacity: 0;
+}
+
+.productCard:hover .imgSliderBtn {
+  opacity: 1;
+}
+
+.imgSliderBtn:hover {
+  background: #ffffff;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.imgSliderPrev {
+  left: 6px;
+}
+
+.imgSliderNext {
+  right: 6px;
+}
+
+.imgSliderDots {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.imgSliderDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  transition: all 0.2s ease;
+}
+
+.imgSliderDotActive {
+  width: 12px;
+  border-radius: 3px;
+  background: #ffffff;
+}
+
+/* REQUIREMENT 9: Clean Product Body - NO SIZE BUTTONS HERE */
+.cardBody {
+  padding: 0.65rem 0.65rem 0.75rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.cardTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.2rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+.cardPriceRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: auto;
+}
+
+.struckPrice {
+  color: #9ca3af;
+  text-decoration: line-through;
+  font-size: 0.775rem;
+  font-weight: 600;
+}
+
+.freePriceText {
+  color: #16a34a;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.selectedSizeTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #16a34a;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  margin-top: 0.2rem;
+  margin-bottom: 0.25rem;
+  width: fit-content;
+}
+
+/* =========================================================================
+   REQUIREMENT 11: SIZE SELECTION POPUP MODAL
+   ========================================================================= */
+.sizeModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  padding: 1rem;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.sizeModalCard {
+  background: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: scaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #e5e7eb;
+}
+
+.sizeModalHeader {
+  padding: 1rem 1.25rem 0.75rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.sizeModalHeaderInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.sizeModalTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.sizeModalSubtitle {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.sizeModalCloseBtn {
+  background: none;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  transition: background 0.15s ease;
+}
+
+.sizeModalCloseBtn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.sizeModalBody {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sizeModalProductRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #f9fafb;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #f3f4f6;
+}
+
+.sizeModalThumb {
+  width: 50px;
+  height: 62px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+}
+
+.sizeModalMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.sizeModalColorText {
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+.sizeModalColorText span {
+  color: #111827;
+  font-weight: 700;
+}
+
+.sizeModalPriceText {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sizeModalFreeTag {
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.685rem;
+  font-weight: 800;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.sizeSelectionArea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sizeSelectLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.sizePillGrid {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sizePillBtn {
+  min-width: 44px;
+  height: 38px;
+  padding: 0 0.75rem;
+  border-radius: 6px;
+  border: 1.5px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sizePillBtn:hover {
+  border-color: #111827;
+}
+
+.sizePillBtnActive {
+  border-color: #111827 !important;
+  background: #111827 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.sizeModalFooter {
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid #f3f4f6;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.sizeModalCancelBtn {
+  background: none;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 0.95rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sizeModalCancelBtn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.sizeModalConfirmBtn {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem 1.15rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+}
+
+.sizeModalConfirmBtn:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.sizeModalConfirmBtn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* =========================================================================
+   BOTTOM CONFIRMATION TRAY
+   ========================================================================= */
+.footerBar {
+  border-top: 1px solid #e5e7eb;
+  padding: 0.95rem 1.5rem;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.footerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.footerLabel {
+  font-size: 0.775rem;
+  color: #6b7280;
+}
+
+.footerPriceRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footerPayable {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #111827;
+}
+
+.footerSavings {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #16a34a;
+}
+
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* REQUIREMENT 16: Skip offer link */
+.skipOfferLink {
+  background: none;
+  border: none;
+  color: #374151;
+  text-decoration: underline;
+  font-size: 0.825rem;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 0.25rem 0.25rem;
+  transition: color 0.15s ease;
+}
+
+.skipOfferLink:hover {
+  color: #111827;
+}
+
+/* REQUIREMENT 15: Continue Button */
+.continueBtn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1.35rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.continueBtnDisabled {
+  background: #9ca3af;
+  color: #ffffff;
+  cursor: not-allowed;
+}
+
+.continueBtnActive {
+  background: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+}
+
+.continueBtnActive:hover {
+  background: #15803d;
+}
+
+.continueBtnActive:active {
+  background: #166534;
+}
+
+/* =========================================================================
+   RESPONSIVE DESIGN (TABLET & MOBILE)
+   ========================================================================= */
+@media (max-width: 1024px) {
+  .productGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .dualOptionCard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .optionASection {
+    border-left: none;
+    border-top: 1px solid #e5e7eb;
+    padding-left: 0;
+    padding-top: 0.75rem;
+  }
+  .orDivider {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .modalOverlay {
+    padding: 0.5rem;
+  }
+  .modalContainer {
+    max-height: 98vh;
+    border-radius: 12px;
+  }
+  .modalHeader {
+    padding: 1rem 1rem 0.5rem 1rem;
+  }
+  .modalBody {
+    padding: 0 1rem 1rem 1rem;
+  }
+  .modalTitle {
+    font-size: 1.25rem;
+  }
+  .pricingBanner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .pricingMetrics {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .filterToolbar {
+    flex-wrap: wrap;
+  }
+  .productGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+  }
+  .footerBar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.85rem 1rem;
+    gap: 0.75rem;
+  }
+  .footerActions {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+  }
+  .continueBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
