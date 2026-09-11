@@ -16,7 +16,7 @@ export type User = {
   avatar_url?: string | null;
 };
 
-export type AuthMode = 'SIGN_IN' | 'SIGN_UP' | 'FORGOT_PASSWORD';
+export type AuthMode = 'SIGN_IN' | 'SIGN_UP' | 'FORGOT_PASSWORD' | 'PHONE_OTP';
 
 type AuthContextType = {
   user: User | null;

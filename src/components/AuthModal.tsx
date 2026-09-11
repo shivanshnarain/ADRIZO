@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { X, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
+import { X, Eye, EyeOff, AlertCircle, CheckCircle, Phone } from 'lucide-react';
+import { useAuth, AuthMode } from '@/context/AuthContext';
 import styles from './AuthModal.module.css';
-
-type AuthMode = 'SIGN_IN' | 'SIGN_UP' | 'FORGOT_PASSWORD';
+import PhoneOtpAuth from './PhoneOtpAuth';
 
 export default function AuthModal() {
   const { isAuthModalOpen, closeAuthModal, fetchUser, authModalMode, authRedirectUrl } = useAuth();
@@ -278,6 +277,16 @@ export default function AuthModal() {
               </button>
               <button
                 type="button"
+                className={`${styles.tabBtn} ${mode === 'PHONE_OTP' ? styles.tabBtnActive : ''}`}
+                onClick={() => {
+                  setMode('PHONE_OTP');
+                  setError('');
+                }}
+              >
+                Phone OTP
+              </button>
+              <button
+                type="button"
                 className={`${styles.tabBtn} ${mode === 'SIGN_UP' ? styles.tabBtnActive : ''}`}
                 onClick={() => {
                   setMode('SIGN_UP');
@@ -286,6 +295,43 @@ export default function AuthModal() {
               >
                 Create Account
               </button>
+            </div>
+          )}
+
+          {/* =========================================
+              VIEW 0: PHONE OTP LOGIN
+             ========================================= */}
+          {mode === 'PHONE_OTP' && (
+            <div className={styles.formWrapper}>
+              <div className={styles.headerSection}>
+                <h2 className={styles.title}>PHONE LOGIN</h2>
+                <p className={styles.subtitle}>Sign in or register instantly via OTP</p>
+              </div>
+
+              <PhoneOtpAuth
+                onSuccess={async () => {
+                  await fetchUser();
+                  handleClose();
+                  if (authRedirectUrl) {
+                    window.location.href = authRedirectUrl;
+                  }
+                }}
+                submitButtonText="Verify & Sign In"
+              />
+
+              <div className={styles.switchModeRow} style={{ marginTop: '1.5rem' }}>
+                <span>Prefer email & password?</span>{' '}
+                <button
+                  type="button"
+                  className={styles.switchModeBtn}
+                  onClick={() => {
+                    setMode('SIGN_IN');
+                    setError('');
+                  }}
+                >
+                  Sign In with Password
+                </button>
+              </div>
             </div>
           )}
 

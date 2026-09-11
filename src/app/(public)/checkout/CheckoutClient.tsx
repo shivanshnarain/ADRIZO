@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import CodSuccessModal from '@/components/CodSuccessModal';
+import PhoneOtpAuth from '@/components/PhoneOtpAuth';
 import { 
   Check, 
   MapPin, 
@@ -175,7 +176,7 @@ export default function CheckoutClient() {
   // =========================================================================
   // STEP 1: AUTHENTICATION INLINE STATE
   // =========================================================================
-  const [authTab, setAuthTab] = useState<'login' | 'signup' | 'forgot'>('login');
+  const [authTab, setAuthTab] = useState<'otp' | 'login' | 'signup' | 'forgot'>('otp');
   
   // Login form
   const [loginEmail, setLoginEmail] = useState('');
@@ -1344,11 +1345,19 @@ export default function CheckoutClient() {
                 <div className={styles.authTabGroup}>
                   <button
                     type="button"
+                    className={`${styles.authTabBtn} ${authTab === 'otp' ? styles.authTabBtnActive : ''}`}
+                    onClick={() => { setAuthTab('otp'); }}
+                  >
+                    <Phone size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px' }} />
+                    <span>Phone OTP</span>
+                  </button>
+                  <button
+                    type="button"
                     className={`${styles.authTabBtn} ${authTab === 'login' ? styles.authTabBtnActive : ''}`}
                     onClick={() => { setAuthTab('login'); setLoginError(''); }}
                   >
                     <LogIn size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px' }} />
-                    <span>Sign In</span>
+                    <span>Email Sign In</span>
                   </button>
                   <button
                     type="button"
@@ -1364,9 +1373,32 @@ export default function CheckoutClient() {
                     onClick={() => { setAuthTab('forgot'); setForgotError(''); setForgotMessage(''); }}
                   >
                     <KeyRound size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px' }} />
-                    <span>Reset Password</span>
+                    <span>Reset</span>
                   </button>
                 </div>
+
+                {/* PHONE OTP TAB */}
+                {authTab === 'otp' && (
+                  <div>
+                    <PhoneOtpAuth
+                      onSuccess={async () => {
+                        await fetchUser();
+                        setCurrentStep(2);
+                      }}
+                      submitButtonText="Verify & Continue to Address"
+                    />
+                    <div style={{ marginTop: '0.85rem', textAlign: 'center', fontSize: '0.8rem', color: '#71717a' }}>
+                      Prefer email and password?{' '}
+                      <button
+                        type="button"
+                        onClick={() => setAuthTab('login')}
+                        style={{ background: 'none', border: 'none', color: '#09090b', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                      >
+                        Sign in with Password
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* SIGN IN TAB */}
                 {authTab === 'login' && (
