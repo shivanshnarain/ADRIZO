@@ -1381,8 +1381,14 @@ export default function CheckoutClient() {
                 {authTab === 'otp' && (
                   <div>
                     <PhoneOtpAuth
-                      onSuccess={async () => {
+                      onSuccess={async (authedUser) => {
                         await fetchUser();
+                        if (authedUser?.phone) {
+                          setAddressForm(prev => ({
+                            ...prev,
+                            phone: prev.phone && prev.phone.trim() ? prev.phone : authedUser.phone,
+                          }));
+                        }
                         setCurrentStep(2);
                       }}
                       submitButtonText="Verify & Continue to Address"

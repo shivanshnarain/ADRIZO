@@ -24,22 +24,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify Firebase ID token cryptographically if provided
-    let verifiedPhoneFromToken: string | undefined;
-    if (idToken) {
-      const verifiedToken = await verifyFirebaseIdToken(idToken);
-      if (verifiedToken) {
-        if (verifiedToken.uid !== firebaseUid) {
-          return NextResponse.json(
-            { error: 'Invalid authentication token: UID mismatch' },
-            { status: 401 }
-          );
-        }
-        verifiedPhoneFromToken = verifiedToken.phone_number;
-      }
+    if (!idToken) {
+      return NextResponse.json(
+        { error: 'Firebase authentication ID token is required' },
+        { status: 401 }
+      );
     }
 
-    const effectivePhone = verifiedPhoneFromToken || phone;
+    // Verify Firebase ID token cryptographically using Google JWKS
+    const verifiedToken = await verifyFirebaseIdToken(idToken);
+    if (!verifiedToken || verifiedToken.uid !== firebaseUid) {
+      return NextResponse.json(
+        { error: 'Invalid or expired Firebase authentication token' },
+        { status: 401 }
+      );
+    }
+
+    // Use cryptographically verified phone number from token if available
+    const effectivePhone = verifiedToken.phone_number || phone;
     const { national: clean10DigitPhone, international: e164Phone } = normalizePhoneNumber(effectivePhone);
     if (!clean10DigitPhone || clean10DigitPhone.length !== 10) {
       return NextResponse.json(
