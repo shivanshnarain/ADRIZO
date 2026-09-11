@@ -33,3 +33,19 @@ export const POLICY_CONFIG = {
     processingTimeDays: "5–7 business days",
   }
 };
+
+/**
+ * =========================================================================
+ * TEMPORARY TESTING CONFIGURATION FOR CASH ON DELIVERY (COD)
+ * =========================================================================
+ * Set to `true` to temporarily bypass the upfront ₹99 Razorpay payment for COD.
+ * - Customer places COD order directly without making any online payment.
+ * - ₹99 COD handling fee is still retained in the final order total.
+ * - Amount paid online now = ₹0, payable on delivery = full order total (subtotal + shipping + ₹99).
+ * - Online payment (Razorpay) remains completely untouched and functional.
+ * 
+ * TO RESTORE ORIGINAL COD ADVANCE PAYMENT: Change this flag to `false`.
+ * =========================================================================
+ */
+export const TEMPORARY_BYPASS_COD_ADVANCE_PAYMENT = true;
+

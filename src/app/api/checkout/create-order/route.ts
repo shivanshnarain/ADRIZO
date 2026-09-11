@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { getAdminClient } from '@/lib/supabase/admin';
 import { getAuthenticatedCustomer } from '@/lib/customer-auth';
-import { POLICY_CONFIG } from '@/config/policies';
+import { POLICY_CONFIG, TEMPORARY_BYPASS_COD_ADVANCE_PAYMENT } from '@/config/policies';
 import { 
   isRazorpayConfigured, 
   getRazorpayConfigStatus,
@@ -394,6 +394,7 @@ export async function POST(req: NextRequest) {
       codCharge: number;
       razorpayOrderId?: string | null;
       paymentStatus: string;
+      orderStatus?: string;
     } | null = null;
 
     // Check Supabase (Primary Order Store)
@@ -418,6 +419,7 @@ export async function POST(req: NextRequest) {
             codCharge: Number(candidate.cod_charge || codCharge),
             razorpayOrderId: candidate.razorpay_order_id,
             paymentStatus: candidate.payment_status,
+            orderStatus: candidate.order_status,
           };
         }
       }
@@ -425,7 +427,11 @@ export async function POST(req: NextRequest) {
       console.warn('[Supabase Duplicate Prevention Warning]', supaDedupErr);
     }
 
-    if (existingRecentOrder && (existingRecentOrder.paymentStatus === 'PAID' || existingRecentOrder.paymentStatus === 'COD_CONFIRMATION_PAID')) {
+    if (existingRecentOrder && (
+      existingRecentOrder.paymentStatus === 'PAID' || 
+      existingRecentOrder.paymentStatus === 'COD_CONFIRMATION_PAID' ||
+      (existingRecentOrder.paymentMethod === 'COD' && existingRecentOrder.orderStatus === 'CONFIRMED')
+    )) {
       console.log('[Duplicate Order Prevention Triggered] Reusing confirmed order:', existingRecentOrder.orderNumber);
       return NextResponse.json({
         success: true,
@@ -435,10 +441,11 @@ export async function POST(req: NextRequest) {
         total: existingRecentOrder.total,
         codCharge: existingRecentOrder.codCharge,
         isDuplicatePrevented: true,
+        isDirectCod: existingRecentOrder.paymentMethod === 'COD',
       });
     }
 
-    // 8. Handle CASH ON DELIVERY (COD) with MANDATORY ₹99 INSTANT CONFIRMATION PAYMENT
+    // 8. Handle CASH ON DELIVERY (COD)
     if (paymentMethod === 'COD') {
       const { codMinOrder, codMaxOrder } = POLICY_CONFIG.shipping;
 
@@ -456,6 +463,107 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
 
+      // =======================================================================
+      // TEMPORARY TESTING BRANCH: Bypass ₹99 Razorpay payment requirement for COD
+      // (Places COD order directly with ₹0 paid now & full amount on delivery)
+      // =======================================================================
+      if (TEMPORARY_BYPASS_COD_ADVANCE_PAYMENT) {
+        const orderNumber = generateOrderNumber();
+        const codHandlingCharge = POLICY_CONFIG.shipping.codHandlingFee; // Retain ₹99 COD charge in order total
+
+        const orderPayload = {
+          order_number: orderNumber,
+          customer_id: authenticatedUserId,
+          customer_name: authoritativeCustomerName,
+          customer_email: authoritativeCustomerEmail,
+          customer_phone: authoritativeCustomerPhone,
+          house_flat: cleanFlat || null,
+          area_street: cleanArea || null,
+          landmark: cleanLandmark || null,
+          shipping_address: fullShippingAddressString,
+          city: trimmedCity,
+          state: trimmedState,
+          pincode: trimmedPincode,
+          subtotal,
+          shipping_charge: shippingCharge,
+          cod_charge: codHandlingCharge,
+          discount: couponDiscount,
+          coupon_code: appliedCouponCode,
+          total_amount: finalTotal,
+          payment_method: 'COD',
+          payment_status: 'PENDING',
+          order_status: 'CONFIRMED',
+          razorpay_order_id: null,
+          razorpay_payment_id: null,
+          razorpay_signature: null,
+          delivery_partner: null,
+          tracking_id: null,
+          tracking_status: 'ORDER_RECEIVED',
+        };
+
+        const orderItemsPayload = validatedItems.map(item => ({
+          product_id: item.productId,
+          product_name: item.productName,
+          product_image: item.productImage || null,
+          mrp: item.mrp || null,
+          sku: item.sku || null,
+          size: item.size || null,
+          color: item.color || null,
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.price * item.quantity,
+        }));
+
+        const saveResult = await saveOrderToSupabase(adminSupabase, orderPayload, orderItemsPayload);
+        const supaOrderId = saveResult.orderId;
+
+        if (!supaOrderId) {
+          console.error('[Direct COD Order Failure] Supabase write failed:', saveResult.error);
+          return NextResponse.json({
+            success: false,
+            error: saveResult.error || 'Unable to place your COD order right now. Please try again.'
+          }, { status: 500 });
+        }
+
+        // Trigger Automated Order Confirmation Email (non-blocking background task)
+        resolveOrderFromSupabase(supaOrderId)
+          .then(resolved => {
+            if (resolved) {
+              resolved.paymentStatus = 'PENDING';
+              resolved.orderStatus = 'CONFIRMED';
+              sendOrderConfirmationEmail(resolved);
+            }
+          })
+          .catch(err => console.error('[Direct COD Email Background Error]', err));
+
+        // Automatically sync confirmed order to Shiprocket
+        autoSyncOrderToShiprocket(supaOrderId).catch(err =>
+          console.error('[Automatic Shiprocket Sync Error on Direct COD]', err)
+        );
+
+        return NextResponse.json({
+          success: true,
+          orderId: supaOrderId,
+          orderNumber,
+          paymentMethod: 'COD',
+          total: finalTotal,
+          subtotal,
+          shippingCharge,
+          codCharge: codHandlingCharge,
+          codPaidNow: 0,
+          codRemaining: finalTotal,
+          isDirectCod: true,
+          customer: {
+            name: authoritativeCustomerName,
+            email: authoritativeCustomerEmail,
+            phone: authoritativeCustomerPhone,
+          }
+        });
+      }
+
+      // =======================================================================
+      // ORIGINAL ₹99 RAZORPAY COD FLOW (Preserved completely)
+      // =======================================================================
       const codConfigStatus = getRazorpayConfigStatus();
       if (!codConfigStatus.configured) {
         return NextResponse.json({

@@ -44,7 +44,7 @@ import ConfirmDeleteAddressModal from '@/components/ConfirmDeleteAddressModal';
 import PromoBundleRemovalModal from '@/components/PromoBundleRemovalModal';
 import AddCheckoutItemModal from '@/components/AddCheckoutItemModal';
 import EditCheckoutItemModal from '@/components/EditCheckoutItemModal';
-import { POLICY_CONFIG } from '@/config/policies';
+import { POLICY_CONFIG, TEMPORARY_BYPASS_COD_ADVANCE_PAYMENT } from '@/config/policies';
 import { ADRIZO_LOGO_DATA_URI } from '@/lib/brand-logo';
 import { 
   getStatesList, 
@@ -1035,8 +1035,29 @@ export default function CheckoutClient() {
         'India'
       ].filter(Boolean).join(', ');
 
-      // 1. CASH ON DELIVERY (COD) -> REQUIRES INSTANT ₹99 RAZORPAY CONFIRMATION PAYMENT
+      // 1. CASH ON DELIVERY (COD)
       if (paymentMethod === 'COD') {
+        // TEMPORARY TESTING BRANCH: Direct COD order confirmation (no Razorpay payment)
+        if (TEMPORARY_BYPASS_COD_ADVANCE_PAYMENT || data.isDirectCod) {
+          if (isBuyNowMode && typeof window !== 'undefined') {
+            sessionStorage.removeItem('adrizo_buy_now');
+          } else {
+            clearCart();
+          }
+          setProcessing(false);
+          isSubmittingRef.current = false;
+          setConfirmedOrder({
+            orderNumber: data.orderNumber || data.orderId,
+            total: data.total || finalPayable,
+            codConfirmationPaid: 0,
+            codRemaining: data.total || finalPayable,
+            address: normalizedDisplayAddress,
+            paymentMethod: 'COD',
+          });
+          return;
+        }
+
+        // ORIGINAL ₹99 RAZORPAY COD CONFIRMATION FLOW (Preserved completely)
         const scriptLoaded = await loadRazorpayScript();
         if (!scriptLoaded) {
           setOrderError('Failed to load secure payment gateway for ₹99 COD confirmation. Please check your network connection.');
@@ -2167,7 +2188,11 @@ export default function CheckoutClient() {
                 <div className={styles.paymentTileHeader}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className={styles.paymentTitle}>Cash on Delivery (COD)</div>
-                    <div className={styles.paymentSubtitle}>Pay ₹99 now to confirm; balance on delivery</div>
+                    <div className={styles.paymentSubtitle}>
+                      {TEMPORARY_BYPASS_COD_ADVANCE_PAYMENT 
+                        ? 'Pay in cash or UPI upon delivery at your doorstep' 
+                        : 'Pay ₹99 now to confirm; balance on delivery'}
+                    </div>
                   </div>
                   {!isCodEligible && (
                     <span style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 700, flexShrink: 0 }}>
@@ -2183,22 +2208,54 @@ export default function CheckoutClient() {
               <div className={styles.codInfoBox}>
                 <div className={styles.codInfoTitle}>Cash on Delivery</div>
                 <div style={{ marginBottom: '0.5rem', lineHeight: 1.45 }}>
-                  Pay ₹99 now to confirm your COD order.<br />
-                  The remaining amount will be payable when your order is delivered.
+                  {TEMPORARY_BYPASS_COD_ADVANCE_PAYMENT ? (
+                    <>
+                      Place your order now without any upfront online payment.<br />
+                      The full amount is payable upon delivery at your doorstep.
+                    </>
+                  ) : (
+                    <>
+                      Pay ₹99 now to confirm your COD order.<br />
+                      The remaining amount will be payable when your order is delivered.
+                    </>
+                  )}
                 </div>
                 <div style={{ borderTop: '1px solid #fef3c7', paddingTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.8rem' }}>
-                  <div className={styles.codBreakdownRow} style={{ color: '#52525b' }}>
-                    <span>Order Total:</span>
-                    <strong>₹{finalPayable.toFixed(2)}</strong>
-                  </div>
-                  <div className={styles.codBreakdownRow} style={{ color: '#15803d' }}>
-                    <span>COD Confirmation Paid:</span>
-                    <strong>₹99.00</strong>
-                  </div>
-                  <div className={styles.codBreakdownRow} style={{ color: '#b45309' }}>
-                    <span>Remaining Payable on Delivery:</span>
-                    <strong>₹{Math.max(0, finalPayable - 99).toFixed(2)}</strong>
-                  </div>
+                  {TEMPORARY_BYPASS_COD_ADVANCE_PAYMENT ? (
+                    <>
+                      <div className={styles.codBreakdownRow} style={{ color: '#52525b' }}>
+                        <span>Product/Order Total:</span>
+                        <strong>₹{(finalPayable - codCharge).toFixed(2)}</strong>
+                      </div>
+                      <div className={styles.codBreakdownRow} style={{ color: '#b45309' }}>
+                        <span>COD Charge:</span>
+                        <strong>₹{codCharge.toFixed(2)}</strong>
+                      </div>
+                      <div className={styles.codBreakdownRow} style={{ color: '#09090b', fontWeight: 700 }}>
+                        <span>Payable on Delivery:</span>
+                        <strong>₹{finalPayable.toFixed(2)}</strong>
+                      </div>
+                      <div className={styles.codBreakdownRow} style={{ color: '#16a34a', fontWeight: 700 }}>
+                        <span>Paid Now:</span>
+                        <strong>₹0</strong>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className={styles.codBreakdownRow} style={{ color: '#52525b' }}>
+                        <span>Order Total:</span>
+                        <strong>₹{finalPayable.toFixed(2)}</strong>
+                      </div>
+                      <div className={styles.codBreakdownRow} style={{ color: '#15803d' }}>
+                        <span>COD Confirmation Paid:</span>
+                        <strong>₹99.00</strong>
+                      </div>
+                      <div className={styles.codBreakdownRow} style={{ color: '#b45309' }}>
+                        <span>Remaining Payable on Delivery:</span>
+                        <strong>₹{Math.max(0, finalPayable - 99).toFixed(2)}</strong>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -2212,10 +2269,12 @@ export default function CheckoutClient() {
             className={styles.yellowPaymentCta}
           >
             {processing
-              ? (paymentMethod === 'ONLINE_RAZORPAY' ? 'CONNECTING TO RAZORPAY…' : 'CONNECTING FOR ₹99 COD…')
+              ? (paymentMethod === 'ONLINE_RAZORPAY' 
+                  ? 'CONNECTING TO RAZORPAY…' 
+                  : (TEMPORARY_BYPASS_COD_ADVANCE_PAYMENT ? 'PLACING COD ORDER…' : 'CONNECTING FOR ₹99 COD…'))
               : paymentMethod === 'ONLINE_RAZORPAY'
               ? `Pay ₹${finalPayable.toFixed(2)} Online →`
-              : 'Pay ₹99 & Confirm COD Order'}
+              : (TEMPORARY_BYPASS_COD_ADVANCE_PAYMENT ? 'Place Cash on Delivery Order' : 'Pay ₹99 & Confirm COD Order')}
           </button>
         </div>
 
@@ -2328,14 +2387,29 @@ export default function CheckoutClient() {
 
               {paymentMethod === 'COD' && (
                 <div style={{ marginTop: '0.65rem', borderTop: '1px dashed #d4d4d8', paddingTop: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.8rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#15803d', fontWeight: 600, gap: '0.5rem' }}>
-                    <span>COD Confirmation Paid (Pay Now):</span>
-                    <span style={{ flexShrink: 0 }}>₹99.00</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#b45309', fontWeight: 700, gap: '0.5rem' }}>
-                    <span>Remaining Payable on Delivery:</span>
-                    <span style={{ flexShrink: 0 }}>₹{Math.max(0, finalPayable - 99).toFixed(2)}</span>
-                  </div>
+                  {TEMPORARY_BYPASS_COD_ADVANCE_PAYMENT ? (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 700, gap: '0.5rem' }}>
+                        <span>Paid Now (Online):</span>
+                        <span style={{ flexShrink: 0 }}>₹0</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#b45309', fontWeight: 800, gap: '0.5rem' }}>
+                        <span>Payable on Delivery:</span>
+                        <span style={{ flexShrink: 0 }}>₹{finalPayable.toFixed(2)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#15803d', fontWeight: 600, gap: '0.5rem' }}>
+                        <span>COD Confirmation Paid (Pay Now):</span>
+                        <span style={{ flexShrink: 0 }}>₹99.00</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#b45309', fontWeight: 700, gap: '0.5rem' }}>
+                        <span>Remaining Payable on Delivery:</span>
+                        <span style={{ flexShrink: 0 }}>₹{Math.max(0, finalPayable - 99).toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

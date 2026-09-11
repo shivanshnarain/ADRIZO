@@ -63,6 +63,8 @@ export default function CodSuccessModal({
         <p className={styles.subtitle}>
           {isPrepaid
             ? 'Your online payment was successful and your order is confirmed.'
+            : codConfirmationPaid === 0
+            ? 'Your Cash on Delivery order has been placed successfully and is confirmed.'
             : 'Your ₹99 confirmation payment was received and your Cash on Delivery order is confirmed.'}
         </p>
 
@@ -84,6 +86,29 @@ export default function CodSuccessModal({
               <span className={styles.detailLabel}>Amount Paid</span>
               <span className={styles.amountPayable}>₹{total.toLocaleString('en-IN')}</span>
             </div>
+          ) : codConfirmationPaid === 0 ? (
+            <>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Product/Order Total</span>
+                <span className={styles.detailValue}>₹{total.toLocaleString('en-IN')}</span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>COD Handling Fee</span>
+                <span className={styles.detailValue}>₹99</span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Paid Online Now</span>
+                <span className={styles.detailValue} style={{ color: '#16a34a', fontWeight: 700 }}>
+                  ₹0
+                </span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Payable on Delivery</span>
+                <span className={styles.amountPayable} style={{ color: '#b45309' }}>
+                  ₹{total.toLocaleString('en-IN')}
+                </span>
+              </div>
+            </>
           ) : (
             <>
               <div className={styles.detailRow}>
