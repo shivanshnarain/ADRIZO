@@ -13,14 +13,16 @@ export function loadEnvFallback() {
   if (envFallbackLoaded) return;
   envFallbackLoaded = true;
 
+  // On Vercel / serverless production, environment variables are injected directly in process.env
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    return;
+  }
+
   try {
     const candidates = [
-      path.resolve(process.cwd(), '.env.vercel'),
       path.resolve(process.cwd(), '.env.local'),
       path.resolve(process.cwd(), '.env'),
-      path.resolve(__dirname, '../../.env.vercel'),
-      path.resolve(__dirname, '../../../.env.vercel'),
-      path.resolve(__dirname, '../../../../.env.vercel'),
+      path.resolve(process.cwd(), '.env.vercel'),
     ];
     for (const fullPath of candidates) {
       if (fs.existsSync(fullPath)) {
