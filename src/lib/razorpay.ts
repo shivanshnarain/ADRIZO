@@ -14,9 +14,15 @@ export function loadEnvFallback() {
   envFallbackLoaded = true;
 
   try {
-    const candidates = ['.env.vercel', '.env.local', '.env'];
-    for (const filename of candidates) {
-      const fullPath = path.resolve(process.cwd(), filename);
+    const candidates = [
+      path.resolve(process.cwd(), '.env.vercel'),
+      path.resolve(process.cwd(), '.env.local'),
+      path.resolve(process.cwd(), '.env'),
+      path.resolve(__dirname, '../../.env.vercel'),
+      path.resolve(__dirname, '../../../.env.vercel'),
+      path.resolve(__dirname, '../../../../.env.vercel'),
+    ];
+    for (const fullPath of candidates) {
       if (fs.existsSync(fullPath)) {
         const content = fs.readFileSync(fullPath, 'utf-8');
         for (const line of content.split('\n')) {
@@ -27,14 +33,15 @@ export function loadEnvFallback() {
           const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
 
           if (key === 'RAZORPAY_KEY_ID' || key === 'NEXT_PUBLIC_RAZORPAY_KEY_ID' || key === 'RAZORPAY_KEY_SECRET') {
-            const currentVal = process.env[key];
-            if (
-              !currentVal ||
-              currentVal.includes('TYio72mColkjPN') ||
-              currentVal.includes('U074TAZdfZv0BCcCTm7DblVm') ||
-              currentVal.includes('REPLACE_WITH')
-            ) {
-              if (val && !val.includes('REPLACE_WITH')) {
+            if (val && !val.includes('REPLACE_WITH') && !val.includes('placeholder')) {
+              const currentVal = process.env[key];
+              if (
+                !currentVal ||
+                currentVal.includes('TYio72mColkjPN') ||
+                currentVal.includes('U074TAZdfZv0BCcCTm7DblVm') ||
+                currentVal.includes('REPLACE_WITH') ||
+                (key === 'RAZORPAY_KEY_SECRET' && val.length > 10)
+              ) {
                 process.env[key] = val;
               }
             }
