@@ -8,13 +8,13 @@ export const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
  * Returns false if keys are missing or using placeholder values.
  */
 export function isRazorpayConfigured(): boolean {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  const rawKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+  const rawSecret = process.env.RAZORPAY_KEY_SECRET;
 
-  if (!keyId || !keySecret) return false;
+  if (!rawKey || !rawSecret) return false;
 
-  const trimmedKey = keyId.trim().toLowerCase();
-  const trimmedSecret = keySecret.trim().toLowerCase();
+  const trimmedKey = rawKey.trim().replace(/^["']|["']$/g, '').toLowerCase();
+  const trimmedSecret = rawSecret.trim().replace(/^["']|["']$/g, '').toLowerCase();
 
   if (
     trimmedKey.includes('placeholder') ||
@@ -35,16 +35,19 @@ export function isRazorpayConfigured(): boolean {
  * Throws a clean descriptive error if keys are not configured.
  */
 export function getRazorpayInstance(): Razorpay {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  const rawKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+  const rawSecret = process.env.RAZORPAY_KEY_SECRET;
+
+  const keyId = rawKey?.trim().replace(/^["']|["']$/g, '');
+  const keySecret = rawSecret?.trim().replace(/^["']|["']$/g, '');
 
   if (!keyId || !keySecret || !isRazorpayConfigured()) {
     throw new Error('Razorpay API keys are not configured in environment variables.');
   }
 
   return new Razorpay({
-    key_id: keyId.trim(),
-    key_secret: keySecret.trim(),
+    key_id: keyId,
+    key_secret: keySecret,
   });
 }
 
@@ -78,7 +81,7 @@ export function verifyRazorpaySignature(
   paymentId: string,
   signature: string
 ): boolean {
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim().replace(/^["']|["']$/g, '');
   if (!keySecret || !signature || !orderId || !paymentId) return false;
 
   try {

@@ -628,10 +628,10 @@ export async function POST(req: NextRequest) {
       const supaOrderId = saveResult.orderId;
 
       if (!supaOrderId) {
-        console.error('[Supabase Online Order Failure] Supabase order write failed');
+        console.error('[Supabase Online Order Failure] Supabase order write failed:', saveResult.error);
         return NextResponse.json({
           success: false,
-          error: 'Unable to initialize online payment order. Please try again.'
+          error: saveResult.error || 'Unable to initialize online payment order. Please try again.'
         }, { status: 500 });
       }
 
@@ -655,9 +655,14 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('[Create Order API Error]', error);
+    const errorMessage = 
+      error?.error?.description || 
+      error?.description || 
+      error?.message || 
+      (typeof error === 'string' ? error : 'Something went wrong while processing your order. Please try again.');
     return NextResponse.json({
       success: false,
-      error: error.message || 'Something went wrong while processing your order. Please try again.'
+      error: errorMessage
     }, { status: 500 });
   }
 }
