@@ -46,6 +46,14 @@
 }
 
 /* Far-Left Vertical Thumbnail Strip */
+.desktopThumbnailColumn {
+  display: flex;
+}
+
+.mobileThumbnailOverlay {
+  display: none;
+}
+
 .thumbnailColumn {
   display: flex;
   flex-direction: column;
@@ -958,47 +966,118 @@
     box-sizing: border-box;
   }
 
+  .desktopThumbnailColumn {
+    display: none !important;
+  }
+
+  /* 1. Main Product Image Gallery — Preserve Natural Aspect Ratio & Floating Thumbnail Overlay */
   .gallerySection {
-    flex-direction: column-reverse;
-    gap: 0.75rem;
+    position: relative;
     width: 100%;
+    display: block;
+    margin-bottom: 0.85rem;
   }
 
   .mainImageWrapper {
     width: 100%;
     height: auto;
+    position: relative;
   }
 
   .mainImageCard {
     width: 100%;
     height: auto;
-    aspect-ratio: 1 / 1;
-    min-height: 280px;
-    border-radius: 8px;
+    aspect-ratio: 4 / 5;
+    background-color: #F4F4F6;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
   }
 
-  .thumbnailColumn {
+  .mainHeroImg {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+    box-sizing: border-box;
+  }
+
+  /* Five Floating Product Thumbnail Cards Overlaid on Bottom of Main Image */
+  .mobileThumbnailOverlay {
+    position: absolute;
+    bottom: 14px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+    transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1), transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.32s ease;
+  }
+
+  .thumbnailsHidden {
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .mobileThumbnailList {
+    display: flex;
     flex-direction: row;
-    justify-content: flex-start;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    width: auto;
+    max-width: 94%;
+    background: rgba(255, 255, 255, 0.84);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 5px 8px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.7);
   }
 
-  .thumbnailList {
-    flex-direction: row;
-    max-height: none;
-    max-width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+  .mobileThumbnailCard {
+    width: 46px;
+    height: 58px;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1.5px solid rgba(0, 0, 0, 0.08);
+    background-color: #FFFFFF;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .thumbnailList::-webkit-scrollbar {
-    display: none;
+  .mobileThumbnailActive {
+    border: 2px solid #FFC800 !important;
+    box-shadow: 0 0 0 1px #FFC800, 0 2px 8px rgba(255, 200, 0, 0.3) !important;
+    transform: scale(1.05);
   }
 
-  .thumbnailCard {
-    width: 58px;
-    height: 72px;
+
+  .thumbImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 
   .thumbScrollDownBtn {
@@ -1006,31 +1085,46 @@
   }
 
   .productTitle {
-    font-size: clamp(1.35rem, 5vw, 1.75rem);
+    font-size: clamp(1.35rem, 5vw, 1.65rem);
     word-break: break-word;
+    margin-bottom: 0.4rem;
   }
 
-  /* 1. Mobile Product Information Accordion Cards */
+  .priceRow {
+    margin-bottom: 0.85rem;
+    gap: 0.65rem;
+  }
+
+  .sizeSection {
+    margin-bottom: 0.85rem;
+  }
+
+  .fitModelNote {
+    margin-top: 0.4rem;
+    font-size: 12px;
+  }
+
+  /* 2. Mobile Product Information Accordion Cards (Slimmer, thinner vertical proportions) */
   .accordionScrollArea {
     overflow: visible;
     max-height: none;
     padding-right: 0;
-    margin-top: 1.25rem;
-    margin-bottom: 0.85rem;
+    margin-top: 1rem;
+    margin-bottom: 0.65rem;
   }
 
   .accordionContainer {
     border-top: none;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 7px;
     margin-bottom: 0;
   }
 
   .accordionItem {
     background-color: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
+    border: 1px solid #EAEAEA;
+    border-radius: 9px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
     overflow: hidden;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -1041,7 +1135,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 16px;
+    padding: 9px 13px;
+    min-height: 40px;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -1052,10 +1147,10 @@
   .accordionTitleGroup {
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 14.5px;
+    gap: 10px;
+    font-size: 13.5px;
     font-weight: 500;
-    color: #111827;
+    color: #18181B;
     letter-spacing: -0.01em;
   }
 
@@ -1063,16 +1158,16 @@
     color: #FFC800;
     stroke: #FFC800;
     flex-shrink: 0;
-    width: 20px;
-    height: 20px;
+    width: 17px;
+    height: 17px;
   }
 
   .accordionToggleIcon {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 400;
-    color: #111827;
-    width: 20px;
-    height: 20px;
+    color: #71717A;
+    width: 18px;
+    height: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1080,21 +1175,21 @@
   }
 
   .accordionBody {
-    padding: 12px 16px 16px 16px;
-    border-top: 1px solid #F3F4F6;
-    font-size: 13.5px;
-    line-height: 1.55;
+    padding: 10px 13px 12px 13px;
+    border-top: 1px solid #F4F4F5;
+    font-size: 13px;
+    line-height: 1.5;
     color: #4B5563;
   }
 
-  /* 2. Buy 1 Get 1 Free Promotion Card */
+  /* 3. Buy 1 Get 1 Free Promotion Card */
   .bottomPurchaseSection {
     margin-top: 4px;
     padding-top: 0;
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 9px;
   }
 
   .offerCardPurchaseArea {
@@ -1106,13 +1201,13 @@
     width: 100%;
     background-color: #FEFCE8;
     border: 1px solid #FEF08A;
-    border-radius: 12px;
-    padding: 10px 14px;
+    border-radius: 10px;
+    padding: 8px 12px;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     box-sizing: border-box;
     cursor: pointer;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
@@ -1126,15 +1221,15 @@
   .offerCardLeft {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     min-width: 0;
     flex: 1;
   }
 
   .offerIconWrap {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
     border-radius: 50%;
     background-color: #FFC800;
     display: flex;
@@ -1144,8 +1239,8 @@
   }
 
   .offerGiftIcon {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     stroke: #000000;
     stroke-width: 2;
   }
@@ -1154,11 +1249,11 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    gap: 2px;
+    gap: 1px;
   }
 
   .offerBadgeTitle {
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 800;
     color: #000000;
     text-transform: uppercase;
@@ -1168,9 +1263,9 @@
   }
 
   .offerBadgeSubtitle {
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 500;
-    color: #111827;
+    color: #18181B;
     margin-top: 0;
     line-height: 1.25;
     white-space: normal;
@@ -1189,11 +1284,11 @@
     padding-right: 2px;
   }
 
-  /* 3. Mobile Action Buttons (Stack: ADD TO CART -> BUY NOW -> SHARE) */
+  /* 4. Mobile Action Buttons (Stack: ADD TO CART -> BUY NOW -> SHARE) */
   .actionButtonsRow {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
   }
 
@@ -1201,9 +1296,9 @@
   .buyNowBtn,
   .shareBtn {
     width: 100%;
-    height: 50px;
-    min-height: 50px;
-    border-radius: 10px;
+    height: 48px;
+    min-height: 48px;
+    border-radius: 9px;
     font-size: 13.5px;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -1255,11 +1350,11 @@
     background-color: #F0FDF4 !important;
   }
 
-  /* 4. Spacing before "You May Also Like" and Mobile 2-Card Layout */
+  /* 5. Spacing before "You May Also Like" and Mobile 2-Card Layout */
   .relatedSection {
-    margin-top: 2rem;
-    padding-top: 1.75rem;
-    border-top: 1px solid #F3F4F6;
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #F4F4F5;
     width: 100%;
     box-sizing: border-box;
   }
@@ -1268,7 +1363,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
     gap: 0.75rem;
   }
 

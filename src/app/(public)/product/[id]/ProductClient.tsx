@@ -292,6 +292,93 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
     setActiveImageIndex((prev) => (prev < imagesList.length - 1 ? prev + 1 : 0));
   }, [imagesList.length]);
 
+  // Floating thumbnails auto-hide/show state & timers (Mobile only)
+  const [areThumbnailsVisible, setAreThumbnailsVisible] = useState(true);
+  const hideThumbnailsTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const slideshowResumeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerThumbnailAutoHide = useCallback((durationMs = 2500) => {
+    setAreThumbnailsVisible(false);
+    if (hideThumbnailsTimerRef.current) {
+      clearTimeout(hideThumbnailsTimerRef.current);
+    }
+    hideThumbnailsTimerRef.current = setTimeout(() => {
+      setAreThumbnailsVisible(true);
+    }, durationMs);
+  }, []);
+
+  const pauseSlideshowTemporarily = useCallback((resumeDelayMs = 4000) => {
+    setIsSlideshowPaused(true);
+    if (slideshowResumeTimerRef.current) {
+      clearTimeout(slideshowResumeTimerRef.current);
+    }
+    slideshowResumeTimerRef.current = setTimeout(() => {
+      setIsSlideshowPaused(false);
+    }, resumeDelayMs);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (hideThumbnailsTimerRef.current) clearTimeout(hideThumbnailsTimerRef.current);
+      if (slideshowResumeTimerRef.current) clearTimeout(slideshowResumeTimerRef.current);
+    };
+  }, []);
+
+  const handleThumbnailClick = (idx: number) => {
+    setActiveImageIndex(idx);
+    triggerThumbnailAutoHide(2500);
+    pauseSlideshowTemporarily(4000);
+  };
+
+  // Mobile Touch Swipe Gesture for Main Image
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+
+  const handleMainImageTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+    triggerThumbnailAutoHide(2500);
+    pauseSlideshowTemporarily(4000);
+  };
+
+  const handleMainImageTouchMove = (e: React.TouchEvent) => {
+    if (touchStartXRef.current !== null) {
+      triggerThumbnailAutoHide(2500);
+    }
+  };
+
+  const handleMainImageTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchEndX - touchStartXRef.current;
+    const deltaY = touchEndY - (touchStartYRef.current || 0);
+
+    if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      if (deltaX < 0) {
+        handleNextImage();
+      } else {
+        handlePrevImage();
+      }
+    }
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    triggerThumbnailAutoHide(2500);
+    pauseSlideshowTemporarily(4000);
+  };
+
+  const handleMainImageClick = () => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      if (!areThumbnailsVisible) {
+        setAreThumbnailsVisible(true);
+      } else {
+        triggerThumbnailAutoHide(2500);
+      }
+    } else {
+      setIsLightboxOpen(true);
+    }
+  };
+
   // Keyboard navigation for Lightbox
   useEffect(() => {
     if (!isLightboxOpen) return;
@@ -478,8 +565,8 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
         {/* LEFT COLUMN: VERTICAL THUMBNAILS + FIXED FRAME HERO IMAGE */}
         {/* ========================================================= */}
         <div className={styles.gallerySection}>
-          {/* Vertical Thumbnail Strip */}
-          <div className={styles.thumbnailColumn}>
+          {/* Vertical Thumbnail Strip on Desktop */}
+          <div className={`${styles.thumbnailColumn} ${styles.desktopThumbnailColumn}`}>
             <div className={styles.thumbnailList}>
               {imagesList.map((img: string, idx: number) => {
                 const isActive = activeImageIndex === idx;
@@ -513,10 +600,13 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
           >
             <div 
               className={styles.mainImageCard}
-              onClick={() => setIsLightboxOpen(true)}
+              onClick={handleMainImageClick}
+              onTouchStart={handleMainImageTouchStart}
+              onTouchMove={handleMainImageTouchMove}
+              onTouchEnd={handleMainImageTouchEnd}
               role="button"
               tabIndex={0}
-              aria-label="Click to enlarge image"
+              aria-label="Click to enlarge or view image"
             >
               {imagesList.map((img: string, idx: number) => {
                 const isCurrent = activeImageIndex === idx;
@@ -531,8 +621,37 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                 );
               })}
             </div>
+
+            {/* Floating Thumbnail Overlay on Mobile (Inside mainImageWrapper) */}
+            <div className={`${styles.mobileThumbnailOverlay} ${!areThumbnailsVisible ? styles.thumbnailsHidden : ''}`}>
+              <div className={styles.mobileThumbnailList}>
+                {imagesList.map((img: string, idx: number) => {
+                  const isActive = activeImageIndex === idx;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`${styles.mobileThumbnailCard} ${isActive ? styles.mobileThumbnailActive : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleThumbnailClick(idx);
+                      }}
+                      aria-label={`View image ${idx + 1}`}
+                    >
+                      <img 
+                        src={img} 
+                        alt={`${product.name} thumbnail ${idx + 1}`} 
+                        className={styles.thumbImg}
+                        loading="lazy"
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
+
 
         {/* ========================================================= */}
         {/* 2. PRODUCT INFORMATION COLUMN — RIGHT SIDE               */}
