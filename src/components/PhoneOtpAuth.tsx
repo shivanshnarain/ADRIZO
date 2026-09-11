@@ -18,6 +18,8 @@ function mapFirebaseError(err: any, fallback: string): string {
   switch (code) {
     case 'auth/invalid-phone-number':
       return 'Please enter a valid 10-digit mobile number.';
+    case 'auth/billing-not-enabled':
+      return 'Phone verification is temporarily unavailable. Please try again later.';
     case 'auth/too-many-requests':
       return 'Too many OTP attempts. Please wait and try again later.';
     case 'auth/quota-exceeded':
@@ -32,12 +34,14 @@ function mapFirebaseError(err: any, fallback: string): string {
       return 'This OTP has expired. Please request a new OTP.';
     case 'auth/invalid-verification-code':
       return 'Incorrect OTP. Please check the code and try again.';
+    case 'auth/session-expired':
+      return 'Verification session has expired. Please request a new OTP.';
     case 'auth/missing-verification-code':
       return 'Please enter the 6-digit OTP.';
     case 'auth/app-not-authorized':
       return 'This domain is not authorized for phone authentication.';
     default:
-      return err?.message || fallback;
+      return fallback;
   }
 }
 
