@@ -906,6 +906,12 @@
 .filterTabs::-webkit-scrollbar { display: none; }
 
 .filterTab {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
   font-size: clamp(0.6875rem, 2.5vw, 0.8125rem);
   font-weight: 600;
   color: #888888;

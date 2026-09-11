@@ -3,7 +3,7 @@ import Image from "next/image";
 import { ArrowRight, Truck, RefreshCw, Award } from "lucide-react";
 import styles from "./page.module.css";
 import { prisma } from '../../lib/prisma';
-import ProductCard from '../../components/ProductCard';
+import HomeProductSection from '../../components/HomeProductSection';
 
 export const revalidate = 60;
 
@@ -24,12 +24,11 @@ const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
 };
 
 export default async function Home() {
-  let featuredProducts: any[] = [];
+  let allProducts: any[] = [];
 
   try {
-    featuredProducts = await prisma.product.findMany({
+    allProducts = await prisma.product.findMany({
       where: { status: 'ACTIVE' },
-      take: 8,
       include: {
         category: true,
         images: { orderBy: { sortOrder: 'asc' } },
@@ -39,7 +38,7 @@ export default async function Home() {
     });
   } catch (err: any) {
     console.warn("Prisma query failed on Home page:", err.message);
-    featuredProducts = [];
+    allProducts = [];
   }
 
   // Exact category images from project assets with guaranteed fallbacks
@@ -49,8 +48,6 @@ export default async function Home() {
     <>
       {/* =====================================================================
           MOBILE HERO — visible ONLY on phones (max-width: 767px)
-          Matches target Reference Image 1: natural artwork, black typography,
-          yellow accent dash below label, no dark overlay, controlled height.
          ===================================================================== */}
       <section className={styles.mobileHeroSection} aria-label="ADRIZO Hero">
         {/* Background photo */}
@@ -83,15 +80,11 @@ export default async function Home() {
             A Better{' '}
             <em className={styles.heroHeadingAccent}>You.</em>
           </h1>
-
-
         </div>
       </section>
 
       {/* =====================================================================
           DESKTOP + TABLET HERO — visible on tablet/desktop (min-width: 768px)
-          Original design: grayscale /hero-bg.png, SALE clip-text, BUY 1 GET 2
-          FREE offer text, animated SHOP NOW button.
          ===================================================================== */}
       <section className={styles.desktopHeroSection} aria-label="ADRIZO Hero">
         {/* Layer 1: Fixed Grayscale Background */}
@@ -161,7 +154,11 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* ===================== PRODUCTS COLLECTION ===================== */}
+      <HomeProductSection products={JSON.parse(JSON.stringify(allProducts))} />
+
       {/* ===================== TRUST STRIP / BENEFITS ===================== */}
+      {/* Moved to the bottom of the homepage, immediately above the footer/about section */}
       <div className={styles.trustStrip}>
         <div className={styles.trustStripContent}>
           <div className={styles.trustItem}>
@@ -195,43 +192,6 @@ export default async function Home() {
           </div>
         </div>
       </div>
-
-      {/* ===================== NEW ARRIVALS / PRODUCTS ===================== */}
-      <section className={styles.newArrivalsSection} aria-label="New Arrivals">
-        <div className={styles.newArrivalsHeader}>
-          <h2 className={styles.newArrivalsTitle}>
-            NEW ARRIVALS
-            <span className={styles.newArrivalsTitleLine} aria-hidden="true" />
-          </h2>
-          <Link href="/shop?sort=new" className={styles.newArrivalsViewAll}>
-            View All <ArrowRight size={12} strokeWidth={2.5} />
-          </Link>
-        </div>
-
-        {/* Filter tabs */}
-        <div className={styles.filtersSection}>
-          <div className={styles.filterTabs}>
-            <Link href="/shop" className={`${styles.filterTab} ${styles.filterTabActive}`}>ALL</Link>
-            <Link href="/shop?category=men" className={styles.filterTab}>MEN</Link>
-            <Link href="/shop?category=women" className={styles.filterTab}>WOMEN</Link>
-            <Link href="/shop?category=t-shirts" className={styles.filterTab}>T-SHIRTS</Link>
-            <Link href="/shop?category=hoodies" className={styles.filterTab}>HOODIES</Link>
-            <Link href="/shop?sort=new" className={styles.filterTab}>NEW ARRIVALS</Link>
-          </div>
-        </div>
-
-        {featuredProducts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#888' }}>
-            No products available yet.
-          </div>
-        ) : (
-          <div className={styles.featuredProductGrid}>
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
-      </section>
     </>
   );
 }
