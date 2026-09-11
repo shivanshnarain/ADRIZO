@@ -6,67 +6,91 @@ export default function Footer() {
   return (
     <footer className={styles.footer}>
       <div className="container">
-        <div className={styles.footerGrid}>
-          {/* Brand Column */}
-          <div className={styles.brand}>
-            <div className={styles.brandName}>
-              <AdrizoLogo height={26} accentColor="#FFC800" wordmarkColor="#f0f0f0" />
-            </div>
-            <p className={styles.brandDesc}>
-              Premium Indian clothing brand specializing in high-quality men's and women's fashion. Style that defines you.
-            </p>
+        {/* Brand Section */}
+        <div className={styles.brand}>
+          <div className={styles.brandName}>
+            <AdrizoLogo height={26} accentColor="#FFC800" wordmarkColor="#f0f0f0" />
           </div>
+          <p className={styles.brandDesc}>
+            Premium Indian clothing brand specializing in high-quality men&apos;s and women&apos;s fashion. Style that defines you.
+          </p>
+        </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className={styles.columnTitle}>Quick Links</h4>
+        {/* 2x2 Content Arrangement */}
+        <div className={styles.contentGrid}>
+          {/* 1. QUICK LINKS */}
+          <div className={styles.column}>
+            <h4 className={styles.columnTitle}>QUICK LINKS</h4>
             <div className={styles.linkList}>
               <Link href="/">Home</Link>
               <Link href="/shop">Shop</Link>
-              <Link href="/about">About Us</Link>
+              <Link href="/about">About</Link>
               <Link href="/contact">Contact</Link>
             </div>
           </div>
 
-          {/* Support */}
-          <div>
-            <h4 className={styles.columnTitle}>Support</h4>
+          {/* 2. SUPPORT */}
+          <div className={styles.column}>
+            <h4 className={styles.columnTitle}>SUPPORT</h4>
             <div className={styles.linkList}>
               <Link href="/contact">Contact Us</Link>
               <Link href="/faq">FAQs</Link>
             </div>
           </div>
 
-          {/* Policies */}
-          <div>
-            <h4 className={styles.columnTitle}>Policies</h4>
+          {/* 3. POLICY */}
+          <div className={styles.column}>
+            <h4 className={styles.columnTitle}>POLICY</h4>
             <div className={styles.linkList}>
-              <Link href="/refund-return-policy">Refund & Return Policy</Link>
+              <Link href="/refund-return-policy">Refund &amp; Return Policy</Link>
               <Link href="/shipping-policy">Shipping Policy</Link>
               <Link href="/privacy-policy">Privacy Policy</Link>
-              <Link href="/terms-and-conditions">Terms & Conditions</Link>
+              <Link href="/terms-and-conditions">Terms and Conditions</Link>
             </div>
           </div>
 
-          {/* Social */}
-          <div>
-            <h4 className={styles.columnTitle}>Connect With Us</h4>
-            <div className={styles.socialList}>
-              <a href="#" aria-label="Instagram">
-                IG
-              </a>
-              <a href="#" aria-label="Facebook">
-                FB
-              </a>
-              <a href="#" aria-label="WhatsApp">
-                WA
-              </a>
+          {/* 4. FOLLOW US */}
+          <div className={styles.column}>
+            <h4 className={styles.columnTitle}>FOLLOW US</h4>
+            <div className={styles.linkList}>
+              <div className={styles.emailItem}>
+                <span className={styles.emailLabel}>Email: </span>
+                <a href="mailto:care.adrizo@gmail.com" className={styles.emailLink}>
+                  care.adrizo@gmail.com
+                </a>
+              </div>
+              <div>
+                <a
+                  href="https://www.instagram.com/adrizo_official?igsi=d3QwMjIwNHI4dGpm"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.instagramLink}
+                >
+                  Instagram
+                </a>
+              </div>
             </div>
           </div>
         </div>
 
+        {/* Bottom Bar */}
         <div className={styles.bottomBar}>
-          &copy; {new Date().getFullYear()} ADRIZO. All rights reserved.
+          <div className={styles.bottomContent}>
+            <p className={styles.copyright}>
+              &copy; {new Date().getFullYear()} ADRIZO. All rights reserved.
+            </p>
+            <p className={styles.developerCredit}>
+              Designed &amp; Developed By{' '}
+              <a
+                href="https://shivanshnarain.me"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.developerLink}
+              >
+                SHIVANSHNARAIN.me
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
