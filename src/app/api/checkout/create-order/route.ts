@@ -9,6 +9,7 @@ import {
   getRazorpayInstance, 
   generateOrderNumber,
   getRazorpayKeyId,
+  getRazorpaySecret,
 } from '@/lib/razorpay';
 import { resolveOrderFromSupabase } from '@/lib/order-resolver';
 import { sendOrderConfirmationEmail } from '@/lib/order-email';
@@ -667,4 +668,18 @@ export async function POST(req: NextRequest) {
       error: errorMessage
     }, { status: 500 });
   }
+}
+
+export async function GET() {
+  const keyId = getRazorpayKeyId();
+  const configured = isRazorpayConfigured();
+  const hasSecret = Boolean(getRazorpaySecret());
+
+  return NextResponse.json({
+    status: 'ok',
+    isRazorpayConfigured: configured,
+    keyConfigured: Boolean(keyId),
+    keyPrefix: keyId ? keyId.slice(0, 8) : null,
+    secretConfigured: hasSecret,
+  });
 }

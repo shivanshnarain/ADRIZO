@@ -59,7 +59,12 @@ export function loadEnvFallback() {
  */
 export function getRazorpayKeyId(): string {
   loadEnvFallback();
-  const rawKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+  const rawKey =
+    process.env.RAZORPAY_KEY_ID ||
+    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+    process.env.RAZORPAY_API_KEY ||
+    process.env.RAZORPAY_KEY ||
+    process.env.NEXT_PUBLIC_RAZORPAY_KEY;
   return rawKey?.trim().replace(/^["']|["']$/g, '') || '';
 }
 
@@ -68,7 +73,10 @@ export function getRazorpayKeyId(): string {
  */
 export function getRazorpaySecret(): string {
   loadEnvFallback();
-  const rawSecret = process.env.RAZORPAY_KEY_SECRET;
+  const rawSecret =
+    process.env.RAZORPAY_KEY_SECRET ||
+    process.env.RAZORPAY_SECRET ||
+    process.env.RAZORPAY_API_SECRET;
   return rawSecret?.trim().replace(/^["']|["']$/g, '') || '';
 }
 
