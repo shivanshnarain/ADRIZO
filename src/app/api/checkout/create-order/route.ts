@@ -6,6 +6,7 @@ import { getAuthenticatedCustomer } from '@/lib/customer-auth';
 import { POLICY_CONFIG } from '@/config/policies';
 import { 
   isRazorpayConfigured, 
+  getRazorpayConfigStatus,
   getRazorpayInstance, 
   generateOrderNumber,
   getRazorpayKeyId,
@@ -455,10 +456,11 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
 
-      if (!isRazorpayConfigured()) {
+      const codConfigStatus = getRazorpayConfigStatus();
+      if (!codConfigStatus.configured) {
         return NextResponse.json({
           success: false,
-          error: 'Online payment gateway is awaiting credential configuration for COD ₹99 confirmation.'
+          error: codConfigStatus.reason || 'Online payment gateway is awaiting credential configuration for COD ₹99 confirmation.'
         }, { status: 400 });
       }
 
@@ -561,10 +563,11 @@ export async function POST(req: NextRequest) {
 
     // 9. Handle ONLINE PAYMENT (RAZORPAY)
     if (paymentMethod === 'ONLINE_RAZORPAY' || paymentMethod === 'RAZORPAY') {
-      if (!isRazorpayConfigured()) {
+      const onlineConfigStatus = getRazorpayConfigStatus();
+      if (!onlineConfigStatus.configured) {
         return NextResponse.json({
           success: false,
-          error: 'Online payment gateway is awaiting credential configuration. Please configure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env, or select Cash on Delivery to place your order right now.'
+          error: onlineConfigStatus.reason || 'Online payment gateway is awaiting credential configuration. Please configure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env, or select Cash on Delivery to place your order right now.'
         }, { status: 400 });
       }
 
@@ -672,27 +675,14 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   const keyId = getRazorpayKeyId();
-  const secret = getRazorpaySecret();
-  const trimmedKey = keyId.toLowerCase();
-  const trimmedSecret = secret.toLowerCase();
-
-  const reasons = {
-    hasKey: Boolean(keyId),
-    hasSecret: Boolean(secret),
-    isPlaceholderKey: trimmedKey.includes('placeholder'),
-    isPlaceholderSecret: trimmedSecret.includes('placeholder'),
-    isYourRazorpayKey: trimmedKey.includes('your_razorpay'),
-    isYourRazorpaySecret: trimmedSecret.includes('your_razorpay'),
-    isReplaceWithSecret: trimmedSecret.includes('replace_with'),
-    isOldKey: trimmedKey.includes('tyio72mcolkjpn'),
-    isOldSecret: trimmedSecret.includes('u074tazdfzv0bccctm7dblvm'),
-    secretLength: secret.length,
-    keyLength: keyId.length,
-  };
+  const configStatus = getRazorpayConfigStatus();
 
   return NextResponse.json({
     status: 'ok',
-    isRazorpayConfigured: isRazorpayConfigured(),
-    reasons,
+    isRazorpayConfigured: configStatus.configured,
+    keyConfigured: Boolean(keyId),
+    keyPrefix: keyId ? keyId.slice(0, 8) : null,
+    secretConfigured: Boolean(getRazorpaySecret()),
+    reason: configStatus.reason || null,
   });
 }

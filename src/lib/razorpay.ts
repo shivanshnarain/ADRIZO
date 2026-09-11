@@ -83,17 +83,38 @@ export function getRazorpaySecret(): string {
 export const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
 
 /**
- * Checks whether Razorpay credentials are actively configured in environment variables.
- * Returns false if keys are missing or using placeholder values.
+ * Returns detailed status and human-readable reason if Razorpay is not configured.
  */
-export function isRazorpayConfigured(): boolean {
+export function getRazorpayConfigStatus(): { configured: boolean; reason?: string } {
   const rawKey = getRazorpayKeyId();
   const rawSecret = getRazorpaySecret();
 
-  if (!rawKey || !rawSecret) return false;
+  if (!rawKey && !rawSecret) {
+    return { configured: false, reason: 'Razorpay keys are not configured in environment variables.' };
+  }
+  if (!rawKey) {
+    return { configured: false, reason: 'RAZORPAY_KEY_ID is missing in environment variables.' };
+  }
+  if (!rawSecret) {
+    return { configured: false, reason: 'RAZORPAY_KEY_SECRET is missing in environment variables.' };
+  }
 
   const trimmedKey = rawKey.toLowerCase();
   const trimmedSecret = rawSecret.toLowerCase();
+
+  if (trimmedSecret.includes('u074tazdfzv0bccctm7dblvm')) {
+    return {
+      configured: false,
+      reason: 'The Vercel environment still contains the deprecated OLD Razorpay API Secret. Please update RAZORPAY_KEY_SECRET in Vercel Project Settings and redeploy.',
+    };
+  }
+
+  if (trimmedKey.includes('tyio72mcolkjpn')) {
+    return {
+      configured: false,
+      reason: 'The Vercel environment still contains the deprecated OLD Razorpay Key ID. Please update RAZORPAY_KEY_ID in Vercel Project Settings and redeploy.',
+    };
+  }
 
   if (
     trimmedKey.includes('placeholder') ||
@@ -101,14 +122,21 @@ export function isRazorpayConfigured(): boolean {
     trimmedKey.includes('your_razorpay') ||
     trimmedSecret.includes('your_razorpay') ||
     trimmedKey === 'your_key_id' ||
-    trimmedSecret === 'your_key_secret' ||
-    trimmedKey.includes('tyio72mcolkjpn') ||
-    trimmedSecret.includes('u074tazdfzv0bccctm7dblvm')
+    trimmedSecret === 'your_key_secret'
   ) {
-    return false;
+    return { configured: false, reason: 'Razorpay environment variables are set to placeholder values.' };
   }
 
-  return trimmedKey.length > 5 && trimmedSecret.length > 5;
+  const isValid = trimmedKey.length > 5 && trimmedSecret.length > 5;
+  return { configured: isValid, reason: isValid ? undefined : 'Razorpay credentials are invalid or too short.' };
+}
+
+/**
+ * Checks whether Razorpay credentials are actively configured in environment variables.
+ * Returns false if keys are missing or using placeholder values.
+ */
+export function isRazorpayConfigured(): boolean {
+  return getRazorpayConfigStatus().configured;
 }
 
 /**
