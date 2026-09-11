@@ -752,8 +752,8 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                     borderRadius: '6px',
                     fontSize: '0.725rem',
                     fontWeight: 800,
-                    background: (viewingOrder.paymentStatus || '').toUpperCase() === 'PAID' || (viewingOrder.paymentStatus || '').toUpperCase() === 'COD_CONFIRMATION_PAID' ? '#dcfce7' : ((viewingOrder.paymentStatus || '').toUpperCase() === 'PENDING_COD_CONFIRMATION' || (viewingOrder.paymentMethod === 'COD' && (viewingOrder.paymentStatus || '').toUpperCase() === 'PENDING')) ? '#fef3c7' : '#fee2e2',
-                    color: (viewingOrder.paymentStatus || '').toUpperCase() === 'PAID' || (viewingOrder.paymentStatus || '').toUpperCase() === 'COD_CONFIRMATION_PAID' ? '#15803d' : ((viewingOrder.paymentStatus || '').toUpperCase() === 'PENDING_COD_CONFIRMATION' || (viewingOrder.paymentMethod === 'COD' && (viewingOrder.paymentStatus || '').toUpperCase() === 'PENDING')) ? '#92400e' : '#dc2626'
+                    background: (viewingOrder.paymentStatus || '').toUpperCase() === 'PAID' || (viewingOrder.paymentStatus || '').toUpperCase() === 'COD_CONFIRMATION_PAID' ? '#dcfce7' : (viewingOrder.paymentStatus || '').toUpperCase() === 'PENDING_COD_CONFIRMATION' ? '#fef3c7' : '#fee2e2',
+                    color: (viewingOrder.paymentStatus || '').toUpperCase() === 'PAID' || (viewingOrder.paymentStatus || '').toUpperCase() === 'COD_CONFIRMATION_PAID' ? '#15803d' : (viewingOrder.paymentStatus || '').toUpperCase() === 'PENDING_COD_CONFIRMATION' ? '#92400e' : '#dc2626'
                   }}>
                     PAYMENT: {viewingOrder.paymentStatus}
                   </span>
@@ -1155,25 +1155,24 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                 const isPaid = (viewingOrder.paymentStatus || '').toUpperCase() === 'PAID';
                 const isCodPaid = (viewingOrder.paymentStatus || '').toUpperCase() === 'COD_CONFIRMATION_PAID';
                 const isCodPending = (viewingOrder.paymentStatus || '').toUpperCase() === 'PENDING_COD_CONFIRMATION';
-                const isDirectCodPending = isCod && ((viewingOrder.paymentStatus || '').toUpperCase() === 'PENDING' || (viewingOrder.paymentStatus || '').toUpperCase() === 'COD_PENDING');
                 const isPaymentVerified = isPaid || isCodPaid;
 
                 const codConfirmationAmount = viewingOrder.codCharge || 99;
-                const codRemainingAmount = isCodPaid ? Math.max(0, viewingOrder.total - codConfirmationAmount) : viewingOrder.total;
+                const codRemainingAmount = Math.max(0, viewingOrder.total - codConfirmationAmount);
 
                 return (
                   <div style={{
                     backgroundColor: '#ffffff',
                     borderRadius: '10px',
-                    border: isPaymentVerified ? '1.5px solid #16a34a' : (isCodPending || isDirectCodPending) ? '1.5px solid #f59e0b' : '1.5px solid #ef4444',
+                    border: isPaymentVerified ? '1.5px solid #16a34a' : isCodPending ? '1.5px solid #f59e0b' : '1.5px solid #ef4444',
                     overflow: 'hidden',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                     marginBottom: '1.25rem'
                   }}>
                     <div style={{
-                      background: isPaymentVerified ? '#f0fdf4' : (isCodPending || isDirectCodPending) ? '#fffbeb' : '#fef2f2',
+                      background: isPaymentVerified ? '#f0fdf4' : isCodPending ? '#fffbeb' : '#fef2f2',
                       padding: '1rem 1.25rem',
-                      borderBottom: isPaymentVerified ? '1px solid #bbf7d0' : (isCodPending || isDirectCodPending) ? '1px solid #fde68a' : '1px solid #fee2e2',
+                      borderBottom: isPaymentVerified ? '1px solid #bbf7d0' : isCodPending ? '1px solid #fde68a' : '1px solid #fee2e2',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.75rem'
@@ -1182,7 +1181,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                         width: '32px',
                         height: '32px',
                         borderRadius: '50%',
-                        background: isPaymentVerified ? '#16a34a' : (isCodPending || isDirectCodPending) ? '#f59e0b' : '#dc2626',
+                        background: isPaymentVerified ? '#16a34a' : isCodPending ? '#f59e0b' : '#dc2626',
                         color: '#ffffff',
                         display: 'flex',
                         alignItems: 'center',
@@ -1192,13 +1191,11 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                         <CreditCard size={16} />
                       </div>
                       <div>
-                        <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: isPaymentVerified ? '#14532d' : (isCodPending || isDirectCodPending) ? '#92400e' : '#991b1b', margin: 0 }}>
+                        <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: isPaymentVerified ? '#14532d' : isCodPending ? '#92400e' : '#991b1b', margin: 0 }}>
                           Payment &amp; Gateway Details
                         </h3>
-                        <p style={{ fontSize: '0.725rem', color: isPaymentVerified ? '#15803d' : (isCodPending || isDirectCodPending) ? '#b45309' : '#b91c1c', margin: '2px 0 0 0' }}>
-                          {isCod 
-                            ? (isDirectCodPending ? 'Cash on Delivery (Payable on Delivery)' : 'Cash on Delivery with ₹99 Online Confirmation') 
-                            : 'Online Prepaid Razorpay Payment'}
+                        <p style={{ fontSize: '0.725rem', color: isPaymentVerified ? '#15803d' : isCodPending ? '#b45309' : '#b91c1c', margin: '2px 0 0 0' }}>
+                          {isCod ? 'Cash on Delivery with ₹99 Online Confirmation' : 'Online Prepaid Razorpay Payment'}
                         </p>
                       </div>
                     </div>
@@ -1218,8 +1215,8 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                             borderRadius: '4px',
                             fontSize: '0.725rem',
                             fontWeight: 800,
-                            background: isPaymentVerified ? '#dcfce7' : (isCodPending || isDirectCodPending) ? '#fef3c7' : '#fee2e2',
-                            color: isPaymentVerified ? '#15803d' : (isCodPending || isDirectCodPending) ? '#92400e' : '#dc2626'
+                            background: isPaymentVerified ? '#dcfce7' : isCodPending ? '#fef3c7' : '#fee2e2',
+                            color: isPaymentVerified ? '#15803d' : isCodPending ? '#92400e' : '#dc2626'
                           }}>
                             {viewingOrder.paymentStatus}
                           </span>
@@ -1229,35 +1226,25 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                       {isCod ? (
                         <>
                           <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '0.5rem' }}>
-                            <span style={{ color: '#09090b', fontWeight: 700 }}>Amount Paid Online:</span>
-                            <span style={{ color: isCodPaid ? '#16a34a' : '#52525b', fontWeight: 700 }}>
-                              {isCodPaid ? '₹99.00 (Paid & Verified Online)' : '₹0.00 (Unpaid / Online ₹0)'}
+                            <span style={{ color: '#09090b', fontWeight: 700 }}>COD ₹99 Payment:</span>
+                            <span style={{ color: isCodPaid ? '#16a34a' : '#b45309', fontWeight: 700 }}>
+                              {isCodPaid ? '₹99.00 (Paid & Verified Online)' : '₹99.00 (Pending Confirmation Payment)'}
                             </span>
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '0.5rem' }}>
-                            <span style={{ color: '#09090b', fontWeight: 700 }}>COD Handling Fee:</span>
-                            <span style={{ color: '#334155', fontWeight: 600 }}>
-                              ₹{codConfirmationAmount.toFixed(2)}
+                            <span style={{ color: '#09090b', fontWeight: 700 }}>Razorpay Payment ID:</span>
+                            <span style={{ color: '#334155', fontFamily: 'monospace' }}>
+                              {viewingOrder.razorpayPaymentId || '—'}
                             </span>
                           </div>
-                          {viewingOrder.razorpayPaymentId && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '0.5rem' }}>
-                              <span style={{ color: '#09090b', fontWeight: 700 }}>Razorpay Payment ID:</span>
-                              <span style={{ color: '#334155', fontFamily: 'monospace' }}>
-                                {viewingOrder.razorpayPaymentId}
-                              </span>
-                            </div>
-                          )}
-                          {viewingOrder.razorpayOrderId && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '0.5rem' }}>
-                              <span style={{ color: '#09090b', fontWeight: 700 }}>Razorpay Order ID:</span>
-                              <span style={{ color: '#334155', fontFamily: 'monospace' }}>
-                                {viewingOrder.razorpayOrderId}
-                              </span>
-                            </div>
-                          )}
+                          <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '0.5rem' }}>
+                            <span style={{ color: '#09090b', fontWeight: 700 }}>Razorpay Order ID:</span>
+                            <span style={{ color: '#334155', fontFamily: 'monospace' }}>
+                              {viewingOrder.razorpayOrderId || '—'}
+                            </span>
+                          </div>
                           <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '0.5rem', background: '#fffbeb', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
-                            <span style={{ color: '#92400e', fontWeight: 800 }}>Payable on Delivery:</span>
+                            <span style={{ color: '#92400e', fontWeight: 800 }}>Remaining to Collect:</span>
                             <span style={{ color: '#b45309', fontWeight: 800, fontSize: '0.95rem' }}>
                               ₹{codRemainingAmount.toFixed(2)} on Delivery
                             </span>
@@ -2337,8 +2324,8 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                           borderRadius: '4px',
                           fontSize: '0.725rem',
                           fontWeight: 700,
-                          background: o.paymentStatus === 'PAID' || o.paymentStatus === 'COD_CONFIRMATION_PAID' ? '#f0fdf4' : (o.paymentStatus === 'PENDING_COD_CONFIRMATION' || (o.paymentMethod === 'COD' && o.paymentStatus === 'PENDING')) ? '#fffbeb' : '#fef2f2',
-                          color: o.paymentStatus === 'PAID' || o.paymentStatus === 'COD_CONFIRMATION_PAID' ? '#166534' : (o.paymentStatus === 'PENDING_COD_CONFIRMATION' || (o.paymentMethod === 'COD' && o.paymentStatus === 'PENDING')) ? '#92400e' : '#991b1b'
+                          background: o.paymentStatus === 'PAID' || o.paymentStatus === 'COD_CONFIRMATION_PAID' ? '#f0fdf4' : o.paymentStatus === 'PENDING_COD_CONFIRMATION' ? '#fffbeb' : '#fef2f2',
+                          color: o.paymentStatus === 'PAID' || o.paymentStatus === 'COD_CONFIRMATION_PAID' ? '#166534' : o.paymentStatus === 'PENDING_COD_CONFIRMATION' ? '#92400e' : '#991b1b'
                         }}>
                           {o.paymentStatus}
                         </span>
