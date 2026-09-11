@@ -30,15 +30,15 @@ The following **16 values** were discovered in `.env` and `.env.local` and popul
 | `CLOUDINARY_CLOUD_NAME` | `.env` | `zytsxasx` | Cloudinary account cloud name for product image hosting |
 | `CLOUDINARY_API_KEY` | `.env` | `375971195811223` | Cloudinary API Key for image uploads & signed deletions |
 | `CLOUDINARY_API_SECRET` | `.env` | `7orQb2EO_QiOtRGtDKIRtFNom6Y` | Cloudinary API Secret for authenticated SDK operations |
-| `RAZORPAY_KEY_ID` | `.env` | `rzp_live_TYio72mColkjPN` | Live Razorpay Key ID for payments and COD confirmation |
-| `RAZORPAY_KEY_SECRET` | `.env` | `U074TAZdfZv0BCcCTm7DblVm` | Live Razorpay Secret for order creation & HMAC verification |
+| `RAZORPAY_KEY_ID` | `.env` | `rzp_live_Taj9UBraLpmYHj` | Live Razorpay Key ID for payments and COD confirmation |
+| `RAZORPAY_KEY_SECRET` | `.env` | `[SECURE_SERVER_SECRET]` | Live Razorpay Secret for order creation & HMAC verification |
 | `NEXT_PUBLIC_SUPABASE_URL` | `.env` | `https://inaekhxynubttednivvp.supabase.co` | Supabase Project URL for customer accounts & order management |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `.env` | `eyJhbGciOiJIUzI1Ni...` | Supabase client anon public key for frontend/SSR auth |
 | `MAIL_FROM` | `.env` | `AD(R)IZO <care.adrizo@gmail.com>` | Sender header format for transactional emails and invoices |
 | `SMTP_USER` | `.env` | `care.adrizo@gmail.com` | Google Workspace / Gmail account email for SMTP |
 | `SHIPROCKET_API_EMAIL` | `.env.local` | `Care.adrizo@gmail.com` | Dedicated Shiprocket API login email for logistics |
 | `SHIPROCKET_API_PASSWORD` | `.env.local` | `TeyH%wV4vMGGs%5d5lqtbHk2mkA7L52$` | Dedicated Shiprocket API login password for logistics |
-| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Derived from `.env` | `rzp_live_TYio72mColkjPN` | Client-side Razorpay fallback key matching `RAZORPAY_KEY_ID` |
+| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Derived from `.env` | `rzp_live_Taj9UBraLpmYHj` | Client-side Razorpay fallback key matching `RAZORPAY_KEY_ID` |
 
 ---
 
@@ -95,7 +95,7 @@ The following **4 variables** are used in the codebase but were missing from the
 
 4. **`NEXT_PUBLIC_RAZORPAY_KEY_ID`**
    - **Where used:** `src/app/api/checkout/create-order/route.ts` (line 547).
-   - **Why needed:** Client-facing fallback key ID. Populated with the same value as `RAZORPAY_KEY_ID` (`rzp_live_TYio72mColkjPN`).
+   - **Why needed:** Client-facing fallback key ID. Populated with the same value as `RAZORPAY_KEY_ID` (`rzp_live_Taj9UBraLpmYHj`).
 
 ---
 

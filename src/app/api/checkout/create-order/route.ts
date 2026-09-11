@@ -544,7 +544,7 @@ export async function POST(req: NextRequest) {
         razorpayOrderId: razorpayOrder.id,
         amount: codConfirmationAmount * 100, // 9900 paise
         currency,
-        key: process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: (process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID)?.trim(),
         total: finalTotal,
         codConfirmationAmount,
         codRemainingAmount: Math.max(0, finalTotal - codConfirmationAmount),
@@ -642,7 +642,7 @@ export async function POST(req: NextRequest) {
         razorpayOrderId: razorpayOrder.id,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency || currency,
-        key: process.env.RAZORPAY_KEY_ID?.trim(),
+        key: (process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID)?.trim(),
         customer: {
           name: trimmedName,
           email: trimmedEmail,

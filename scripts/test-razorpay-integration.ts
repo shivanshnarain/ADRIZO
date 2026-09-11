@@ -11,7 +11,7 @@ import {
   verifyRazorpayWebhookSignature, 
   generateOrderNumber, 
   RAZORPAY_CURRENCY 
-} from '../src/lib/razorpay';
+} from '../src/lib/razorpay.ts';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -166,14 +166,14 @@ async function runTests() {
 
   // TEST 6: Git Security (.gitignore rules)
   console.log('\n--- TEST 6: Git Security (.gitignore) ---');
-  const gitignorePath = path.resolve(__dirname, '../.gitignore');
+  const gitignorePath = path.resolve(process.cwd(), '.gitignore');
   const gitignoreContent = fs.readFileSync(gitignorePath, 'utf8');
   assert(gitignoreContent.includes('.env'), '.gitignore explicitly excludes .env');
   assert(gitignoreContent.includes('!.env.example'), '.gitignore explicitly allows .env.example');
 
   // TEST 7: .env.example Validation
   console.log('\n--- TEST 7: .env.example Structure ---');
-  const envExamplePath = path.resolve(__dirname, '../.env.example');
+  const envExamplePath = path.resolve(process.cwd(), '.env.example');
   const envExampleContent = fs.readFileSync(envExamplePath, 'utf8');
   assert(envExampleContent.includes('RAZORPAY_KEY_ID='), '.env.example includes RAZORPAY_KEY_ID');
   assert(envExampleContent.includes('RAZORPAY_KEY_SECRET='), '.env.example includes RAZORPAY_KEY_SECRET');
@@ -182,7 +182,7 @@ async function runTests() {
 
   // TEST 8: .env File Configuration Validation
   console.log('\n--- TEST 8: .env Configuration Validation ---');
-  const envPath = path.resolve(__dirname, '../.env');
+  const envPath = path.resolve(process.cwd(), '.env');
   const envContent = fs.readFileSync(envPath, 'utf8');
   assert(envContent.includes('RAZORPAY_KEY_ID='), '.env defines RAZORPAY_KEY_ID');
   assert(envContent.includes('RAZORPAY_KEY_SECRET='), '.env defines RAZORPAY_KEY_SECRET');
