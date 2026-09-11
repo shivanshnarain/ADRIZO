@@ -63,6 +63,15 @@ export function getRazorpayKeyId(): string {
   return rawKey?.trim().replace(/^["']|["']$/g, '') || '';
 }
 
+/**
+ * Returns the authoritative active Razorpay Key Secret.
+ */
+export function getRazorpaySecret(): string {
+  loadEnvFallback();
+  const rawSecret = process.env.RAZORPAY_KEY_SECRET;
+  return rawSecret?.trim().replace(/^["']|["']$/g, '') || '';
+}
+
 export const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
 
 /**
@@ -70,9 +79,8 @@ export const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
  * Returns false if keys are missing or using placeholder values.
  */
 export function isRazorpayConfigured(): boolean {
-  loadEnvFallback();
   const rawKey = getRazorpayKeyId();
-  const rawSecret = process.env.RAZORPAY_KEY_SECRET?.trim().replace(/^["']|["']$/g, '');
+  const rawSecret = getRazorpaySecret();
 
   if (!rawKey || !rawSecret) return false;
 
@@ -100,9 +108,8 @@ export function isRazorpayConfigured(): boolean {
  * Throws a clean descriptive error if keys are not configured.
  */
 export function getRazorpayInstance(): Razorpay {
-  loadEnvFallback();
   const keyId = getRazorpayKeyId();
-  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim().replace(/^["']|["']$/g, '');
+  const keySecret = getRazorpaySecret();
 
   if (!keyId || !keySecret || !isRazorpayConfigured()) {
     throw new Error('Razorpay API keys are not configured in environment variables.');
@@ -144,7 +151,7 @@ export function verifyRazorpaySignature(
   paymentId: string,
   signature: string
 ): boolean {
-  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim().replace(/^["']|["']$/g, '');
+  const keySecret = getRazorpaySecret();
   if (!keySecret || !signature || !orderId || !paymentId) return false;
 
   try {
@@ -172,7 +179,8 @@ export function verifyRazorpayWebhookSignature(
   rawBody: string,
   signature: string
 ): boolean {
-  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  loadEnvFallback();
+  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET?.trim().replace(/^["']|["']$/g, '');
   if (!webhookSecret || !signature || !rawBody) return false;
 
   try {
