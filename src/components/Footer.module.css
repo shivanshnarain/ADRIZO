@@ -31,12 +31,11 @@
   margin: 0;
 }
 
-/* 2x2 Content Arrangement on Desktop */
+/* Desktop / Laptop: Exactly 4 columns in ONE single horizontal row */
 .contentGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  column-gap: 5rem;
-  row-gap: 3.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2.5rem;
 }
 
 .column {
@@ -143,15 +142,18 @@
   color: var(--primary-yellow);
 }
 
-/* Responsive Breakpoints */
-@media (max-width: 1024px) {
+/* Tablet Adaptability (900px - 1024px) */
+@media (max-width: 1024px) and (min-width: 900px) {
   .contentGrid {
-    column-gap: 3.5rem;
-    row-gap: 2.75rem;
+    gap: 1.75rem;
   }
 }
 
-@media (max-width: 768px) {
+/* Mobile & Small Tablet (Below 900px): Clean 2x2 Square-Style Grid
+   Row 1: POLICY | QUICK LINKS
+   Row 2: SUPPORT | FOLLOW US
+*/
+@media (max-width: 899px) {
   .footer {
     padding: 3rem 0 1.75rem;
     margin-top: 2.5rem;
@@ -163,8 +165,9 @@
   }
 
   .contentGrid {
-    grid-template-columns: 1fr;
-    gap: 2.25rem;
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 1.75rem;
+    row-gap: 2.25rem;
   }
 
   .bottomBar {
@@ -176,5 +179,13 @@
     flex-direction: column;
     text-align: center;
     gap: 0.6rem;
+  }
+}
+
+/* Ultra-compact screen safety (under 320px) */
+@media (max-width: 320px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
   }
 }

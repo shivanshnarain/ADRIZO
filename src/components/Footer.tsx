@@ -16,9 +16,20 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* 2x2 Content Arrangement */}
+        {/* Footer Navigation Columns: 1 row on Desktop (4 cols), 2x2 grid on Mobile */}
         <div className={styles.contentGrid}>
-          {/* 1. QUICK LINKS */}
+          {/* 1. POLICY */}
+          <div className={styles.column}>
+            <h4 className={styles.columnTitle}>POLICY</h4>
+            <div className={styles.linkList}>
+              <Link href="/refund-return-policy">Refund &amp; Return Policy</Link>
+              <Link href="/shipping-policy">Shipping Policy</Link>
+              <Link href="/privacy-policy">Privacy Policy</Link>
+              <Link href="/terms-and-conditions">Terms and Conditions</Link>
+            </div>
+          </div>
+
+          {/* 2. QUICK LINKS */}
           <div className={styles.column}>
             <h4 className={styles.columnTitle}>QUICK LINKS</h4>
             <div className={styles.linkList}>
@@ -29,23 +40,12 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* 2. SUPPORT */}
+          {/* 3. SUPPORT */}
           <div className={styles.column}>
             <h4 className={styles.columnTitle}>SUPPORT</h4>
             <div className={styles.linkList}>
               <Link href="/contact">Contact Us</Link>
               <Link href="/faq">FAQs</Link>
-            </div>
-          </div>
-
-          {/* 3. POLICY */}
-          <div className={styles.column}>
-            <h4 className={styles.columnTitle}>POLICY</h4>
-            <div className={styles.linkList}>
-              <Link href="/refund-return-policy">Refund &amp; Return Policy</Link>
-              <Link href="/shipping-policy">Shipping Policy</Link>
-              <Link href="/privacy-policy">Privacy Policy</Link>
-              <Link href="/terms-and-conditions">Terms and Conditions</Link>
             </div>
           </div>
 
