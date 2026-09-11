@@ -244,7 +244,7 @@ export default function FreeProductSelectorModal() {
 
   // Determine active offer quantities & category scope dynamically
   const effectiveOffer = modalOffer || bogoPromoConfig;
-  const freeMultiplier = effectiveOffer?.freeQuantity || 2;
+  const freeMultiplier = effectiveOffer?.freeQuantity ?? 1;
   const buyQuantity = paidQuantity;
   const freeQuantity = paidQuantity * freeMultiplier;
   const promoName = triggerProduct?.promotionRule || effectiveOffer?.name || 'SPECIAL OFFER';
@@ -252,7 +252,7 @@ export default function FreeProductSelectorModal() {
     qualifyingCategory?.name ||
     triggerProduct?.categoryName ||
     products[0]?.category?.name ||
-    'T-Shirts';
+    'Hoodies';
   const categorySingular = formatCategoryForFreeCount(categoryDisplayName, 1);
   const categoryPlural = formatCategoryForFreeCount(categoryDisplayName, 2);
 
@@ -411,11 +411,7 @@ export default function FreeProductSelectorModal() {
 
   // DYNAMIC PRICING CALCULATION (strictly based on HIGHEST SELLING PRICE):
   const { youPay, youSave, totalCatalog, is6ProductBonusEligible, is9ProductBonusEligible } = useMemo(() => {
-    if (allCandidateItems.length === 0) {
-      return { youPay: 0, youSave: 0, totalCatalog: 0, is6ProductBonusEligible: false, is9ProductBonusEligible: false };
-    }
-
-    const basePrice = triggerProduct?.price || (mainPaidProduct ? mainPaidProduct.price : 0);
+    const basePrice = triggerProduct?.price || (mainPaidProduct ? mainPaidProduct.price : 1999);
     const rawPaidSum = basePrice * paidQuantity;
 
     // Check 9-product and 6-product bundle conditions:
@@ -429,12 +425,15 @@ export default function FreeProductSelectorModal() {
     const finalPayable = Math.max(0, rawPaidSum - bonusDiscount);
 
     // Total Catalog MRP sum
-    const mainMrp = triggerProduct?.originalPrice || triggerProduct?.price || 0;
+    const mainMrp = triggerProduct?.originalPrice || triggerProduct?.price || (basePrice * 2);
     const freeMrpSum = chosenFreeItems.reduce(
-      (acc, it) => acc + (it.originalPrice || it.price),
+      (acc, it) => acc + (it.originalPrice || it.price || mainMrp),
       0
     );
-    const catSum = (mainMrp * paidQuantity) + freeMrpSum;
+    // For unselected free slots, estimate based on main product's originalPrice (MRP)
+    const unchosenSlotsCount = Math.max(0, freeQuantity - chosenFreeItems.length);
+    const estimatedRemainingMrp = unchosenSlotsCount * mainMrp;
+    const catSum = (mainMrp * paidQuantity) + freeMrpSum + estimatedRemainingMrp;
     const savings = Math.max(0, catSum - finalPayable);
 
     return {
@@ -444,7 +443,7 @@ export default function FreeProductSelectorModal() {
       is6ProductBonusEligible,
       is9ProductBonusEligible,
     };
-  }, [allCandidateItems, triggerProduct, mainPaidProduct, paidQuantity, chosenFreeItems]);
+  }, [triggerProduct, mainPaidProduct, paidQuantity, chosenFreeItems, freeQuantity]);
 
   if (!isBogoSelectorOpen) return null;
 
@@ -511,21 +510,34 @@ export default function FreeProductSelectorModal() {
     }
 
     if (chosenFreeItems.length >= freeQuantity) {
+      if (freeQuantity === 1) {
+        if (product.availableSizes && product.availableSizes.length > 1) {
+          const triggerSize = triggerProduct?.size || 'M';
+          const initialSize = product.availableSizes.includes(triggerSize)
+            ? triggerSize
+            : product.availableSizes[0];
+
+          setSizeModalSelectedSize(initialSize);
+          setSizeModalProduct(product);
+        } else {
+          const sz = product.availableSizes?.[0] || 'Standard';
+          setChosenFreeItems([]);
+          addFreeItemWithChosenSize(product, sz);
+        }
+        return;
+      }
+
       setLimitWarning(true);
       setTimeout(() => setLimitWarning(false), 1200);
       return;
     }
 
-    // REQUIREMENT 11: If product requires size selection, open the Size Selection Popup
+    // If product requires size selection, open the Size Selection Popup
     if (product.availableSizes && product.availableSizes.length > 1) {
       const triggerSize = triggerProduct?.size || 'M';
-      const initialSize =
-        selectedSizeFilter !== 'all' &&
-        product.availableSizes.some((s) => s.toUpperCase() === selectedSizeFilter.toUpperCase())
-          ? selectedSizeFilter
-          : product.availableSizes.includes(triggerSize)
-          ? triggerSize
-          : product.availableSizes[0];
+      const initialSize = product.availableSizes.includes(triggerSize)
+        ? triggerSize
+        : product.availableSizes[0];
 
       setSizeModalSelectedSize(initialSize);
       setSizeModalProduct(product);
@@ -680,350 +692,151 @@ export default function FreeProductSelectorModal() {
     <div className={styles.modalOverlay} onClick={handleCloseModal}>
       <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
         {/* =========================================================================
-            HEADER SECTION (Matches Reference Exactly)
+            SECTION 1: SPECIAL OFFER SINGLE-LINE HEADER
             ========================================================================= */}
         <div className={styles.modalHeader}>
-          <div className={styles.headerLeft}>
-            {/* REQUIREMENT 1: Polished ecommerce offer badge with colorful gift icon */}
-            <div className={styles.specialOfferBadge}>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className={styles.colorfulGiftIcon}
-              >
-                <rect x="3" y="10" width="18" height="11" rx="1.5" fill="#F59E0B" />
-                <rect x="2" y="6.5" width="20" height="4" rx="1.5" fill="#FBBF24" />
-                <rect x="10.5" y="6.5" width="3" height="14.5" fill="#EF4444" />
-                <path
-                  d="M12 6.5C10.5 3.8 6.5 3.8 7.5 6.5C8.8 7.2 11 6.5 12 6.5Z"
-                  fill="#EF4444"
-                />
-                <path
-                  d="M12 6.5C13.5 3.8 17.5 3.8 16.5 6.5C15.2 7.2 13 6.5 12 6.5Z"
-                  fill="#EF4444"
-                />
-                <circle cx="12" cy="6.5" r="1.5" fill="#FDE047" />
-              </svg>
-              <span className={styles.badgeSpecialOfferText}>SPECIAL OFFER</span>
-              <span className={styles.badgeDash}>—</span>
-              <div className={styles.offerTagPill}>
-                <span className={styles.tagWordWhite}>BUY</span>
-                <span className={styles.tagNumPaid}>{buyQuantity}</span>
-                <span className={styles.tagWordWhite}>GET</span>
-                <span className={styles.tagNumFree}>{freeQuantity}</span>
-                <span className={styles.tagWordWhite}>FREE</span>
-              </div>
-            </div>
-
-            <h2 className={styles.modalTitle}>
-              Choose {freeQuantity} {categoryPlural} FREE
-            </h2>
-            <p className={styles.modalSubtitle}>
-              Buy {buyQuantity} eligible paid {categorySingular} &bull; Get {freeQuantity} FREE &bull; Selected: {freeCount}/{freeQuantity} &bull; Remaining: {remainingCount}
-            </p>
+          <div className={styles.singleLineOfferTitle}>
+            <Gift size={16} className={styles.headerGiftIcon} />
+            <span className={styles.specialOfferText}>SPECIAL OFFER</span>
+            <span className={styles.headerDash}>—</span>
+            <span className={styles.bogoOfferText}>
+              BUY {buyQuantity} GET {freeQuantity} FREE
+            </span>
           </div>
 
-          <div className={styles.headerRight}>
-            {/* Selected counter strictly dynamic and GREEN */}
-            <div
-              className={`${styles.selectedCounterBadge} ${
-                isComplete ? styles.selectedCounterComplete : ''
-              } ${limitWarning ? styles.counterShaking : ''}`}
-            >
-              <Gift size={14} /> Selected: {freeCount} / {freeQuantity}
-            </div>
-            <button
-              type="button"
-              className={styles.closeBtn}
-              onClick={handleCloseModal}
-              title="Close"
-              aria-label="Close modal"
-            >
-              <X size={18} />
-            </button>
-          </div>
+          <button
+            type="button"
+            className={styles.closeBtn}
+            onClick={handleCloseModal}
+            title="Close"
+            aria-label="Close modal"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* =========================================================================
             SCROLLABLE MODAL CONTENT
             ========================================================================= */}
         <div className={styles.modalBody}>
-          {/* =======================================================================
-              TOP CARD: MAIN PRODUCT (PAID) + OPTION A + OR + OPTION B
-              ======================================================================= */}
-          <div className={styles.dualOptionCard}>
-            {/* Left: Main Product (Highest-selling-price product) */}
-            <div className={styles.mainProductSection}>
+          {/* SECTION 2: Selected Status immediately below the header */}
+          <div className={styles.selectedStatusRow}>
+            <span className={styles.selectedStatusText}>
+              Selected: <strong>{freeCount}/{freeQuantity}</strong>
+            </span>
+          </div>
+
+          {/* SECTION 3: Main Title */}
+          <div className={styles.titleSection}>
+            <h2 className={styles.modalTitle}>
+              Choose {freeQuantity} {categorySingular} for{' '}
+              <span className={styles.greenHighlight}>Free</span>
+            </h2>
+            <p className={styles.modalSubtitle}>
+              Buy {buyQuantity} Eligible Paid {categorySingular} &bull; Get {freeQuantity} Free
+            </p>
+          </div>
+
+          {/* SECTION 4 & 5: Main Paid Product Card (Simplified, Paid Qty removed) */}
+          <div className={styles.mainProductCard}>
+            <div className={styles.mainProductTopRow}>
               <span className={styles.mainProductBadge}>MAIN PRODUCT (PAID)</span>
-              {mainPaidProduct ? (
-                <div className={styles.mainProductBody}>
-                  <div className={styles.mainProductThumb}>
-                    <img src={mainPaidProduct.image} alt={mainPaidProduct.name} />
+            </div>
+
+            {mainPaidProduct ? (
+              <div className={styles.mainProductBody}>
+                <div className={styles.mainProductThumb}>
+                  <img src={mainPaidProduct.image} alt={mainPaidProduct.name} />
+                </div>
+                <div className={styles.mainProductDetails}>
+                  <h4 className={styles.mainProductTitle} title={mainPaidProduct.name}>
+                    {mainPaidProduct.name}
+                  </h4>
+                  <div className={styles.mainProductPrice}>
+                    ₹{mainPaidProduct.price.toLocaleString('en-IN')}
                   </div>
-                  <div className={styles.mainProductDetails}>
-                    <h4 className={styles.mainProductTitle} title={mainPaidProduct.name}>
-                      {mainPaidProduct.name}
-                    </h4>
-                    <div className={styles.mainProductPrice}>
-                      ₹{mainPaidProduct.price.toLocaleString('en-IN')}
-                    </div>
-                    <div className={styles.mainProductMeta}>
-                      Color: {mainPaidProduct.color?.toUpperCase() || 'STANDARD'}
-                      {mainPaidProduct.size && mainPaidProduct.size !== 'Standard' && (
-                        <span> &bull; Size: {mainPaidProduct.size.toUpperCase()}</span>
-                      )}
-                    </div>
-                    {/* Paid Quantity Stepper per Qualifying Product */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.45rem', background: '#f8fafc', padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#334155' }}>
-                        Paid Qty:
-                      </span>
-                      <div className={styles.qtyStepper}>
-                        <button
-                          type="button"
-                          className={styles.qtyBtn}
-                          onClick={() => {
-                            setPaidQuantity((prev) => {
-                              const next = Math.max(1, prev - 1);
-                              const nextFree = next * freeMultiplier;
-                              setChosenFreeItems((cur) => cur.slice(0, nextFree));
-                              return next;
-                            });
-                          }}
-                          disabled={paidQuantity <= 1}
-                          title="Decrease paid quantity"
-                        >
-                          <Minus size={11} />
-                        </button>
-                        <span className={styles.qtyVal}>{paidQuantity}</span>
-                        <button
-                          type="button"
-                          className={styles.qtyBtn}
-                          onClick={() => {
-                            setPaidQuantity((prev) => prev + 1);
-                          }}
-                          title="Increase paid quantity (unlocks +2 more free)"
-                        >
-                          <Plus size={11} />
-                        </button>
-                      </div>
-                    </div>
+                  <div className={styles.mainProductMeta}>
+                    Color: {mainPaidProduct.color?.toUpperCase() || 'STANDARD'}
+                    {mainPaidProduct.size && mainPaidProduct.size !== 'Standard' && (
+                      <span> &bull; Size: {mainPaidProduct.size.toUpperCase()}</span>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Loading product...</div>
-              )}
-            </div>
-
-            {/* REQUIREMENT 3: Option A (Increase quantity of this exact product) */}
-            <div className={styles.optionASection}>
-              <div className={styles.optionATitle}>
-                Increase quantity of this {categorySingular}?
-              </div>
-              <div className={styles.optionASubtitle}>
-                Get next {freeQuantity} quantities FREE
-              </div>
-              <div className={styles.optionAControls}>
-                <button
-                  type="button"
-                  className={styles.addFreeWithThisBtn}
-                  onClick={handleOptionAAddSameProduct}
-                >
-                  Add {freeQuantity} Free with this
-                </button>
-              </div>
-            </div>
-
-            {/* Center: OR Circle Divider */}
-            <div className={styles.orDivider}>
-              <div className={styles.orCircle}>OR</div>
-            </div>
-
-            {/* REQUIREMENT 4: Option B */}
-            <div
-              className={styles.optionBSection}
-              onClick={() => {
-                productGridRef.current?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              <div className={styles.optionBIcon}>
-                <svg
-                  width="34"
-                  height="34"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#111827"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M9 3.5C9.5 4.8 10.6 5.8 12 5.8C13.4 5.8 14.5 4.8 15 3.5" />
-                  <path d="M9 3.5L3.5 6.2L1.8 9.8L5.5 11.5L6.5 10V20.5H17.5V10L18.5 11.5L22.2 9.8L20.5 6.2L15 3.5" />
-                </svg>
-              </div>
-              <div className={styles.optionBText}>
-                <div className={styles.optionBTitle}>
-                  Select {freeQuantity} different {categoryPlural}
-                </div>
-                <div className={styles.optionBSubtitle}>Choose from below</div>
-              </div>
-            </div>
-          </div>
-
-          {/* =======================================================================
-              REQUIREMENT 13: PRICING SUMMARY BAR
-              Exact Order: 1. CATALOG VALUE -> 2. YOU SAVE -> 3. PAYABLE PRICE
-              ======================================================================= */}
-          <div className={styles.pricingBanner}>
-            <div className={styles.pricingMetrics}>
-              {/* 1. CATALOG VALUE */}
-              <div className={styles.pricingMetric}>
-                <span className={styles.metricLabel}>
-                  CATALOG VALUE ({allCandidateItems.length === totalBundleItemsCount ? `${totalBundleItemsCount} ITEMS` : `${allCandidateItems.length} ITEM${allCandidateItems.length === 1 ? '' : 'S'}`})
-                </span>
-                <span className={styles.metricCatalog}>
-                  ₹{totalCatalog.toLocaleString('en-IN')}{' '}
-                  <span
-                    className={styles.infoIcon}
-                    title="Combined original catalog value of all items in bundle"
-                  >
-                    <Info size={14} />
-                  </span>
-                </span>
-              </div>
-
-              <div className={styles.pricingDivider} />
-
-              {/* 2. YOU SAVE */}
-              <div className={styles.pricingMetric}>
-                <span className={styles.metricLabel}>YOU SAVE</span>
-                <span className={styles.metricSavings}>
-                  ₹{youSave.toLocaleString('en-IN')}
-                  {is9ProductBonusEligible && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: '#dcfce7', color: '#15803d', padding: '2px 6px', borderRadius: '4px', fontSize: '0.725rem', fontWeight: 800, marginLeft: '6px' }}>
-                      ₹200 BONUS!
-                    </span>
-                  )}
-                  {!is9ProductBonusEligible && is6ProductBonusEligible && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: '#dcfce7', color: '#15803d', padding: '2px 6px', borderRadius: '4px', fontSize: '0.725rem', fontWeight: 800, marginLeft: '6px' }}>
-                      ₹100 BONUS!
-                    </span>
-                  )}
-                </span>
-              </div>
-
-              <div className={styles.pricingDivider} />
-
-              {/* 3. PAYABLE PRICE */}
-              <div className={styles.pricingMetric}>
-                <span className={styles.metricLabel}>PAYABLE PRICE</span>
-                <span className={styles.metricPayable}>₹{youPay.toLocaleString('en-IN')}</span>
-              </div>
-            </div>
-
-            {/* Offer Status Badge */}
-            <div className={styles.offerPillBadge}>
-              <Gift size={13} /> Buy {buyQuantity} + {freeQuantity} Free {is9ProductBonusEligible ? '(+₹200 Off)' : is6ProductBonusEligible ? '(+₹100 Off)' : ''}
-            </div>
-          </div>
-
-          {/* =======================================================================
-              REQUIREMENT 10 & 12: PRODUCT FILTER BAR
-              Hierarchy: Search | All Sizes | All Colors | Sort
-              ======================================================================= */}
-          <div className={styles.filterToolbar}>
-            <div className={styles.searchInputWrap}>
-              <Search size={15} className={styles.searchIcon} />
-              <input
-                type="text"
-                placeholder={`Search ${categoryPlural} by title, color or SKU...`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={styles.searchInput}
-              />
-            </div>
-
-            <div className={styles.selectWrap}>
-              <select
-                value={selectedSizeFilter}
-                onChange={(e) => setSelectedSizeFilter(e.target.value)}
-                className={styles.filterSelect}
-              >
-                <option value="all">All Sizes</option>
-                {SYSTEMATIC_SIZES.map((sz) => (
-                  <option key={sz} value={sz}>
-                    {sz}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={14} className={styles.selectChevron} />
-            </div>
-
-            <div className={styles.selectWrap}>
-              <select
-                value={selectedColorFilter}
-                onChange={(e) => setSelectedColorFilter(e.target.value)}
-                className={styles.filterSelect}
-              >
-                <option value="all">All Colors</option>
-                {availableColorsList.map((col) => (
-                  <option key={col} value={col}>
-                    {col}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={14} className={styles.selectChevron} />
-            </div>
-
-            <div className={styles.selectWrap}>
-              <select
-                value={selectedSort}
-                onChange={(e) => setSelectedSort(e.target.value)}
-                className={styles.filterSelect}
-              >
-                <option value="default">Sort</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="newest">Newest</option>
-                <option value="name-asc">Name: A to Z</option>
-              </select>
-              <ChevronDown size={14} className={styles.selectChevron} />
-            </div>
-          </div>
-
-          {/* =======================================================================
-              PRODUCT GRID (5 Cards Across, Image Slider, Checkbox Selection)
-              ======================================================================= */}
-          <div ref={productGridRef} className={styles.productGrid}>
-            {loading ? (
-              <div
-                style={{
-                  gridColumn: '1 / -1',
-                  textAlign: 'center',
-                  padding: '3rem 1rem',
-                  color: '#9ca3af',
-                }}
-              >
-                Loading eligible {categoryPlural}...
-              </div>
-            ) : filteredAndSortedProducts.length === 0 ? (
-              <div
-                style={{
-                  gridColumn: '1 / -1',
-                  textAlign: 'center',
-                  padding: '3rem 1rem',
-                  color: '#9ca3af',
-                }}
-              >
-                No matching {categoryPlural} found.
               </div>
             ) : (
-              filteredAndSortedProducts.map((product) => {
+              <div className={styles.loadingPlaceholder}>Loading product...</div>
+            )}
+
+            {/* SECTION 5: Increase quantity section */}
+            <div className={styles.increaseQtySection}>
+              <div className={styles.increaseQtyTexts}>
+                <div className={styles.increaseQtyTitle}>
+                  Increase quantity of this {categorySingular}?
+                </div>
+                <div className={styles.increaseQtySubtitle}>
+                  Get next {freeQuantity} quantity free
+                </div>
+              </div>
+              <button
+                type="button"
+                className={styles.addFreeWithThisBtn}
+                onClick={handleOptionAAddSameProduct}
+              >
+                Add {freeQuantity} Free with this
+              </button>
+            </div>
+          </div>
+
+          {/* SECTION 6: Pricing Summary — Single Compact Row */}
+          <div className={styles.pricingRowCard}>
+            <div className={styles.pricingMetricCol}>
+              <span className={styles.metricLabel}>
+                CATALOG VALUE ({totalBundleItemsCount} ITEMS)
+              </span>
+              <span className={styles.metricCatalogPrice}>
+                ₹{totalCatalog.toLocaleString('en-IN')}
+              </span>
+            </div>
+
+            <div className={styles.pricingDivider} />
+
+            <div className={styles.pricingMetricCol}>
+              <span className={styles.metricLabel}>YOU SAVE</span>
+              <span className={styles.metricSavingsPrice}>
+                ₹{youSave.toLocaleString('en-IN')}
+              </span>
+            </div>
+
+            <div className={styles.pricingDivider} />
+
+            <div className={styles.pricingMetricCol}>
+              <span className={styles.metricLabel}>PAYABLE PRICE</span>
+              <span className={styles.metricPayablePrice}>
+                ₹{youPay.toLocaleString('en-IN')}
+              </span>
+            </div>
+          </div>
+
+          {/* SECTION 7: Buy 1 + 1 Free Green Badge */}
+          <div className={styles.greenOfferBadge}>
+            <Gift size={14} className={styles.greenGiftIcon} />
+            <span>Buy {buyQuantity} + {freeQuantity} Free</span>
+          </div>
+
+          {/* SECTION 9 & 10: Free Product Grid (Search, Size, Color, Sort REMOVED completely!) */}
+          <div ref={productGridRef} className={styles.productGrid}>
+            {loading ? (
+              <div className={styles.gridEmptyMessage}>
+                Loading eligible {categoryPlural}...
+              </div>
+            ) : products.length === 0 ? (
+              <div className={styles.gridEmptyMessage}>
+                No eligible {categoryPlural} available.
+              </div>
+            ) : (
+              products.map((product) => {
                 const isChecked = chosenFreeItems.some((f) => f.productId === product.id);
-                const isOutOfStock = product.availableSizes.length === 0;
+                const isOutOfStock = product.availableSizes && product.availableSizes.length === 0;
 
                 const productImages =
                   product.images && product.images.length > 0 ? product.images : [product.image];
@@ -1034,13 +847,15 @@ export default function FreeProductSelectorModal() {
                 return (
                   <div
                     key={product.id}
-                    className={`${styles.productCard} ${isChecked ? styles.productCardActive : ''}`}
+                    className={`${styles.productCard} ${
+                      isChecked ? styles.productCardActive : ''
+                    }`}
                     onClick={() => !isOutOfStock && handleToggleProductSelection(product)}
                   >
                     {/* Free Ribbon Top Left */}
                     <div className={styles.freeRibbon}>FREE</div>
 
-                    {/* REQUIREMENT 7: Square Checkbox Top Right with Green Checkmark */}
+                    {/* Square Checkbox Top Right with Green Checkmark */}
                     <div
                       className={`${styles.cardCheckbox} ${
                         isChecked ? styles.cardCheckboxChecked : ''
@@ -1050,10 +865,10 @@ export default function FreeProductSelectorModal() {
                         if (!isOutOfStock) handleToggleProductSelection(product);
                       }}
                     >
-                      {isChecked && <Check size={13} strokeWidth={3} />}
+                      {isChecked && <Check size={12} strokeWidth={3} />}
                     </div>
 
-                    {/* REQUIREMENT 8: Product Image Slider */}
+                    {/* Product Image */}
                     <div className={styles.cardImageWrapper}>
                       <img
                         src={currentImg}
@@ -1072,7 +887,7 @@ export default function FreeProductSelectorModal() {
                             }}
                             aria-label="Previous image"
                           >
-                            <ChevronLeft size={13} />
+                            <ChevronLeft size={12} />
                           </button>
                           <button
                             type="button"
@@ -1083,7 +898,7 @@ export default function FreeProductSelectorModal() {
                             }}
                             aria-label="Next image"
                           >
-                            <ChevronRight size={13} />
+                            <ChevronRight size={12} />
                           </button>
                           <div className={styles.imgSliderDots}>
                             {productImages.map((_, idx) => (
@@ -1099,7 +914,7 @@ export default function FreeProductSelectorModal() {
                       )}
                     </div>
 
-                    {/* REQUIREMENT 9: Clean Product Details - NO SIZE BUTTONS HERE */}
+                    {/* Product Details */}
                     <div className={styles.cardBody}>
                       <h4 className={styles.cardTitle} title={product.name}>
                         {product.name}
@@ -1129,9 +944,7 @@ export default function FreeProductSelectorModal() {
           </div>
         </div>
 
-        {/* =========================================================================
-            REQUIREMENT 11: SIZE SELECTION POPUP MODAL
-            ========================================================================= */}
+        {/* SECTION 11: Size Selection Modal */}
         {sizeModalProduct && (
           <div
             className={styles.sizeModalOverlay}
@@ -1211,6 +1024,9 @@ export default function FreeProductSelectorModal() {
                   disabled={!sizeModalSelectedSize}
                   onClick={() => {
                     if (sizeModalProduct && sizeModalSelectedSize) {
+                      if (freeQuantity === 1 && chosenFreeItems.length >= 1) {
+                        setChosenFreeItems([]);
+                      }
                       addFreeItemWithChosenSize(sizeModalProduct, sizeModalSelectedSize);
                       setSizeModalProduct(null);
                     }
@@ -1223,32 +1039,33 @@ export default function FreeProductSelectorModal() {
           </div>
         )}
 
-        {/* =========================================================================
-            FOOTER / ACTION TRAY (Matches Reference Exactly)
-            ========================================================================= */}
+        {/* SECTION 11: Sticky Footer Bar */}
         <div className={styles.footerBar}>
-          <div className={styles.footerLeft}>
+          <div className={styles.footerInfoRow}>
             <span className={styles.footerLabel}>
               Total payable for all {totalBundleItemsCount} items:
             </span>
-            <div className={styles.footerPriceRow}>
+            <div className={styles.footerPriceWrap}>
               <span className={styles.footerPayable}>₹{youPay.toLocaleString('en-IN')}</span>
-              <span className={styles.footerSavings}>(Save ₹{youSave.toLocaleString('en-IN')})</span>
+              <span className={styles.footerSavings}>
+                (Save ₹{youSave.toLocaleString('en-IN')})
+              </span>
             </div>
           </div>
 
           <div className={styles.footerActions}>
-            {/* REQUIREMENT 16: Skip Offer */}
             <button
               type="button"
               className={styles.skipOfferLink}
               onClick={handleSkipPromotion}
             >
-              Skip offer &amp; buy {buyQuantity} item{buyQuantity > 1 ? 's' : ''} only (₹
-              {(((triggerProduct || mainPaidProduct)?.price || 0) * buyQuantity).toLocaleString('en-IN')})
+              Skip offer &amp; buy {buyQuantity} item only (₹
+              {(((triggerProduct || mainPaidProduct)?.price || 0) * buyQuantity).toLocaleString(
+                'en-IN'
+              )}
+              )
             </button>
 
-            {/* REQUIREMENT 15: Continue Button */}
             <button
               type="button"
               className={`${styles.continueBtn} ${
@@ -1257,16 +1074,11 @@ export default function FreeProductSelectorModal() {
               onClick={handleConfirmBundle}
               disabled={!isComplete}
             >
-              <span>
-                {isComplete
-                  ? editingPromoGroupId
-                    ? `Update Offer →`
-                    : `Continue to Checkout →`
-                  : `Please select ${remainingCount} more ${formatCategoryForFreeCount(
-                      categoryDisplayName,
-                      remainingCount
-                    )} →`}
-              </span>
+              {isComplete
+                ? editingPromoGroupId
+                  ? `Update Offer →`
+                  : `Continue to Checkout →`
+                : `Please select ${remainingCount} more ${categorySingular} →`}
             </button>
           </div>
         </div>

@@ -1,5 +1,5 @@
 /* =========================================================================
-   AD(R)IZO — BUY X GET Y FREE OFFER-SELECTION MODAL
+   AD(R)IZO — BUY 1 GET 1 FREE OFFER-SELECTION POPUP MODAL
    Strictly matches the visual reference image & prompt specifications
    ========================================================================= */
 
@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.25rem;
+  padding: 1rem;
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -26,8 +26,8 @@
   background: #ffffff;
   border-radius: 16px;
   width: 100%;
-  max-width: 1060px;
-  max-height: 94vh;
+  max-width: 580px;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -42,150 +42,63 @@
 }
 
 /* =========================================================================
-   1. HEADER SECTION (REQUIREMENT 1 & 6)
+   SECTION 1: SPECIAL OFFER SINGLE-LINE HEADER
    ========================================================================= */
 .modalHeader {
-  padding: 1.25rem 1.5rem 0.75rem 1.5rem;
+  padding: 0.75rem 1rem;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   background: #ffffff;
-}
-
-.headerLeft {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.headerRight {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-/* REQUIREMENT 1: Polished ecommerce offer badge */
-.specialOfferBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: #f3f4f6; /* light contrasting grey/off-white */
-  border: 1px solid #e5e7eb; /* subtle outline */
-  padding: 0.25rem 0.6rem;
-  border-radius: 6px; /* slightly rounded corners, NOT pill-shaped */
-  width: fit-content;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.colorfulGiftIcon {
+  border-bottom: 1px solid #f1f5f9;
   flex-shrink: 0;
-  display: block;
 }
 
-.badgeSpecialOfferText {
-  color: #111827; /* "SPECIAL OFFER" text must be black */
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.badgeDash {
-  color: #9ca3af;
-  font-weight: 700;
-  font-size: 0.75rem;
-}
-
-.offerTagPill {
+.singleLineOfferTitle {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  background: #111827; /* dark container for high contrast */
-  padding: 0.15rem 0.45rem;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.tagWordWhite {
-  color: #ffffff; /* "BUY", "GET" and "FREE" must be white */
-}
-
-.tagNumPaid {
-  background: #ffffff;
-  color: #111827; /* The number 1 remains black */
-  padding: 0.05rem 0.35rem;
-  border-radius: 3px;
-  font-weight: 900;
-  font-size: 0.725rem;
-  line-height: 1.1;
-}
-
-.tagNumFree {
-  color: #facc15; /* The number 2 must be yellow */
-  font-weight: 900;
-  font-size: 0.75rem;
-  line-height: 1.1;
-}
-
-.modalTitle {
-  font-size: 1.55rem;
+  gap: 0.35rem;
+  font-size: 0.775rem;
   font-weight: 800;
   color: #111827;
-  margin: 0.15rem 0 0.1rem 0;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
-}
-
-.modalSubtitle {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin: 0;
-}
-
-/* REQUIREMENT 6: Selected counter strictly dynamic and GREEN */
-.selectedCounterBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: 9999px;
-  font-size: 0.825rem;
-  font-weight: 800;
-  background: #ecfdf5;
-  color: #166534;
-  border: 1px solid #86efac;
+  letter-spacing: 0.02em;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.selectedCounterBadge svg {
-  color: #16a34a;
+.headerGiftIcon {
+  color: #FFC800;
+  flex-shrink: 0;
 }
 
-.selectedCounterComplete {
-  background: #dcfce7;
-  color: #15803d;
-  border-color: #4ade80;
-  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.15);
+.specialOfferText {
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #111827;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
 }
 
-.counterShaking {
-  animation: counterShake 0.4s ease-in-out;
+.headerDash {
+  color: #9ca3af;
+  font-weight: 600;
+  font-size: 0.75rem;
 }
 
-@keyframes counterShake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-4px); }
-  40%, 80% { transform: translateX(4px); }
+.bogoOfferText {
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #111827;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
 }
 
 .closeBtn {
-  background: none;
+  background: #f3f4f6;
   border: none;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -193,11 +106,11 @@
   cursor: pointer;
   border-radius: 50%;
   transition: background 0.15s ease, color 0.15s ease;
-  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .closeBtn:hover {
-  background: #f3f4f6;
+  background: #e5e7eb;
   color: #111827;
 }
 
@@ -207,43 +120,91 @@
 .modalBody {
   flex: 1;
   overflow-y: auto;
-  padding: 0 1.5rem 1.25rem 1.5rem;
+  padding: 0.65rem 0.95rem 1.25rem 0.95rem;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.65rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* =========================================================================
-   TOP SECTION: MAIN PRODUCT (PAID) + OPTION A + OR + OPTION B
+   SECTION 2: SELECTED STATUS
    ========================================================================= */
-.dualOptionCard {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
-  background: #ffffff;
+.selectedStatusRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  justify-content: flex-start;
+  padding: 0 0.15rem;
 }
 
-.mainProductSection {
+.selectedStatusText {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.selectedStatusText strong {
+  color: #16a34a;
+  font-weight: 800;
+}
+
+/* =========================================================================
+   SECTION 3: MAIN TITLE
+   ========================================================================= */
+.titleSection {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  flex: 1.1;
-  min-width: 250px;
+  gap: 0.15rem;
+  padding: 0 0.15rem;
+}
+
+.modalTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.greenHighlight {
+  color: #16a34a;
+  font-weight: 800;
+}
+
+.modalSubtitle {
+  font-size: 0.775rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* =========================================================================
+   SECTION 4 & 5: MAIN PAID PRODUCT CARD
+   ========================================================================= */
+.mainProductCard {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.mainProductTopRow {
+  display: flex;
+  align-items: center;
 }
 
 .mainProductBadge {
   background: #111827;
   color: #ffffff;
-  font-size: 0.65rem;
+  font-size: 0.625rem;
   font-weight: 800;
-  padding: 0.15rem 0.5rem;
+  padding: 0.15rem 0.45rem;
   border-radius: 4px;
   display: inline-block;
-  width: fit-content;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -251,16 +212,16 @@
 .mainProductBody {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.75rem;
 }
 
 .mainProductThumb {
-  width: 54px;
-  height: 68px;
+  width: 52px;
+  height: 60px;
   border-radius: 6px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e2e8f0;
   overflow: hidden;
-  background: #f9fafb;
+  background: #ffffff;
   flex-shrink: 0;
 }
 
@@ -271,14 +232,15 @@
 }
 
 .mainProductDetails {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
+  gap: 0.1rem;
 }
 
 .mainProductTitle {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: #111827;
   white-space: nowrap;
@@ -287,369 +249,178 @@
   margin: 0;
 }
 
-.mainProductMeta {
-  font-size: 0.775rem;
-  color: #6b7280;
-}
-
 .mainProductPrice {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 800;
   color: #111827;
 }
 
-/* REQUIREMENT 3: Option A - Increase Quantity */
-.optionASection {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.35rem;
-  padding: 0 1rem;
-  border-left: 1px solid #e5e7eb;
-  flex: 1;
-  min-height: 72px; /* aligned height with option B */
-}
-
-.optionATitle {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.optionASubtitle {
+.mainProductMeta {
   font-size: 0.725rem;
   color: #6b7280;
-  margin-top: -0.15rem;
+  font-weight: 500;
 }
 
-.optionAControls {
+.loadingPlaceholder {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  padding: 0.5rem 0;
+}
+
+/* SECTION 5: Increase Quantity Section */
+.increaseQtySection {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.5rem;
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  margin-top: 0.2rem;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
-.qtyStepper {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #ffffff;
-  overflow: hidden;
-  height: 28px;
-}
-
-.qtyBtn {
-  background: none;
-  border: none;
-  width: 26px;
-  height: 100%;
+.increaseQtyTexts {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #374151;
-  transition: background 0.15s ease;
+  flex-direction: column;
+  gap: 0.05rem;
 }
 
-.qtyBtn:hover:not(:disabled) {
-  background: #f3f4f6;
-  color: #111827;
-}
-
-.qtyBtn:disabled {
-  color: #d1d5db;
-  cursor: not-allowed;
-}
-
-.qtyVal {
-  min-width: 22px;
-  text-align: center;
-  font-size: 0.8125rem;
+.increaseQtyTitle {
+  font-size: 0.775rem;
   font-weight: 700;
   color: #111827;
+}
+
+.increaseQtySubtitle {
+  font-size: 0.7rem;
+  color: #6b7280;
 }
 
 .addFreeWithThisBtn {
-  background: #facc15;
+  background: #FFC800;
   color: #111827;
   border: none;
-  font-size: 0.775rem;
-  font-weight: 700;
+  font-size: 0.725rem;
+  font-weight: 800;
   height: 28px;
-  padding: 0 0.85rem;
+  padding: 0 0.75rem;
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: filter 0.15s ease, transform 0.1s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 .addFreeWithThisBtn:hover {
-  background: #eab308;
+  filter: brightness(0.95);
 }
 
 .addFreeWithThisBtn:active {
   transform: scale(0.98);
 }
 
-/* OR Divider */
-.orDivider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  align-self: stretch;
-  padding: 0 0.5rem;
-}
-
-.orDivider::before {
-  content: '';
-  position: absolute;
-  top: 10%;
-  bottom: 10%;
-  left: 50%;
-  width: 1px;
-  background: #e5e7eb;
-  transform: translateX(-50%);
-}
-
-.orCircle {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: #4b5563;
-  text-transform: uppercase;
-  position: relative;
-  z-index: 1;
-}
-
-/* REQUIREMENT 4: Option B - Select Different Products (clean minimal, NO yellow card) */
-.optionBSection {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 0.65rem 0.85rem;
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  flex: 1.1;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  min-height: 72px; /* aligned height with option A */
-}
-
-.optionBSection:hover {
-  border-color: #9ca3af;
-  background: #f9fafb;
-}
-
-.optionBIcon {
-  color: #111827;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.optionBText {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.optionBTitle {
-  font-size: 0.825rem;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1.25;
-}
-
-.optionBSubtitle {
-  font-size: 0.725rem;
-  color: #6b7280;
-}
-
 /* =========================================================================
-   REQUIREMENT 13: PRICING SUMMARY BAR
-   Exact Order: 1. CATALOG VALUE -> 2. YOU SAVE -> 3. PAYABLE PRICE
+   SECTION 6: PRICING SUMMARY — SINGLE COMPACT ROW
    ========================================================================= */
-.pricingBanner {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 0.75rem 1.25rem;
-  background: #ffffff;
+.pricingRowCard {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  gap: 0.25rem;
 }
 
-.pricingMetrics {
-  display: flex;
-  align-items: center;
-  gap: 1.75rem;
-}
-
-.pricingMetric {
+.pricingMetricCol {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  align-items: center;
+  text-align: center;
+  min-width: 0;
+}
+
+.metricLabel {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.15rem;
+  white-space: nowrap;
+}
+
+.metricCatalogPrice {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-decoration: line-through;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.metricSavingsPrice {
+  font-size: 0.925rem;
+  font-weight: 800;
+  color: #16a34a;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.metricPayablePrice {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #111827;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .pricingDivider {
   width: 1px;
-  height: 32px;
+  height: 26px;
   background: #e5e7eb;
-}
-
-.metricLabel {
-  font-size: 0.685rem;
-  font-weight: 700;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.metricPayable {
-  font-size: 1.25rem;
-  font-weight: 900;
-  color: #111827;
-  line-height: 1.1;
-}
-
-.metricSavings {
-  font-size: 1.25rem;
-  font-weight: 900;
-  color: #16a34a;
-  line-height: 1.1;
-}
-
-.metricCatalog {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #9ca3af;
-  text-decoration: line-through;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  line-height: 1.1;
-}
-
-.infoIcon {
-  color: #9ca3af;
-  cursor: help;
-  display: inline-flex;
-}
-
-/* REQUIREMENT 14: Offer Status Badge (slightly rounded, not pill) */
-.offerPillBadge {
-  background: #fef3c7;
-  border: 1px solid #fde68a;
-  color: #92400e;
-  font-size: 0.775rem;
-  font-weight: 700;
-  padding: 0.35rem 0.75rem;
-  border-radius: 8px; /* Refined medium radius, not full capsule */
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* =========================================================================
-   REQUIREMENT 10 & 12: SEARCH & FILTERS TOOLBAR
+   SECTION 7: BUY 1 + 1 FREE GREEN BADGE
    ========================================================================= */
-.filterToolbar {
+.greenOfferBadge {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-}
-
-.searchInputWrap {
-  position: relative;
-  flex: 1;
-}
-
-.searchIcon {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9ca3af;
-  pointer-events: none;
-}
-
-.searchInput {
-  width: 100%;
-  height: 38px;
-  border: 1px solid #e5e7eb;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
   border-radius: 8px;
-  padding: 0.5rem 0.85rem 0.5rem 2.25rem;
-  font-size: 0.8125rem;
-  color: #111827;
-  outline: none;
-  background: #ffffff;
-  transition: border-color 0.15s ease;
+  color: #15803d;
+  font-size: 0.775rem;
+  font-weight: 700;
 }
 
-.searchInput:focus {
-  border-color: #111827;
-}
-
-.searchInput::placeholder {
-  color: #9ca3af;
-}
-
-.selectWrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.filterSelect {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  height: 38px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 0.5rem 1.85rem 0.5rem 0.85rem;
-  font-size: 0.8125rem;
-  color: #374151;
-  background: #ffffff;
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.15s ease;
-  min-width: 105px;
-}
-
-.filterSelect:focus {
-  border-color: #111827;
-}
-
-.selectChevron {
-  position: absolute;
-  right: 0.65rem;
-  pointer-events: none;
-  color: #6b7280;
+.greenGiftIcon {
+  color: #16a34a;
+  flex-shrink: 0;
 }
 
 /* =========================================================================
-   PRODUCT SELECTION GRID (REQUIREMENT 7 & 8)
+   SECTION 9 & 10: FREE PRODUCT SELECTION GRID
    ========================================================================= */
 .productGrid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.65rem;
+}
+
+.gridEmptyMessage {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
 }
 
 .productCard {
@@ -666,22 +437,22 @@
 
 .productCard:hover {
   border-color: #d1d5db;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
 }
 
-/* REQUIREMENT 7: Selected state green border & elevation */
 .productCardActive {
   border: 2px solid #16a34a !important;
+  background: #f0fdf4;
   box-shadow: 0 0 0 1px #16a34a, 0 4px 12px rgba(22, 163, 74, 0.18) !important;
 }
 
 .freeRibbon {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  background: #facc15;
+  top: 7px;
+  left: 7px;
+  background: #FFC800;
   color: #000000;
-  font-size: 0.65rem;
+  font-size: 0.625rem;
   font-weight: 900;
   padding: 0.15rem 0.45rem;
   border-radius: 3px;
@@ -690,16 +461,15 @@
   text-transform: uppercase;
 }
 
-/* REQUIREMENT 7: Square Checkbox Top Right with Green Checkmark */
 .cardCheckbox {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 7px;
+  right: 7px;
   width: 20px;
   height: 20px;
   border-radius: 4px;
   border: 1.5px solid #d1d5db;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -714,32 +484,27 @@
   color: #ffffff !important;
 }
 
-/* REQUIREMENT 8: Product Image Slider */
 .cardImageWrapper {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  background: #f9fafb;
+  background: #f8fafc;
 }
 
 .cardImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.25s ease;
-}
-
-.productCard:hover .cardImage {
-  transform: scale(1.02);
+  display: block;
 }
 
 .imgSliderBtn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -750,30 +515,20 @@
   cursor: pointer;
   z-index: 3;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.15s ease;
-  opacity: 0;
-}
-
-.productCard:hover .imgSliderBtn {
-  opacity: 1;
-}
-
-.imgSliderBtn:hover {
-  background: #ffffff;
-  transform: translateY(-50%) scale(1.1);
+  opacity: 0.85;
 }
 
 .imgSliderPrev {
-  left: 6px;
+  left: 5px;
 }
 
 .imgSliderNext {
-  right: 6px;
+  right: 5px;
 }
 
 .imgSliderDots {
   position: absolute;
-  bottom: 6px;
+  bottom: 5px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -788,72 +543,70 @@
   height: 4px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.6);
-  transition: all 0.2s ease;
 }
 
 .imgSliderDotActive {
-  width: 12px;
+  width: 10px;
   border-radius: 3px;
   background: #ffffff;
 }
 
-/* REQUIREMENT 9: Clean Product Body - NO SIZE BUTTONS HERE */
 .cardBody {
-  padding: 0.65rem 0.65rem 0.75rem 0.65rem;
+  padding: 0.5rem 0.6rem 0.6rem 0.6rem;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .cardTitle {
-  font-size: 0.8rem;
+  font-size: 0.775rem;
   font-weight: 700;
   color: #111827;
-  margin: 0 0 0.2rem 0;
+  margin: 0 0 0.15rem 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.25;
 }
 
+.selectedSizeTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.685rem;
+  font-weight: 600;
+  color: #16a34a;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+  margin-top: 0.15rem;
+  margin-bottom: 0.2rem;
+  width: fit-content;
+}
+
 .cardPriceRow {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   margin-top: auto;
 }
 
 .struckPrice {
   color: #9ca3af;
   text-decoration: line-through;
-  font-size: 0.775rem;
+  font-size: 0.725rem;
   font-weight: 600;
 }
 
 .freePriceText {
   color: #16a34a;
   font-weight: 800;
-  font-size: 0.85rem;
-}
-
-.selectedSizeTag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #16a34a;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-  margin-top: 0.2rem;
-  margin-bottom: 0.25rem;
-  width: fit-content;
+  font-size: 0.8rem;
 }
 
 /* =========================================================================
-   REQUIREMENT 11: SIZE SELECTION POPUP MODAL
+   SIZE SELECTION POPUP MODAL
    ========================================================================= */
 .sizeModalOverlay {
   position: fixed;
@@ -873,15 +626,15 @@
   background: #ffffff;
   border-radius: 12px;
   width: 100%;
-  max-width: 420px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   animation: scaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid #e5e7eb;
 }
 
 .sizeModalHeader {
-  padding: 1rem 1.25rem 0.75rem 1.25rem;
+  padding: 0.85rem 1.1rem 0.65rem 1.1rem;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -891,25 +644,25 @@
 .sizeModalHeaderInfo {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.1rem;
   min-width: 0;
 }
 
 .sizeModalTitle {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: #111827;
   margin: 0;
 }
 
 .sizeModalSubtitle {
-  font-size: 0.8rem;
+  font-size: 0.775rem;
   color: #6b7280;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 320px;
+  max-width: 300px;
 }
 
 .sizeModalCloseBtn {
@@ -923,7 +676,6 @@
   justify-content: center;
   cursor: pointer;
   color: #6b7280;
-  transition: background 0.15s ease;
 }
 
 .sizeModalCloseBtn:hover {
@@ -932,25 +684,25 @@
 }
 
 .sizeModalBody {
-  padding: 1.25rem;
+  padding: 1rem 1.1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
 .sizeModalProductRow {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   background: #f9fafb;
-  padding: 0.75rem;
+  padding: 0.65rem;
   border-radius: 8px;
   border: 1px solid #f3f4f6;
 }
 
 .sizeModalThumb {
-  width: 50px;
-  height: 62px;
+  width: 46px;
+  height: 56px;
   border-radius: 6px;
   object-fit: cover;
   border: 1px solid #e5e7eb;
@@ -959,11 +711,11 @@
 .sizeModalMeta {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.15rem;
 }
 
 .sizeModalColorText {
-  font-size: 0.8rem;
+  font-size: 0.775rem;
   color: #4b5563;
 }
 
@@ -973,31 +725,31 @@
 }
 
 .sizeModalPriceText {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 800;
   color: #111827;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .sizeModalFreeTag {
   background: #dcfce7;
   color: #166534;
-  font-size: 0.685rem;
+  font-size: 0.65rem;
   font-weight: 800;
-  padding: 0.1rem 0.4rem;
+  padding: 0.1rem 0.35rem;
   border-radius: 4px;
 }
 
 .sizeSelectionArea {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .sizeSelectLabel {
-  font-size: 0.8rem;
+  font-size: 0.775rem;
   font-weight: 700;
   color: #374151;
 }
@@ -1005,19 +757,19 @@
 .sizePillGrid {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
 }
 
 .sizePillBtn {
-  min-width: 44px;
-  height: 38px;
-  padding: 0 0.75rem;
+  min-width: 42px;
+  height: 36px;
+  padding: 0 0.65rem;
   border-radius: 6px;
   border: 1.5px solid #d1d5db;
   background: #ffffff;
   color: #111827;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1034,47 +786,38 @@
   border-color: #111827 !important;
   background: #111827 !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .sizeModalFooter {
-  padding: 0.85rem 1.25rem;
+  padding: 0.75rem 1.1rem;
   border-top: 1px solid #f3f4f6;
   background: #fafafa;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .sizeModalCancelBtn {
   background: none;
   border: 1px solid #d1d5db;
-  padding: 0.5rem 0.95rem;
+  padding: 0.45rem 0.85rem;
   border-radius: 6px;
-  font-size: 0.8125rem;
+  font-size: 0.775rem;
   font-weight: 600;
   color: #4b5563;
   cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.sizeModalCancelBtn:hover {
-  background: #f3f4f6;
-  color: #111827;
 }
 
 .sizeModalConfirmBtn {
   background: #16a34a;
   color: #ffffff;
   border: none;
-  padding: 0.5rem 1.15rem;
+  padding: 0.45rem 1rem;
   border-radius: 6px;
-  font-size: 0.8125rem;
+  font-size: 0.775rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
 }
 
 .sizeModalConfirmBtn:hover:not(:disabled) {
@@ -1084,67 +827,70 @@
 .sizeModalConfirmBtn:disabled {
   background: #9ca3af;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
 /* =========================================================================
-   BOTTOM CONFIRMATION TRAY
+   SECTION 11: STICKY FOOTER ACTION TRAY
    ========================================================================= */
 .footerBar {
   border-top: 1px solid #e5e7eb;
-  padding: 0.95rem 1.5rem;
+  padding: 0.65rem 0.95rem calc(0.75rem + env(safe-area-inset-bottom)) 0.95rem;
   background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.footerInfoRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-}
-
-.footerLeft {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-.footerLabel {
-  font-size: 0.775rem;
-  color: #6b7280;
-}
-
-.footerPriceRow {
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
 }
 
+.footerLabel {
+  font-size: 0.725rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.footerPriceWrap {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
 .footerPayable {
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 900;
   color: #111827;
 }
 
 .footerSavings {
-  font-size: 0.85rem;
+  font-size: 0.775rem;
   font-weight: 800;
   color: #16a34a;
 }
 
 .footerActions {
   display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
   align-items: center;
-  gap: 1.25rem;
+  width: 100%;
 }
 
-/* REQUIREMENT 16: Skip offer link */
 .skipOfferLink {
   background: none;
   border: none;
-  color: #374151;
+  color: #4b5563;
   text-decoration: underline;
-  font-size: 0.825rem;
+  font-size: 0.725rem;
   cursor: pointer;
   font-weight: 500;
-  padding: 0.25rem 0.25rem;
+  padding: 0.15rem 0.25rem;
   transition: color 0.15s ease;
 }
 
@@ -1152,16 +898,16 @@
   color: #111827;
 }
 
-/* REQUIREMENT 15: Continue Button */
 .continueBtn {
+  width: 100%;
+  height: 44px;
   border: none;
   border-radius: 8px;
-  padding: 0.65rem 1.35rem;
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 800;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -1170,6 +916,7 @@
   background: #9ca3af;
   color: #ffffff;
   cursor: not-allowed;
+  opacity: 0.9;
 }
 
 .continueBtnActive {
@@ -1186,74 +933,12 @@
   background: #166534;
 }
 
-/* =========================================================================
-   RESPONSIVE DESIGN (TABLET & MOBILE)
-   ========================================================================= */
-@media (max-width: 1024px) {
+/* Desktop expansion */
+@media (min-width: 768px) {
+  .modalContainer {
+    max-width: 680px;
+  }
   .productGrid {
     grid-template-columns: repeat(3, 1fr);
-  }
-  .dualOptionCard {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .optionASection {
-    border-left: none;
-    border-top: 1px solid #e5e7eb;
-    padding-left: 0;
-    padding-top: 0.75rem;
-  }
-  .orDivider {
-    display: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .modalOverlay {
-    padding: 0.5rem;
-  }
-  .modalContainer {
-    max-height: 98vh;
-    border-radius: 12px;
-  }
-  .modalHeader {
-    padding: 1rem 1rem 0.5rem 1rem;
-  }
-  .modalBody {
-    padding: 0 1rem 1rem 1rem;
-  }
-  .modalTitle {
-    font-size: 1.25rem;
-  }
-  .pricingBanner {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  .pricingMetrics {
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-  .filterToolbar {
-    flex-wrap: wrap;
-  }
-  .productGrid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.65rem;
-  }
-  .footerBar {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 0.85rem 1rem;
-    gap: 0.75rem;
-  }
-  .footerActions {
-    flex-direction: column;
-    width: 100%;
-    gap: 0.5rem;
-  }
-  .continueBtn {
-    width: 100%;
-    justify-content: center;
   }
 }
