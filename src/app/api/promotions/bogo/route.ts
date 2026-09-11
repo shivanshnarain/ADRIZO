@@ -135,6 +135,12 @@ export async function GET(request: NextRequest) {
         color: p.color || 'Standard',
         availableSizes,
         category: p.category ? { id: p.category.id, name: p.category.name, slug: p.category.slug } : null,
+        description: p.description || '',
+        washCare: p.washCare || null,
+        sizeFit: p.sizeFit || null,
+        freeShippingText: p.freeShippingText || null,
+        deliveryText: p.deliveryText || null,
+        returnPolicyText: p.returnPolicyText || null,
       };
     }).filter((p) => p.availableSizes.length > 0);
 

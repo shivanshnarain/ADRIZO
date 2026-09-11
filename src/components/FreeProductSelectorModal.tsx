@@ -1,23 +1,57 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
   Check,
-  Gift,
-  Search,
-  ArrowRight,
-  Minus,
-  Plus,
-  Info,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Gift,
+  ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 import { useCart, CartItem } from '../context/CartContext';
 import { useRouter } from 'next/navigation';
 import styles from './FreeProductSelectorModal.module.css';
+
+// COLORFUL GIFT ICON SVG COMPONENT (Golden box, bright red ribbon & bow, crisp highlights)
+function ColorfulGiftIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={styles.headerGiftIconSvg}
+      aria-hidden="true"
+    >
+      {/* Box bottom with warm gradient/shadow */}
+      <rect x="3.5" y="10" width="17" height="11" rx="2" fill="#F59E0B" />
+      {/* Lid */}
+      <rect x="2.5" y="6" width="19" height="4.5" rx="1.5" fill="#FBBF24" />
+      {/* Vertical ribbon on box and lid */}
+      <rect x="10.25" y="6" width="3.5" height="15" fill="#EF4444" />
+      {/* Horizontal ribbon on lid */}
+      <rect x="2.5" y="8" width="19" height="1.8" fill="#DC2626" opacity="0.4" />
+      {/* Left bow loop */}
+      <path
+        d="M12 6.5C12 6.5 9.5 2 7 2.5C4.5 3 5.5 6.5 12 6.5Z"
+        fill="#EF4444"
+      />
+      {/* Right bow loop */}
+      <path
+        d="M12 6.5C12 6.5 14.5 2 17 2.5C19.5 3 18.5 6.5 12 6.5Z"
+        fill="#EF4444"
+      />
+      {/* Center ribbon knot */}
+      <circle cx="12" cy="6.5" r="1.5" fill="#B91C1C" />
+      {/* Subtle shine highlight on lid */}
+      <line x1="4" y1="7.2" x2="8.5" y2="7.2" stroke="#FEF08A" strokeWidth="1" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 interface FreeProductOption {
   id: string;
@@ -31,6 +65,12 @@ interface FreeProductOption {
   color: string;
   availableSizes: string[];
   category: { id: string; name: string; slug: string } | null;
+  description?: string;
+  washCare?: string | null;
+  sizeFit?: string | null;
+  freeShippingText?: string | null;
+  deliveryText?: string | null;
+  returnPolicyText?: string | null;
   stock?: number;
   totalStock?: number;
 }
@@ -74,6 +114,208 @@ function formatCategoryForFreeCount(catName: string, count: number): string {
   }
 }
 
+// =========================================================================
+// CHILD COMPONENT: FREE PRODUCT CARD WITH INDEPENDENT IMAGE SLIDESHOW
+// =========================================================================
+interface FreeProductCardProps {
+  product: FreeProductOption;
+  index: number;
+  isChecked: boolean;
+  chosenSize?: string;
+  onToggleSelect: (product: FreeProductOption) => void;
+  onOpenDetails: (product: FreeProductOption) => void;
+}
+
+function FreeProductCard({
+  product,
+  index,
+  isChecked,
+  chosenSize,
+  onToggleSelect,
+  onOpenDetails,
+}: FreeProductCardProps) {
+  const images = useMemo(() => {
+    if (product.images && product.images.length > 0) {
+      return product.images;
+    }
+    return [product.image];
+  }, [product.images, product.image]);
+
+  const [activeImgIdx, setActiveImgIdx] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const manualTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isPausedRef = useRef(false);
+
+  // Automatic slideshow with independent timer and staggered start
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    // Stagger initial start per card so cards don't flip simultaneously
+    const initialDelay = 1000 + ((index * 650) % 2400);
+
+    const startInterval = () => {
+      autoTimerRef.current = setInterval(() => {
+        if (!isPausedRef.current) {
+          setActiveImgIdx((prev) => (prev + 1) % images.length);
+        }
+      }, 3500);
+    };
+
+    const initialTimeout = setTimeout(() => {
+      startInterval();
+    }, initialDelay);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      if (autoTimerRef.current) clearInterval(autoTimerRef.current);
+      if (manualTimerRef.current) clearTimeout(manualTimerRef.current);
+    };
+  }, [images.length, index]);
+
+  // Pause on manual user action, then resume after 4s of inactivity
+  const pauseTemporarily = useCallback(() => {
+    isPausedRef.current = true;
+    if (manualTimerRef.current) clearTimeout(manualTimerRef.current);
+    manualTimerRef.current = setTimeout(() => {
+      isPausedRef.current = false;
+    }, 4000);
+  }, []);
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    pauseTemporarily();
+    setActiveImgIdx((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    pauseTemporarily();
+    setActiveImgIdx((prev) => (prev + 1) % images.length);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 35) {
+      pauseTemporarily();
+      if (diff > 0) {
+        // Swiped left -> next image
+        setActiveImgIdx((prev) => (prev + 1) % images.length);
+      } else {
+        // Swiped right -> prev image
+        setActiveImgIdx((prev) => (prev - 1 + images.length) % images.length);
+      }
+    }
+    setTouchStartX(null);
+  };
+
+  const isOutOfStock = product.availableSizes && product.availableSizes.length === 0;
+
+  return (
+    <div
+      className={`${styles.productCard} ${isChecked ? styles.productCardActive : ''}`}
+      onClick={() => onOpenDetails(product)}
+    >
+      {/* Free Ribbon Top Left */}
+      <div className={styles.freeRibbon}>FREE</div>
+
+      {/* Checkbox Top Right */}
+      <button
+        type="button"
+        className={`${styles.cardCheckbox} ${isChecked ? styles.cardCheckboxChecked : ''}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!isOutOfStock) onToggleSelect(product);
+        }}
+        title={isChecked ? 'Deselect hoodie' : 'Select as free hoodie'}
+        aria-label={isChecked ? 'Deselect hoodie' : 'Select as free hoodie'}
+      >
+        {isChecked ? <Check size={12} strokeWidth={3} /> : null}
+      </button>
+
+      {/* Product Image with Slideshow & Touch Swipe */}
+      <div
+        className={styles.cardImageWrapper}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <img
+          src={images[activeImgIdx] || product.image}
+          alt={product.name}
+          className={styles.cardImage}
+          loading="lazy"
+        />
+
+        {images.length > 1 && (
+          <>
+            <button
+              type="button"
+              className={`${styles.imgSliderBtn} ${styles.imgSliderPrev}`}
+              onClick={handlePrev}
+              aria-label="Previous image"
+            >
+              <ChevronLeft size={13} />
+            </button>
+            <button
+              type="button"
+              className={`${styles.imgSliderBtn} ${styles.imgSliderNext}`}
+              onClick={handleNext}
+              aria-label="Next image"
+            >
+              <ChevronRight size={13} />
+            </button>
+
+            {/* Dots */}
+            <div className={styles.imgSliderDots}>
+              {images.map((_, dotIdx) => (
+                <span
+                  key={dotIdx}
+                  className={`${styles.imgSliderDot} ${
+                    dotIdx === activeImgIdx ? styles.imgSliderDotActive : ''
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Card Body */}
+      <div className={styles.cardBody}>
+        <h4 className={styles.cardTitle} title={product.name}>
+          {product.name}
+        </h4>
+
+        {isChecked && chosenSize && chosenSize !== 'Standard' && (
+          <div className={styles.selectedSizeTag}>
+            Size: <strong>{chosenSize}</strong>
+          </div>
+        )}
+
+        <div className={styles.cardPriceRow}>
+          <span className={styles.struckPrice}>
+            ₹{product.price.toLocaleString('en-IN')}
+          </span>
+          <span className={styles.freePriceText}>₹0 FREE</span>
+        </div>
+
+        <div className={styles.cardDetailsHint}>
+          <span>Tap for details →</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// MAIN MODAL COMPONENT
+// =========================================================================
 export default function FreeProductSelectorModal() {
   const router = useRouter();
   const {
@@ -89,7 +331,6 @@ export default function FreeProductSelectorModal() {
     editingPromoGroupId,
     setEditingPromoGroupId,
     cart,
-    addToCart,
     bogoPromoConfig,
   } = useCart();
 
@@ -100,21 +341,18 @@ export default function FreeProductSelectorModal() {
 
   const [products, setProducts] = useState<FreeProductOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSizeFilter, setSelectedSizeFilter] = useState('all');
-  const [selectedColorFilter, setSelectedColorFilter] = useState('all');
-  const [selectedSort, setSelectedSort] = useState('default');
   const [chosenFreeItems, setChosenFreeItems] = useState<SelectedSlotItem[]>([]);
   const [modalOffer, setModalOffer] = useState<any>(null);
   const [qualifyingCategory, setQualifyingCategory] = useState<any>(null);
   const [paidQuantity, setPaidQuantity] = useState(1);
-  const [sameProductStepperQty, setSameProductStepperQty] = useState(1);
   const [limitWarning, setLimitWarning] = useState(false);
 
-  // Multi-image slider index map per product: { [productId]: currentImageIndex }
-  const [productImgIndices, setProductImgIndices] = useState<Record<string, number>>({});
+  // Full Product Details Sheet state
+  const [detailProduct, setDetailProduct] = useState<FreeProductOption | null>(null);
+  const [detailSelectedSize, setDetailSelectedSize] = useState<string>('');
+  const [detailActiveImgIdx, setDetailActiveImgIdx] = useState<number>(0);
 
-  // Size selection popup state
+  // Quick Size Selection modal state (for direct checkbox clicks on multi-size items)
   const [sizeModalProduct, setSizeModalProduct] = useState<FreeProductOption | null>(null);
   const [sizeModalSelectedSize, setSizeModalSelectedSize] = useState<string>('');
 
@@ -123,7 +361,67 @@ export default function FreeProductSelectorModal() {
   // Systematic Size Order: All Sizes -> S -> M -> L -> XL -> XXL
   const SYSTEMATIC_SIZES = useMemo(() => ['S', 'M', 'L', 'XL', 'XXL'], []);
 
-  // Derive the original triggering product that qualified for the offer
+  // =========================================================================
+  // REQUIREMENT 3: ROCK-SOLID BACKGROUND SCROLL LOCK (iOS SAFARI COMPATIBLE)
+  // =========================================================================
+  useEffect(() => {
+    if (!isBogoSelectorOpen) return;
+
+    // 1. Capture exact current window scroll position
+    const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+
+    // 2. Snapshot existing body styles
+    const originalBodyPosition = document.body.style.position;
+    const originalBodyTop = document.body.style.top;
+    const originalBodyLeft = document.body.style.left;
+    const originalBodyRight = document.body.style.right;
+    const originalBodyWidth = document.body.style.width;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    // 3. Freeze body firmly at current offset
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      // 4. Restore original styles cleanly
+      document.body.style.position = originalBodyPosition;
+      document.body.style.top = originalBodyTop;
+      document.body.style.left = originalBodyLeft;
+      document.body.style.right = originalBodyRight;
+      document.body.style.width = originalBodyWidth;
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+
+      // 5. Restore exact scroll offset instantly with zero jump
+      window.scrollTo({
+        top: scrollY,
+        left: 0,
+        behavior: 'instant' as ScrollBehavior,
+      });
+    };
+  }, [isBogoSelectorOpen]);
+
+  // =========================================================================
+  // REQUIREMENT 8: BROWSER BACK BUTTON INTEGRATION FOR PRODUCT DETAILS
+  // =========================================================================
+  useEffect(() => {
+    const handlePopState = () => {
+      if (detailProduct) {
+        setDetailProduct(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [detailProduct]);
+
+  // Derive original triggering product that qualified for offer
   const triggerProduct: SelectedSlotItem | null = useMemo(() => {
     if (editingPromoGroupId) {
       const bundleItems = cart.filter((i) => i.promoGroupId === editingPromoGroupId);
@@ -216,7 +514,6 @@ export default function FreeProductSelectorModal() {
       }
     }
 
-    // Fallback: first non-free, non-bundled paid item from cart
     const firstPaid = cart.find((i) => !i.isFree && !i.promoGroupId);
     if (firstPaid) {
       return {
@@ -256,7 +553,6 @@ export default function FreeProductSelectorModal() {
   const categorySingular = formatCategoryForFreeCount(categoryDisplayName, 1);
   const categoryPlural = formatCategoryForFreeCount(categoryDisplayName, 2);
 
-  // Combine trigger product + all chosen free items into the bundle candidate pool
   const allCandidateItems: SelectedSlotItem[] = useMemo(() => {
     const pool: SelectedSlotItem[] = [];
     if (triggerProduct) {
@@ -268,12 +564,10 @@ export default function FreeProductSelectorModal() {
     return pool;
   }, [triggerProduct, paidQuantity, chosenFreeItems]);
 
-  // Sort candidate items by actual selling price descending (highest price becomes PAID)
   const sortedCandidateItems: SelectedSlotItem[] = useMemo(() => {
     return [...allCandidateItems].sort((a, b) => b.price - a.price);
   }, [allCandidateItems]);
 
-  // The currently viewed product must always become the paid/main product when opening the offer directly from its product page
   const mainPaidProduct: SelectedSlotItem | null = useMemo(() => {
     if (triggerProduct) {
       return triggerProduct;
@@ -307,14 +601,7 @@ export default function FreeProductSelectorModal() {
         .catch((err) => console.error('Failed to load eligible promotional products', err))
         .finally(() => setLoading(false));
 
-      // Main product size initially influences free product filter if valid
-      if (triggerProduct?.size && SYSTEMATIC_SIZES.includes(triggerProduct.size.toUpperCase())) {
-        setSelectedSizeFilter(triggerProduct.size.toUpperCase());
-      } else {
-        setSelectedSizeFilter('all');
-      }
-
-      // If editing an existing bundle, pre-populate free items and paid quantity
+      // Pre-populate if editing existing bundle
       if (editingPromoGroupId) {
         const bundleItems = cart.filter((i) => i.promoGroupId === editingPromoGroupId);
         const paidItemsInBundle = bundleItems.filter((i) => i.isPaidPromoItem);
@@ -348,73 +635,22 @@ export default function FreeProductSelectorModal() {
       setPaidQuantity(1);
       setModalOffer(null);
       setQualifyingCategory(null);
-      setSearchQuery('');
-      setSelectedSizeFilter('all');
-      setSelectedColorFilter('all');
-      setSelectedSort('default');
       setSizeModalProduct(null);
+      setDetailProduct(null);
     }
   }, [
     isBogoSelectorOpen,
     editingPromoGroupId,
     triggerProduct?.productId,
     triggerProduct?.categorySlug,
-    triggerProduct?.size,
     cart,
-    SYSTEMATIC_SIZES,
   ]);
 
-  const availableColorsList = useMemo(() => {
-    const colorSet = new Set<string>();
-    products.forEach((p) => {
-      if (p.color && p.color !== 'Standard' && p.color !== 'Default') {
-        colorSet.add(p.color.trim());
-      }
-    });
-    return Array.from(colorSet).sort((a, b) => a.localeCompare(b));
-  }, [products]);
-
-  // Filter & Sort products strictly within the eligible category
-  const filteredAndSortedProducts = useMemo(() => {
-    let result = products.filter((p) => {
-      const matchSearch =
-        !searchQuery.trim() ||
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.color?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()));
-
-      const matchSize =
-        selectedSizeFilter === 'all' ||
-        p.availableSizes?.some(
-          (sz) => sz.toUpperCase().trim() === selectedSizeFilter.toUpperCase().trim()
-        );
-
-      const matchColor =
-        selectedColorFilter === 'all' ||
-        p.color?.toLowerCase().trim() === selectedColorFilter.toLowerCase().trim();
-
-      return matchSearch && matchSize && matchColor;
-    });
-
-    if (selectedSort === 'price-low') {
-      result = [...result].sort((a, b) => a.price - b.price);
-    } else if (selectedSort === 'price-high') {
-      result = [...result].sort((a, b) => b.price - a.price);
-    } else if (selectedSort === 'newest') {
-      result = [...result].reverse();
-    } else if (selectedSort === 'name-asc') {
-      result = [...result].sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return result;
-  }, [products, searchQuery, selectedSizeFilter, selectedColorFilter, selectedSort]);
-
-  // DYNAMIC PRICING CALCULATION (strictly based on HIGHEST SELLING PRICE):
-  const { youPay, youSave, totalCatalog, is6ProductBonusEligible, is9ProductBonusEligible } = useMemo(() => {
+  // DYNAMIC PRICING CALCULATION
+  const { youPay, youSave, totalCatalog } = useMemo(() => {
     const basePrice = triggerProduct?.price || (mainPaidProduct ? mainPaidProduct.price : 1999);
     const rawPaidSum = basePrice * paidQuantity;
 
-    // Check 9-product and 6-product bundle conditions:
     const is9ProductBonusEligible = paidQuantity >= 3 && chosenFreeItems.length >= 6;
     const is6ProductBonusEligible = paidQuantity >= 2 && chosenFreeItems.length >= 4;
     const bonusDiscount = is9ProductBonusEligible
@@ -430,7 +666,6 @@ export default function FreeProductSelectorModal() {
       (acc, it) => acc + (it.originalPrice || it.price || mainMrp),
       0
     );
-    // For unselected free slots, estimate based on main product's originalPrice (MRP)
     const unchosenSlotsCount = Math.max(0, freeQuantity - chosenFreeItems.length);
     const estimatedRemainingMrp = unchosenSlotsCount * mainMrp;
     const catSum = (mainMrp * paidQuantity) + freeMrpSum + estimatedRemainingMrp;
@@ -440,8 +675,6 @@ export default function FreeProductSelectorModal() {
       youPay: finalPayable,
       youSave: savings,
       totalCatalog: catSum,
-      is6ProductBonusEligible,
-      is9ProductBonusEligible,
     };
   }, [triggerProduct, mainPaidProduct, paidQuantity, chosenFreeItems, freeQuantity]);
 
@@ -499,12 +732,12 @@ export default function FreeProductSelectorModal() {
     setChosenFreeItems((prev) => [...prev, newFreeItem]);
   };
 
-  // Toggle selection of a product from the grid (Option B)
+  // Toggle selection from the grid
   const handleToggleProductSelection = (product: FreeProductOption) => {
     const existingIndex = chosenFreeItems.findIndex((f) => f.productId === product.id);
 
     if (existingIndex !== -1) {
-      // Deselect immediately -> counter decrements cleanly
+      // Deselect immediately
       setChosenFreeItems((prev) => prev.filter((_, idx) => idx !== existingIndex));
       return;
     }
@@ -532,7 +765,6 @@ export default function FreeProductSelectorModal() {
       return;
     }
 
-    // If product requires size selection, open the Size Selection Popup
     if (product.availableSizes && product.availableSizes.length > 1) {
       const triggerSize = triggerProduct?.size || 'M';
       const initialSize = product.availableSizes.includes(triggerSize)
@@ -547,24 +779,37 @@ export default function FreeProductSelectorModal() {
     }
   };
 
-  // Multi-image slider navigation
-  const handlePrevImage = (productId: string, totalImages: number) => {
-    setProductImgIndices((prev) => {
-      const current = prev[productId] || 0;
-      const nextIdx = (current - 1 + totalImages) % totalImages;
-      return { ...prev, [productId]: nextIdx };
-    });
+  // Open full product details view
+  const handleOpenDetails = (product: FreeProductOption) => {
+    setDetailProduct(product);
+    setDetailActiveImgIdx(0);
+
+    const existing = chosenFreeItems.find((f) => f.productId === product.id);
+    if (existing?.size && existing.size !== 'Standard') {
+      setDetailSelectedSize(existing.size);
+    } else {
+      const triggerSize = triggerProduct?.size || 'M';
+      const initialSize = product.availableSizes.includes(triggerSize)
+        ? triggerSize
+        : product.availableSizes[0] || 'M';
+      setDetailSelectedSize(initialSize);
+    }
+
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ adrizoBogoDetail: true, productId: product.id }, '');
+    }
   };
 
-  const handleNextImage = (productId: string, totalImages: number) => {
-    setProductImgIndices((prev) => {
-      const current = prev[productId] || 0;
-      const nextIdx = (current + 1) % totalImages;
-      return { ...prev, [productId]: nextIdx };
-    });
+  // Close full product details view with browser history alignment
+  const handleCloseDetailModal = () => {
+    if (typeof window !== 'undefined' && window.history.state?.adrizoBogoDetail) {
+      window.history.back();
+    } else {
+      setDetailProduct(null);
+    }
   };
 
-  // Close modal safely without corrupting cart
+  // Close main modal safely without corrupting cart
   const handleCloseModal = () => {
     setIsBogoSelectorOpen(false);
     setBuyNowPromoItem(null);
@@ -572,6 +817,7 @@ export default function FreeProductSelectorModal() {
     setEditingPromoGroupId(null);
     setChosenFreeItems([]);
     setSizeModalProduct(null);
+    setDetailProduct(null);
   };
 
   // Skip offer & buy only the paid item
@@ -612,7 +858,6 @@ export default function FreeProductSelectorModal() {
       return;
     }
 
-    // Build atomic bundle items: `paidQuantity` paid items + `freeQuantity` free items
     const bundleItemsToSubmit: CartItem[] = [];
 
     // 1. Paid items
@@ -688,19 +933,33 @@ export default function FreeProductSelectorModal() {
 
   const totalBundleItemsCount = buyQuantity + freeQuantity;
 
+  // Detail product image list
+  const detailImages = detailProduct
+    ? (detailProduct.images && detailProduct.images.length > 0
+        ? detailProduct.images
+        : [detailProduct.image])
+    : [];
+
+  const isDetailProductSelected = detailProduct
+    ? chosenFreeItems.some((f) => f.productId === detailProduct.id)
+    : false;
+
   const modalContent = (
     <div className={styles.modalOverlay} onClick={handleCloseModal}>
       <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
         {/* =========================================================================
-            SECTION 1: SPECIAL OFFER SINGLE-LINE HEADER
+            REQUIREMENT 1: SPECIAL OFFER HEADER WITH COLORFUL GIFT & CUSTOM BADGE
             ========================================================================= */}
         <div className={styles.modalHeader}>
           <div className={styles.singleLineOfferTitle}>
-            <Gift size={16} className={styles.headerGiftIcon} />
+            <ColorfulGiftIcon size={18} />
             <span className={styles.specialOfferText}>SPECIAL OFFER</span>
             <span className={styles.headerDash}>—</span>
-            <span className={styles.bogoOfferText}>
-              BUY {buyQuantity} GET {freeQuantity} FREE
+            <span className={styles.bogoOfferPhrase}>
+              <span className={styles.bogoBuyText}>BUY</span>
+              <span className={styles.bogoDigitBox}>{buyQuantity}</span>
+              <span className={styles.bogoGetText}>GET</span>
+              <span className={styles.bogoFreeText}>{freeQuantity} FREE</span>
             </span>
           </div>
 
@@ -716,7 +975,7 @@ export default function FreeProductSelectorModal() {
         </div>
 
         {/* =========================================================================
-            SCROLLABLE MODAL CONTENT
+            REQUIREMENT 4: SCROLLABLE MODAL BODY (INDEPENDENT INTERNAL SCROLL)
             ========================================================================= */}
         <div className={styles.modalBody}>
           {/* SECTION 2: Selected Status immediately below the header */}
@@ -787,12 +1046,12 @@ export default function FreeProductSelectorModal() {
             </div>
           </div>
 
-          {/* SECTION 6: Pricing Summary — Single Compact Row */}
+          {/* =========================================================================
+              REQUIREMENT 2: CATALOG VALUE FIX — PERFECTLY CENTERED, NO OVERFLOW
+              ========================================================================= */}
           <div className={styles.pricingRowCard}>
             <div className={styles.pricingMetricCol}>
-              <span className={styles.metricLabel}>
-                CATALOG VALUE ({totalBundleItemsCount} ITEMS)
-              </span>
+              <span className={styles.metricLabel}>CATALOG VALUE</span>
               <span className={styles.metricCatalogPrice}>
                 ₹{totalCatalog.toLocaleString('en-IN')}
               </span>
@@ -823,7 +1082,9 @@ export default function FreeProductSelectorModal() {
             <span>Buy {buyQuantity} + {freeQuantity} Free</span>
           </div>
 
-          {/* SECTION 9 & 10: Free Product Grid (Search, Size, Color, Sort REMOVED completely!) */}
+          {/* =========================================================================
+              REQUIREMENTS 5, 6, 9: FREE PRODUCT GRID WITH INDEPENDENT SLIDESHOWS
+              ========================================================================= */}
           <div ref={productGridRef} className={styles.productGrid}>
             {loading ? (
               <div className={styles.gridEmptyMessage}>
@@ -834,118 +1095,247 @@ export default function FreeProductSelectorModal() {
                 No eligible {categoryPlural} available.
               </div>
             ) : (
-              products.map((product) => {
+              products.map((product, idx) => {
                 const isChecked = chosenFreeItems.some((f) => f.productId === product.id);
-                const isOutOfStock = product.availableSizes && product.availableSizes.length === 0;
-
-                const productImages =
-                  product.images && product.images.length > 0 ? product.images : [product.image];
-                const activeImgIdx = productImgIndices[product.id] || 0;
-                const currentImg = productImages[activeImgIdx] || product.image;
-                const hasMultipleImages = productImages.length > 1;
+                const chosenItem = chosenFreeItems.find((f) => f.productId === product.id);
 
                 return (
-                  <div
+                  <FreeProductCard
                     key={product.id}
-                    className={`${styles.productCard} ${
-                      isChecked ? styles.productCardActive : ''
-                    }`}
-                    onClick={() => !isOutOfStock && handleToggleProductSelection(product)}
-                  >
-                    {/* Free Ribbon Top Left */}
-                    <div className={styles.freeRibbon}>FREE</div>
-
-                    {/* Square Checkbox Top Right with Green Checkmark */}
-                    <div
-                      className={`${styles.cardCheckbox} ${
-                        isChecked ? styles.cardCheckboxChecked : ''
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!isOutOfStock) handleToggleProductSelection(product);
-                      }}
-                    >
-                      {isChecked && <Check size={12} strokeWidth={3} />}
-                    </div>
-
-                    {/* Product Image */}
-                    <div className={styles.cardImageWrapper}>
-                      <img
-                        src={currentImg}
-                        alt={product.name}
-                        className={styles.cardImage}
-                        loading="lazy"
-                      />
-                      {hasMultipleImages && (
-                        <>
-                          <button
-                            type="button"
-                            className={`${styles.imgSliderBtn} ${styles.imgSliderPrev}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePrevImage(product.id, productImages.length);
-                            }}
-                            aria-label="Previous image"
-                          >
-                            <ChevronLeft size={12} />
-                          </button>
-                          <button
-                            type="button"
-                            className={`${styles.imgSliderBtn} ${styles.imgSliderNext}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNextImage(product.id, productImages.length);
-                            }}
-                            aria-label="Next image"
-                          >
-                            <ChevronRight size={12} />
-                          </button>
-                          <div className={styles.imgSliderDots}>
-                            {productImages.map((_, idx) => (
-                              <span
-                                key={idx}
-                                className={`${styles.imgSliderDot} ${
-                                  idx === activeImgIdx ? styles.imgSliderDotActive : ''
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Product Details */}
-                    <div className={styles.cardBody}>
-                      <h4 className={styles.cardTitle} title={product.name}>
-                        {product.name}
-                      </h4>
-
-                      {isChecked && (() => {
-                        const chosen = chosenFreeItems.find((f) => f.productId === product.id);
-                        return chosen?.size && chosen.size !== 'Standard' ? (
-                          <div className={styles.selectedSizeTag}>
-                            Size: <strong>{chosen.size}</strong>
-                          </div>
-                        ) : null;
-                      })()}
-
-                      {/* Price Row */}
-                      <div className={styles.cardPriceRow}>
-                        <span className={styles.struckPrice}>
-                          ₹{product.price.toLocaleString('en-IN')}
-                        </span>
-                        <span className={styles.freePriceText}>₹0 FREE</span>
-                      </div>
-                    </div>
-                  </div>
+                    product={product}
+                    index={idx}
+                    isChecked={isChecked}
+                    chosenSize={chosenItem?.size}
+                    onToggleSelect={handleToggleProductSelection}
+                    onOpenDetails={handleOpenDetails}
+                  />
                 );
               })
             )}
           </div>
         </div>
 
-        {/* SECTION 11: Size Selection Modal */}
-        {sizeModalProduct && (
+        {/* =========================================================================
+            REQUIREMENTS 7 & 8: FULL PRODUCT DETAILS SHEET WITH BROWSER BACK SUPPORT
+            ========================================================================= */}
+        {detailProduct && (
+          <div className={styles.detailSheetOverlay} onClick={handleCloseDetailModal}>
+            <div
+              className={styles.detailSheetContainer}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Detail Sheet Header */}
+              <div className={styles.detailSheetHeader}>
+                <button
+                  type="button"
+                  className={styles.detailBackBtn}
+                  onClick={handleCloseDetailModal}
+                  title="Back to offer"
+                >
+                  <ChevronLeft size={20} />
+                  <span>Back to Offer</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.detailCloseBtn}
+                  onClick={handleCloseDetailModal}
+                  aria-label="Close product details"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Detail Sheet Scrollable Body */}
+              <div className={styles.detailSheetBody}>
+                {/* Full Image Gallery Carousel */}
+                <div className={styles.detailGallery}>
+                  <div className={styles.detailMainImageWrap}>
+                    <img
+                      src={detailImages[detailActiveImgIdx] || detailProduct.image}
+                      alt={detailProduct.name}
+                      className={styles.detailMainImage}
+                    />
+                    {detailImages.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          className={`${styles.detailImgNavBtn} ${styles.detailImgPrev}`}
+                          onClick={() =>
+                            setDetailActiveImgIdx(
+                              (prev) => (prev - 1 + detailImages.length) % detailImages.length
+                            )
+                          }
+                          aria-label="Previous image"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.detailImgNavBtn} ${styles.detailImgNext}`}
+                          onClick={() =>
+                            setDetailActiveImgIdx((prev) => (prev + 1) % detailImages.length)
+                          }
+                          aria-label="Next image"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Thumbnail Row */}
+                  {detailImages.length > 1 && (
+                    <div className={styles.detailThumbRow}>
+                      {detailImages.map((imgUrl, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          className={`${styles.detailThumbBtn} ${
+                            idx === detailActiveImgIdx ? styles.detailThumbBtnActive : ''
+                          }`}
+                          onClick={() => setDetailActiveImgIdx(idx)}
+                        >
+                          <img src={imgUrl} alt={`Thumb ${idx + 1}`} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Product Info Section */}
+                <div className={styles.detailInfoSection}>
+                  <div className={styles.detailBadgeRow}>
+                    <span className={styles.detailFreeBadge}>ELIGIBLE FREE HOODIE</span>
+                    {detailProduct.category?.name && (
+                      <span className={styles.detailCategoryBadge}>
+                        {detailProduct.category.name}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className={styles.detailTitle}>{detailProduct.name}</h3>
+
+                  <div className={styles.detailPriceRow}>
+                    <span className={styles.detailStruckPrice}>
+                      ₹{detailProduct.price.toLocaleString('en-IN')}
+                    </span>
+                    <span className={styles.detailFreePrice}>₹0 FREE</span>
+                    <span className={styles.detailSaveTag}>100% OFF</span>
+                  </div>
+
+                  {detailProduct.color && detailProduct.color !== 'Standard' && (
+                    <div className={styles.detailColorRow}>
+                      Color: <strong>{detailProduct.color.toUpperCase()}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {/* Size Selection Section */}
+                <div className={styles.detailSizeSection}>
+                  <div className={styles.detailSizeHeader}>
+                    <span className={styles.detailSectionLabel}>Select Size:</span>
+                    {detailSelectedSize && (
+                      <span className={styles.detailCurrentSize}>
+                        Selected: <strong>{detailSelectedSize}</strong>
+                      </span>
+                    )}
+                  </div>
+                  <div className={styles.detailSizeGrid}>
+                    {SYSTEMATIC_SIZES.filter((sz) =>
+                      detailProduct.availableSizes.some(
+                        (s) => s.toUpperCase() === sz.toUpperCase()
+                      )
+                    ).map((sz) => (
+                      <button
+                        key={sz}
+                        type="button"
+                        className={`${styles.detailSizeBtn} ${
+                          detailSelectedSize === sz ? styles.detailSizeBtnActive : ''
+                        }`}
+                        onClick={() => setDetailSelectedSize(sz)}
+                      >
+                        {sz}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Product Description */}
+                {detailProduct.description && (
+                  <div className={styles.detailAccordionItem}>
+                    <h4 className={styles.detailAccordionTitle}>Product Description</h4>
+                    <p className={styles.detailDescriptionText}>{detailProduct.description}</p>
+                  </div>
+                )}
+
+                {/* Features & Wash Care */}
+                <div className={styles.detailAccordionItem}>
+                  <h4 className={styles.detailAccordionTitle}>Features &amp; Care</h4>
+                  <ul className={styles.detailFeatureList}>
+                    <li>100% Super-combed Premium Heavyweight Cotton Fleece</li>
+                    <li>Double-stitched reinforced seams for long-lasting comfort</li>
+                    <li>Machine wash cold with similar colors, tumble dry low</li>
+                    <li>Pre-shrunk fabric to preserve fit and silhouette</li>
+                  </ul>
+                </div>
+
+                {/* Shipping & Delivery Guarantee */}
+                <div className={styles.detailAccordionItem}>
+                  <h4 className={styles.detailAccordionTitle}>Shipping &amp; Returns</h4>
+                  <p className={styles.detailDeliveryText}>
+                    ✓ Free Express Shipping across India (2–5 Days Delivery)<br />
+                    ✓ 7 Days Easy Returns &amp; Exchanges Policy
+                  </p>
+                </div>
+              </div>
+
+              {/* Detail Sheet Sticky Action Footer */}
+              <div className={styles.detailSheetFooter}>
+                <button
+                  type="button"
+                  className={styles.detailSecondaryBtn}
+                  onClick={handleCloseDetailModal}
+                >
+                  ← Back to Offer
+                </button>
+
+                {isDetailProductSelected ? (
+                  <button
+                    type="button"
+                    className={styles.detailRemoveBtn}
+                    onClick={() => {
+                      handleToggleProductSelection(detailProduct);
+                      handleCloseDetailModal();
+                    }}
+                  >
+                    Remove Free Selection
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.detailSelectBtn}
+                    disabled={!detailSelectedSize}
+                    onClick={() => {
+                      if (!detailSelectedSize) return;
+                      if (freeQuantity === 1 && chosenFreeItems.length >= 1) {
+                        setChosenFreeItems([]);
+                      }
+                      addFreeItemWithChosenSize(detailProduct, detailSelectedSize);
+                      handleCloseDetailModal();
+                    }}
+                  >
+                    {detailSelectedSize
+                      ? `Select Size ${detailSelectedSize} & Add Free`
+                      : 'Please Select a Size'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Direct Size Selection Modal (Quick selector for checkbox clicks) */}
+        {sizeModalProduct && !detailProduct && (
           <div
             className={styles.sizeModalOverlay}
             onClick={() => setSizeModalProduct(null)}
@@ -988,7 +1378,7 @@ export default function FreeProductSelectorModal() {
                 </div>
 
                 <div className={styles.sizeSelectionArea}>
-                  <span className={styles.sizeSelectLabel}>Available:</span>
+                  <span className={styles.sizeSelectLabel}>Available Sizes:</span>
                   <div className={styles.sizePillGrid}>
                     {SYSTEMATIC_SIZES.filter((sz) =>
                       sizeModalProduct.availableSizes.some(
@@ -1039,7 +1429,9 @@ export default function FreeProductSelectorModal() {
           </div>
         )}
 
-        {/* SECTION 11: Sticky Footer Bar */}
+        {/* =========================================================================
+            REQUIREMENT 4: FIXED BOTTOM SUMMARY & CTA TRAY
+            ========================================================================= */}
         <div className={styles.footerBar}>
           <div className={styles.footerInfoRow}>
             <span className={styles.footerLabel}>
@@ -1086,5 +1478,7 @@ export default function FreeProductSelectorModal() {
     </div>
   );
 
-  return mounted && typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
+  return mounted && typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : null;
 }
