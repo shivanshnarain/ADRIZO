@@ -5,7 +5,7 @@ import styles from "./page.module.css";
 import { prisma } from '../../lib/prisma';
 import ProductCard from '../../components/ProductCard';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 // Static category data — exactly 4 items in required order:
 // ZIPPER POLO → BUTTON POLO → MEN'S HOODIE → WOMEN'S HOODIE

@@ -1,7 +1,8 @@
 import React from 'react';
+import Image from 'next/image';
 
 interface AdrizoLogoProps {
-  /** Total height of the rendered SVG in px. Default 22 */
+  /** Total height of the rendered logo in px. Default 22 */
   height?: number;
   className?: string;
   /** Color of the "A". Default #FFC800 */
@@ -11,39 +12,33 @@ interface AdrizoLogoProps {
 }
 
 /**
- * ADRIZO brand logotype — single unified wordmark.
- * A is rendered in yellow (#FFC800), DRIZO in white.
- * Both use the exact same font-family, font-size, font-weight,
- * letter-spacing, baseline and visual scale — no geometric shapes.
+ * ADRIZO brand logotype — rendered using the exact official wordmark asset.
+ * When wordmarkColor is dark (e.g. #111111, black), uses /adrizo-logo-dark.png.
+ * Otherwise uses /adrizo-logo-transparent.png for dark/black backgrounds.
  */
 export default function AdrizoLogo({
   height = 22,
   className,
-  accentColor = '#FFC800',
   wordmarkColor = '#ffffff',
 }: AdrizoLogoProps) {
+  const isDark =
+    wordmarkColor === '#111111' ||
+    wordmarkColor === '#18181B' ||
+    wordmarkColor === '#000000' ||
+    wordmarkColor.toLowerCase() === 'black';
+
+  const logoSrc = isDark ? '/adrizo-logo-dark.png' : '/adrizo-logo-transparent.png';
+  const width = Math.round((height * 600) / 82);
+
   return (
-    <svg
-      viewBox="0 0 96 18"
+    <Image
+      src={logoSrc}
+      alt="ADRIZO"
+      width={width}
       height={height}
-      width={(height * 96) / 18}
-      aria-label="ADRIZO"
-      role="img"
+      priority
       className={className}
-      xmlns="http://www.w3.org/2000/svg"
-      overflow="visible"
-    >
-      <text
-        y="14"
-        fontFamily="'Helvetica Neue', Helvetica, Arial, sans-serif"
-        fontSize="16"
-        fontWeight="500"
-        letterSpacing="3"
-        textAnchor="start"
-        dominantBaseline="auto"
-      >
-        <tspan fill={accentColor}>A</tspan><tspan fill={wordmarkColor}>DRIZO</tspan>
-      </text>
-    </svg>
+      style={{ width: 'auto', height: `${height}px`, objectFit: 'contain' }}
+    />
   );
 }

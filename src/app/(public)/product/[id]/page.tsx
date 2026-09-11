@@ -2,6 +2,8 @@ import { prisma } from '../../../../lib/prisma';
 import ProductClient from './ProductClient';
 import { notFound } from 'next/navigation';
 
+export const revalidate = 60;
+
 export default async function ProductDetailsPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const resolvedParams = await (params as any);
   const id = resolvedParams.id || (params as any)?.id;

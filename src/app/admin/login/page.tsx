@@ -60,15 +60,15 @@ export default function AdminLoginPage() {
         <div className={styles.header}>
           <div className={styles.brandIconWrapper}>
             <Image 
-              src="/logo-transparent.png" 
-              alt="ADrizo" 
-              width={48} 
-              height={48} 
+              src="/adrizo-logo-dark.png" 
+              alt="ADRIZO" 
+              width={160} 
+              height={22} 
               className={styles.brandLogo}
               priority
+              style={{ width: '160px', height: 'auto', objectFit: 'contain' }}
             />
           </div>
-          <h1 className={styles.title}>ADrizo</h1>
           <p className={styles.subtitle}>Management Console &bull; Internal Access</p>
         </div>
 

@@ -1,17 +1,22 @@
 import React from "react";
+import Image from "next/image";
 import styles from "./BrandLoader.module.css";
-import AdrizoLogo from "./AdrizoLogo";
 
 export default function BrandLoader() {
   return (
     <div className={styles.loaderContainer} role="status" aria-label="Loading">
       <div className={styles.logoWrapper}>
-        {/* Same ADRIZO wordmark as the navbar — yellow A, white DRIZO */}
-        <AdrizoLogo
-          height={36}
-          accentColor="#FFC800"
-          wordmarkColor="#111111"
+        <Image
+          src="/adrizo-logo-dark.png"
+          alt="ADRIZO"
+          width={170}
+          height={23}
+          priority
+          className={styles.logo}
         />
+        <div className={styles.progressBarWrapper}>
+          <div className={styles.progressBar} />
+        </div>
       </div>
     </div>
   );

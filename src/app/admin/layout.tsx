@@ -71,18 +71,15 @@ export default function AdminLayout({
       <aside className={`${styles.sidebar} ${mobileMenuOpen ? styles.sidebarMobileOpen : ''}`}>
         {/* Brand */}
         <div className={styles.brand}>
-          <div className={styles.brandLogoWrapper}>
-            <Image 
-              src="/logo-transparent.png" 
-              alt="ADrizo" 
-              width={28} 
-              height={28} 
-              className={styles.brandLogo}
-              priority
-            />
-          </div>
           <div className={styles.brandTextGroup}>
-            <span className={styles.brandWordmark}>A D R I Z O</span>
+            <Image 
+              src="/adrizo-logo-dark.png" 
+              alt="ADRIZO" 
+              width={130} 
+              height={18} 
+              priority
+              style={{ width: '130px', height: 'auto', objectFit: 'contain' }}
+            />
             <span className={styles.brandSubText}>ADMIN PANEL</span>
           </div>
         </div>

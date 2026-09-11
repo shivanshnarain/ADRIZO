@@ -71,15 +71,6 @@ export default function ProductCard({ product, badgeText, brandText }: ProductCa
     imageList.push('https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=800');
   }
 
-  // Preload all images on mount for instant, flicker-free hover transitions
-  useEffect(() => {
-    if (imageList.length > 1 && typeof window !== 'undefined') {
-      imageList.forEach((url) => {
-        const img = new window.Image();
-        img.src = url;
-      });
-    }
-  }, [imageList]);
 
   // Extract default color & size for seamless "Buy Now" / Cart integration
   let defaultColor = 'Default';

@@ -292,22 +292,14 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
     setActiveImageIndex((prev) => (prev < imagesList.length - 1 ? prev + 1 : 0));
   }, [imagesList.length]);
 
-  // Floating thumbnails auto-hide/show state & timers (Mobile only)
+  // Floating thumbnails hide/show state & timers (Mobile only)
   const [areThumbnailsVisible, setAreThumbnailsVisible] = useState(true);
-  const hideThumbnailsTimerRef = useRef<NodeJS.Timeout | null>(null);
   const slideshowResumeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isSwipeGestureRef = useRef<boolean>(false);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
 
-  const triggerThumbnailAutoHide = useCallback((durationMs = 2500) => {
-    setAreThumbnailsVisible(false);
-    if (hideThumbnailsTimerRef.current) {
-      clearTimeout(hideThumbnailsTimerRef.current);
-    }
-    hideThumbnailsTimerRef.current = setTimeout(() => {
-      setAreThumbnailsVisible(true);
-    }, durationMs);
-  }, []);
-
-  const pauseSlideshowTemporarily = useCallback((resumeDelayMs = 4000) => {
+  const pauseSlideshowTemporarily = useCallback((resumeDelayMs = 5000) => {
     setIsSlideshowPaused(true);
     if (slideshowResumeTimerRef.current) {
       clearTimeout(slideshowResumeTimerRef.current);
@@ -319,31 +311,29 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
 
   useEffect(() => {
     return () => {
-      if (hideThumbnailsTimerRef.current) clearTimeout(hideThumbnailsTimerRef.current);
       if (slideshowResumeTimerRef.current) clearTimeout(slideshowResumeTimerRef.current);
     };
   }, []);
 
   const handleThumbnailClick = (idx: number) => {
     setActiveImageIndex(idx);
-    triggerThumbnailAutoHide(2500);
-    pauseSlideshowTemporarily(4000);
+    pauseSlideshowTemporarily(5000);
   };
 
   // Mobile Touch Swipe Gesture for Main Image
-  const touchStartXRef = useRef<number | null>(null);
-  const touchStartYRef = useRef<number | null>(null);
-
   const handleMainImageTouchStart = (e: React.TouchEvent) => {
     touchStartXRef.current = e.touches[0].clientX;
     touchStartYRef.current = e.touches[0].clientY;
-    triggerThumbnailAutoHide(2500);
-    pauseSlideshowTemporarily(4000);
+    isSwipeGestureRef.current = false;
+    pauseSlideshowTemporarily(5000);
   };
 
   const handleMainImageTouchMove = (e: React.TouchEvent) => {
     if (touchStartXRef.current !== null) {
-      triggerThumbnailAutoHide(2500);
+      const deltaX = Math.abs(e.touches[0].clientX - touchStartXRef.current);
+      if (deltaX > 15) {
+        isSwipeGestureRef.current = true;
+      }
     }
   };
 
@@ -355,6 +345,7 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
     const deltaY = touchEndY - (touchStartYRef.current || 0);
 
     if (Math.abs(deltaX) > 35 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      isSwipeGestureRef.current = true;
       if (deltaX < 0) {
         handleNextImage();
       } else {
@@ -363,17 +354,19 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
     }
     touchStartXRef.current = null;
     touchStartYRef.current = null;
-    triggerThumbnailAutoHide(2500);
-    pauseSlideshowTemporarily(4000);
+    pauseSlideshowTemporarily(5000);
   };
 
   const handleMainImageClick = () => {
+    // If it was a horizontal swipe gesture, do not toggle thumbnails
+    if (isSwipeGestureRef.current) {
+      isSwipeGestureRef.current = false;
+      return;
+    }
+
     if (typeof window !== 'undefined' && window.innerWidth <= 768) {
-      if (!areThumbnailsVisible) {
-        setAreThumbnailsVisible(true);
-      } else {
-        triggerThumbnailAutoHide(2500);
-      }
+      // Toggle thumbnail row visibility smoothly on mobile
+      setAreThumbnailsVisible((prev) => !prev);
     } else {
       setIsLightboxOpen(true);
     }

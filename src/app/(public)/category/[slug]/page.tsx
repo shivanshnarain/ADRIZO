@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { prisma } from '../../../../lib/prisma';
 import ShopClient from '../../shop/ShopClient';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> | { slug: string } }) {
   const resolvedParams = await (params as any);
