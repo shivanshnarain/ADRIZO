@@ -27,7 +27,7 @@ export async function POST(
     const orderNumber = order.orderNumber;
     const customerEmail = order.customerEmail?.trim();
     const customerPhone = order.customerPhone?.replace(/[^0-9]/g, '') || '';
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.adrizo.in';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.adrizo.com';
     const isCod = order.paymentMethod === 'COD';
 
     // 2. Handle EMAIL Channel

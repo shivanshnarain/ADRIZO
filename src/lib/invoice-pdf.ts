@@ -70,7 +70,7 @@ export async function generateInvoicePdf(order: ResolvedOrder): Promise<Buffer> 
         .font('Helvetica')
         .fontSize(8)
         .fillColor('#A1A1AA')
-        .text('Email: care.adrizo@gmail.com  |  Web: www.adrizo.in', margin, currentY + 38);
+        .text('Email: care.adrizo@gmail.com  |  Web: www.adrizo.com', margin, currentY + 38);
 
       // Top Right: Tax Invoice Metadata
       const rightX = margin + 300;
@@ -554,7 +554,7 @@ export async function generateInvoicePdf(order: ResolvedOrder): Promise<Buffer> 
         .font('Helvetica-Bold')
         .fontSize(7.5)
         .fillColor('#09090B')
-        .text('Need help with your order or returns? Email care.adrizo@gmail.com or visit www.adrizo.in', margin, currentY + 12, {
+        .text('Need help with your order or returns? Email care.adrizo@gmail.com or visit www.adrizo.com', margin, currentY + 12, {
           align: 'center',
           width: contentWidth,
         });

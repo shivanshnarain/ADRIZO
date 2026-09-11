@@ -52,7 +52,7 @@ The following **5 values** are safe defaults explicitly codified or defined acro
 | `SMTP_HOST` | `smtp.gmail.com` | Standard Google SMTP relay server defined in `src/lib/order-email.ts` |
 | `SMTP_PORT` | `465` | SSL/TLS secure SMTP port defined in `src/lib/order-email.ts` |
 | `SMTP_SECURE` | `true` | Required for port 465 SSL connections in `src/lib/order-email.ts` |
-| `NEXT_PUBLIC_APP_URL` | `https://www.adrizo.in` | Storefront canonical URL used in `src/app/api/orders/[id]/send-invoice/route.ts` |
+| `NEXT_PUBLIC_APP_URL` | `https://www.adrizo.com` | Storefront canonical URL used in `src/app/api/orders/[id]/send-invoice/route.ts` |
 
 ---
 
@@ -87,7 +87,7 @@ The following **4 variables** are used in the codebase but were missing from the
 
 2. **`NEXT_PUBLIC_APP_URL`**
    - **Where used:** `src/app/api/orders/[id]/send-invoice/route.ts` (line 30).
-   - **Why needed:** Sets the base URL for downloadable invoice links and customer order receipts (`https://www.adrizo.in` or your Vercel deployment domain).
+   - **Why needed:** Sets the base URL for downloadable invoice links and customer order receipts (`https://www.adrizo.com` or your Vercel deployment domain).
 
 3. **`SHIPROCKET_WEBHOOK_SECRET`**
    - **Where used:** `src/app/api/webhooks/shiprocket/route.ts` (line 21).

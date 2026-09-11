@@ -341,7 +341,7 @@ export async function GET(
         <div class="brand-title">A D ( R ) I Z O</div>
         <div class="brand-sub">Premium Garments &amp; Apparel</div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 6px;">
-          Email: care.adrizo@gmail.com | Web: www.adrizo.in
+          Email: care.adrizo@gmail.com | Web: www.adrizo.com
         </div>
       </div>
       <div class="invoice-badge">

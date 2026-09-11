@@ -246,7 +246,7 @@ function buildOrderEmailHtml(order: ResolvedOrder, isConfirmation = true): strin
             AD(R)IZO Luxury Couture &amp; Atelier
           </p>
           <p style="margin: 0 0 6px 0;">
-            Support: <a href="mailto:care.adrizo@gmail.com" style="color: #0f172a; text-decoration: none; font-weight: 600;">care.adrizo@gmail.com</a> | Visit: <a href="https://www.adrizo.in" style="color: #0f172a; text-decoration: none; font-weight: 600;">www.adrizo.in</a>
+            Support: <a href="mailto:care.adrizo@gmail.com" style="color: #0f172a; text-decoration: none; font-weight: 600;">care.adrizo@gmail.com</a> | Visit: <a href="https://www.adrizo.com" style="color: #0f172a; text-decoration: none; font-weight: 600;">www.adrizo.com</a>
           </p>
           <p style="margin: 0; font-size: 11px;">
             This is an automated transactional notification regarding Order #${order.orderNumber}.
