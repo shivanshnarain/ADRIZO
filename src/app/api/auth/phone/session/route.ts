@@ -5,16 +5,17 @@ import { prisma } from '@/lib/prisma';
 import { getAdminClient } from '@/lib/supabase/admin';
 import { getJwtSecret, getAuthCookieOptions } from '@/lib/auth';
 import { normalizePhoneNumber } from '@/lib/phone';
+import { verifyFirebaseIdToken } from '@/lib/firebase-token';
 
 /**
  * Handles server session creation after Firebase Client verifies the Phone OTP.
- * Expects { firebaseUid: string, phone: string }
+ * Expects { firebaseUid: string, phone: string, idToken?: string, name?: string }
  * Sets customer_token JWT cookie so all existing orders, profile, and checkout flows work seamlessly.
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { firebaseUid, phone, name } = body;
+    const { firebaseUid, phone, name, idToken } = body;
 
     if (!firebaseUid || !phone) {
       return NextResponse.json(
@@ -23,7 +24,23 @@ export async function POST(request: Request) {
       );
     }
 
-    const { national: clean10DigitPhone, international: e164Phone } = normalizePhoneNumber(phone);
+    // Verify Firebase ID token cryptographically if provided
+    let verifiedPhoneFromToken: string | undefined;
+    if (idToken) {
+      const verifiedToken = await verifyFirebaseIdToken(idToken);
+      if (verifiedToken) {
+        if (verifiedToken.uid !== firebaseUid) {
+          return NextResponse.json(
+            { error: 'Invalid authentication token: UID mismatch' },
+            { status: 401 }
+          );
+        }
+        verifiedPhoneFromToken = verifiedToken.phone_number;
+      }
+    }
+
+    const effectivePhone = verifiedPhoneFromToken || phone;
+    const { national: clean10DigitPhone, international: e164Phone } = normalizePhoneNumber(effectivePhone);
     if (!clean10DigitPhone || clean10DigitPhone.length !== 10) {
       return NextResponse.json(
         { error: 'Invalid 10-digit mobile number format' },

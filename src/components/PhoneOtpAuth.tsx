@@ -168,6 +168,7 @@ export default function PhoneOtpAuth({
       // 1. Verify OTP with Firebase Auth
       const userCredential = await confirmationResult.confirm(cleanOtp);
       const firebaseUser = userCredential.user;
+      const idToken = await firebaseUser.getIdToken();
 
       // 2. Establish persistent session with backend
       const sessionRes = await fetch('/api/auth/phone/session', {
@@ -176,6 +177,7 @@ export default function PhoneOtpAuth({
         body: JSON.stringify({
           firebaseUid: firebaseUser.uid,
           phone: phoneNumber.trim(),
+          idToken,
         }),
       });
 
@@ -283,6 +285,7 @@ export default function PhoneOtpAuth({
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
+              autoComplete="one-time-code"
               maxLength={6}
               required
               placeholder="••••••"
