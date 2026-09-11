@@ -96,7 +96,8 @@ export async function POST(req: NextRequest) {
       paymentMethod: rawPaymentMethod = 'COD', 
       couponCode 
     } = body;
-    const paymentMethod = String(rawPaymentMethod || 'COD').trim().toUpperCase();
+    const rawUpper = String(rawPaymentMethod || 'COD').trim().toUpperCase();
+    const paymentMethod = (rawUpper === 'CASH_ON_DELIVERY' || rawUpper === 'CASH-ON-DELIVERY') ? 'COD' : rawUpper;
 
     // 1. Validate Items
     if (!items || !Array.isArray(items) || items.length === 0) {
