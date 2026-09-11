@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, User, Heart, ShoppingCart, Menu, X, ChevronDown, Truck, Sparkles, Package, MapPin, LogOut, MoreVertical } from 'lucide-react';
+import { Search, User, Heart, ShoppingCart, Menu, X, ChevronDown, Truck, Sparkles, Package, MapPin, LogOut } from 'lucide-react';
 import styles from './Header.module.css';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -132,7 +132,7 @@ export default function Header() {
           Frameless, compact, clean, matches Reference Image 1
          ========================================= */}
       <div className={styles.mobileNavbar}>
-        {/* Left Side: Three-dot menu icon */}
+        {/* Left Side: Hamburger menu icon */}
         <button
           type="button"
           className={styles.mobileThreeDotBtn}
@@ -141,7 +141,7 @@ export default function Header() {
           aria-expanded={isMobileMenuOpen}
           id="mobile-nav-menu-btn"
         >
-          {isMobileMenuOpen ? <X size={20} strokeWidth={2} /> : <MoreVertical size={20} strokeWidth={2} />}
+          {isMobileMenuOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
         </button>
 
         {/* Center: ADRIZO Logo (cleaned transparent artwork) */}

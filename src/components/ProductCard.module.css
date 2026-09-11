@@ -173,7 +173,7 @@
 }
 
 .indicatorDotActive {
-  background-color: #059669;
+  background-color: #FFC800;
   width: 14px;
   border-radius: 4px;
 }
@@ -192,7 +192,7 @@
 .brandCategory {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #059669; /* Theme green accent matching reference */
+  color: #FFC800; /* ADRIZO brand yellow matching reference */
   text-transform: capitalize;
   margin-bottom: 3px;
   letter-spacing: 0.01em;

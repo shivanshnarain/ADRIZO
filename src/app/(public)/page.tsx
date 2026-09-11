@@ -7,19 +7,20 @@ import ProductCard from '../../components/ProductCard';
 
 export const dynamic = 'force-dynamic';
 
-// Static category data — links to existing shop filters
+// Static category data — exactly 4 items in required order:
+// ZIPPER POLO → BUTTON POLO → MEN'S HOODIE → WOMEN'S HOODIE
 const CATEGORIES = [
-  { name: 'T-SHIRTS', slug: 't-shirts', href: '/shop?category=t-shirts' },
-  { name: 'HOODIES',  slug: 'hoodies',  href: '/shop?category=hoodies'  },
-  { name: 'SHIRTS',   slug: 'shirts',   href: '/shop?category=shirts'   },
-  { name: 'PANTS',    slug: 'pants',    href: '/shop?category=pants'    },
+  { name: 'ZIPPER POLO', slug: 'zipper-polo', href: '/shop?q=Zipper+Polo' },
+  { name: 'BUTTON POLO', slug: 'button-polo', href: '/shop?q=Button+Polo' },
+  { name: "MEN'S HOODIE", slug: 'mens-hoodie', href: '/shop?category=hoodies' },
+  { name: "WOMEN'S HOODIE", slug: 'womens-hoodie', href: '/shop?category=hoodies' },
 ];
 
 const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
-  't-shirts': 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=800',
-  'hoodies':  'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&q=80&w=800',
-  'shirts':   'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&q=80&w=800',
-  'pants':    'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&q=80&w=800',
+  'zipper-polo': 'https://res.cloudinary.com/zytsxasx/image/upload/v1788418791/adrizo/products/ngydvzqdl0nrk54ib5cf.png', // Jet Black Zipper Polo
+  'button-polo': 'https://res.cloudinary.com/zytsxasx/image/upload/v1788855707/adrizo/products/i9vscqrg4puufvbgdytj.png', // Olive Green Button Polo
+  'mens-hoodie': 'https://res.cloudinary.com/zytsxasx/image/upload/v1789076190/adrizo/products/m3cabwopcf8hwa74nx8c.png', // Chocolate Brown Unisex Hoodie (Men's representation)
+  'womens-hoodie': 'https://res.cloudinary.com/zytsxasx/image/upload/v1789075295/adrizo/products/aymd0p7wdwpb5fc0vquz.png', // White Unisex Hoodie (Women's representation)
 };
 
 export default async function Home() {
@@ -41,15 +42,8 @@ export default async function Home() {
     featuredProducts = [];
   }
 
-  // Build per-category image from product data with high quality fallbacks
-  const categoryImages: Record<string, string> = {};
-  for (const cat of CATEGORIES) {
-    const match = featuredProducts.find(
-      (p) => p.category?.slug?.toLowerCase().includes(cat.slug) ||
-             p.category?.name?.toLowerCase().includes(cat.slug.replace('-', ''))
-    );
-    categoryImages[cat.slug] = match?.images?.[0]?.url || DEFAULT_CATEGORY_IMAGES[cat.slug];
-  }
+  // Exact category images from project assets with guaranteed fallbacks
+  const categoryImages: Record<string, string> = { ...DEFAULT_CATEGORY_IMAGES };
 
   return (
     <>
