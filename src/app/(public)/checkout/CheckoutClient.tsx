@@ -1304,17 +1304,20 @@ export default function CheckoutClient() {
                 <span className={`${styles.stepNumber} ${user ? styles.stepNumberComplete : ''}`}>
                   {user ? <Check size={16} /> : '1'}
                 </span>
-                <div>
-                  <h2 className={styles.stepTitle}>
-                    Account
-                  </h2>
+                <div style={{ minWidth: 0 }}>
+                  <h2 className={styles.stepTitle}>Account</h2>
                   {user ? (
-                    <p style={{ margin: '2px 0 0', fontSize: '0.85rem', color: '#52525b' }}>
-                      Logged in as {user.name || user.email} ({user.email})
-                    </p>
+                    <>
+                      <p style={{ margin: '3px 0 1px', fontSize: '0.875rem', fontWeight: 700, color: '#09090b' }}>
+                        {user.name || 'Customer'}
+                      </p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#52525b', wordBreak: 'break-all' }}>
+                        {user.email}
+                      </p>
+                    </>
                   ) : (
-                    <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#71717a' }}>
-                      Please sign in or create an account to link your order and delivery updates.
+                    <p style={{ margin: '3px 0 0', fontSize: '0.8rem', color: '#71717a', lineHeight: 1.4 }}>
+                      Please sign in or create an account to continue.
                     </p>
                   )}
                 </div>
@@ -1329,7 +1332,6 @@ export default function CheckoutClient() {
                     setAddressConfirmed(false);
                   }}
                   className={styles.blueActionLink}
-                  style={{ whiteSpace: 'nowrap' }}
                 >
                   Switch Account
                 </button>
@@ -1569,13 +1571,13 @@ export default function CheckoutClient() {
                 <span className={`${styles.stepNumber} ${addressConfirmed ? styles.stepNumberComplete : ''}`}>
                   {addressConfirmed ? <Check size={16} /> : '2'}
                 </span>
-                <div>
-                  <h2 className={styles.stepTitle}>Step 2: Delivery Address</h2>
+                <div style={{ minWidth: 0 }}>
+                  <h2 className={styles.stepTitle}>Delivery Address</h2>
                 </div>
               </div>
 
               {user && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>
+                <div className={styles.step2Actions}>
                   <button
                     type="button"
                     onClick={() => {
@@ -1584,7 +1586,7 @@ export default function CheckoutClient() {
                     }}
                     className={styles.blueActionLink}
                   >
-                    Add New Address
+                    Add New
                   </button>
                   <span className={styles.pipeDivider}>|</span>
                   <button
@@ -1592,7 +1594,7 @@ export default function CheckoutClient() {
                     onClick={() => setIsChangeAddressOpen(prev => !prev)}
                     className={styles.blueActionLink}
                   >
-                    Change Address
+                    Change
                   </button>
                 </div>
               )}
@@ -2003,12 +2005,11 @@ export default function CheckoutClient() {
                     </div>
                   )}
 
-                  <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ marginTop: '1.5rem' }}>
                     <button
                       type="submit"
                       disabled={savingAddress || !deliverability.deliverable}
                       className={styles.primaryCtaBtn}
-                      style={{ padding: '0.85rem 2rem' }}
                     >
                       {savingAddress ? 'Saving Address...' : 'Deliver to This Address & Continue to Payment'}
                     </button>
@@ -2019,309 +2020,64 @@ export default function CheckoutClient() {
           </div>
 
           {/* ========================================================= */}
-          {/* STEP 3: PAYMENT METHOD (RAZORPAY ONLINE VS COD)           */}
+          {/* ORDER SUMMARY CARD (appears before payment on all views)   */}
           {/* ========================================================= */}
-          <div className={`${styles.stepCard} ${currentStep === 3 ? styles.stepCardActive : ''}`}>
-            <div className={styles.stepHeader}>
-              <div className={styles.stepHeaderLeft}>
-                <span className={styles.stepNumber}>3</span>
-                <div>
-                  <h2 className={styles.stepTitle}>Step 3: Select Payment Method</h2>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#71717a' }}>
-                    Choose your preferred payment mode. 100% secure payment gateway with instant confirmation.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ marginTop: '1.25rem', borderTop: '1px solid #f4f4f5', paddingTop: '1.25rem' }}>
-              {orderError && (
-                <div className={styles.deliveryBadgeError} style={{ marginBottom: '1.25rem' }}>
-                  <AlertCircle size={16} />
-                  <span>{orderError}</span>
-                </div>
-              )}
-
-              {/* Option 1: ONLINE PAYMENT (RAZORPAY) */}
-              <div 
-                onClick={() => setPaymentMethod('ONLINE_RAZORPAY')}
-                style={{
-                  border: `1.5px solid ${paymentMethod === 'ONLINE_RAZORPAY' ? '#2563eb' : '#e4e4e7'}`,
-                  borderRadius: '10px',
-                  padding: '1.15rem 1.25rem',
-                  marginBottom: '0.85rem',
-                  cursor: 'pointer',
-                  background: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    border: `2px solid ${paymentMethod === 'ONLINE_RAZORPAY' ? '#2563eb' : '#cbd5e1'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    {paymentMethod === 'ONLINE_RAZORPAY' && (
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2563eb' }} />
-                    )}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#09090b' }}>
-                      Online Payment (UPI, Cards, NetBanking, Wallets)
-                    </div>
-                  </div>
-                </div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, background: '#dcfce7', color: '#15803d', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>
-                  Recommended
-                </span>
-              </div>
-
-              {/* Option 2: CASH ON DELIVERY (COD) */}
-              <div 
-                onClick={() => {
-                  if (isCodEligible) setPaymentMethod('COD');
-                }}
-                style={{
-                  border: `1.5px solid ${paymentMethod === 'COD' ? '#2563eb' : '#e4e4e7'}`,
-                  borderRadius: '10px',
-                  padding: '1.15rem 1.25rem',
-                  cursor: isCodEligible ? 'pointer' : 'not-allowed',
-                  opacity: isCodEligible ? 1 : 0.65,
-                  background: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    border: `2px solid ${paymentMethod === 'COD' ? '#2563eb' : '#cbd5e1'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}>
-                    {paymentMethod === 'COD' && (
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2563eb' }} />
-                    )}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#09090b' }}>
-                      Cash on Delivery (COD)
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: '#71717a', marginTop: '2px' }}>
-                      Pay ₹99 now to confirm; balance on delivery
-                    </div>
-                  </div>
-                </div>
-                {!isCodEligible && (
-                  <span style={{ fontSize: '0.75rem', color: '#b45309', fontWeight: 600 }}>
-                    {rawSubtotal < POLICY_CONFIG.shipping.codMinOrder ? `Min ₹${POLICY_CONFIG.shipping.codMinOrder}` : `Max ₹${POLICY_CONFIG.shipping.codMaxOrder}`}
-                  </span>
-                )}
-              </div>
-
-              {/* COD Explanation and Payment Breakdown */}
-              {paymentMethod === 'COD' && (
-                <div style={{
-                  marginTop: '0.75rem',
-                  padding: '0.9rem 1.15rem',
-                  background: '#fffbeb',
-                  border: '1px solid #fde68a',
-                  borderRadius: '8px',
-                  fontSize: '0.85rem',
-                  color: '#92400e',
-                  lineHeight: '1.45'
-                }}>
-                  <div style={{ fontWeight: 800, color: '#78350f', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
-                    Cash on Delivery
-                  </div>
-                  <div style={{ marginBottom: '0.4rem' }}>
-                    Pay ₹99 now to confirm your COD order.<br />
-                    The remaining amount will be payable when your order is delivered.
-                  </div>
-                  <div style={{
-                    marginTop: '0.65rem',
-                    paddingTop: '0.5rem',
-                    borderTop: '1px solid #fef3c7',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.35rem',
-                    fontSize: '0.8rem'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#52525b' }}>
-                      <span>Order Total:</span>
-                      <strong>₹{finalPayable.toFixed(2)}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#15803d' }}>
-                      <span>COD Confirmation Paid:</span>
-                      <strong>₹99.00</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#b45309' }}>
-                      <span>Remaining Payable on Delivery:</span>
-                      <strong>₹{Math.max(0, finalPayable - 99).toFixed(2)}</strong>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Primary CTA: Pay & Confirm COD / Online */}
-          <button
-            type="button"
-            disabled={processing || !addressConfirmed}
-            onClick={handlePlaceOrder}
-            className={styles.yellowPaymentCta}
-          >
-            {processing
-              ? paymentMethod === 'ONLINE_RAZORPAY'
-                ? 'SECURELY CONNECTING TO RAZORPAY…'
-                : 'CONNECTING TO RAZORPAY FOR ₹99 CONFIRMATION…'
-              : paymentMethod === 'ONLINE_RAZORPAY'
-              ? `Pay ₹${finalPayable.toFixed(2)} Online →`
-              : 'Pay ₹99 & Confirm COD Order'}
-          </button>
-        </div>
-
-        {/* ============================================================= */}
-        {/* RIGHT COLUMN: ORDER SUMMARY SIDEBAR                           */}
-        {/* ============================================================= */}
-        <div style={{ position: 'sticky', top: '2rem' }}>
-          <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f4f4f5', paddingBottom: '0.75rem' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#09090b', margin: 0 }}>
+          <div className={styles.orderSummaryCard}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #f4f4f5', paddingBottom: '0.75rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#09090b', margin: 0 }}>
                 Order Summary ({checkoutItems.length} item{checkoutItems.length === 1 ? '' : 's'})
               </h3>
               <button
                 type="button"
-                onClick={() => {
-                  setItemToReplace(null);
-                  setIsAddModalOpen(true);
-                }}
+                onClick={() => { setItemToReplace(null); setIsAddModalOpen(true); }}
                 className={styles.addItemBtn}
               >
                 + Add Item
               </button>
             </div>
 
-            {/* Items List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1.25rem', maxHeight: '420px', overflowY: 'auto' }}>
-              {/* 1. Promotional Bundles */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '1rem', maxHeight: '360px', overflowY: 'auto' }}>
+              {/* Promotional Bundles */}
               {promoBundles.map((bundle) => (
-                <div
-                  key={bundle.groupId}
-                  style={{
-                    background: '#fffbeb',
-                    border: '1px solid #fde68a',
-                    borderRadius: '8px',
-                    padding: '0.75rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', paddingBottom: '0.45rem', borderBottom: '1px dashed #fcd34d' }}>
+                <div key={bundle.groupId} style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', paddingBottom: '0.45rem', borderBottom: '1px dashed #fcd34d', flexWrap: 'wrap', gap: '0.4rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', fontWeight: 800, color: '#92400e' }}>
                       <Sparkles size={13} />
                       <span>🎁 {bundle.items[0]?.promotionRule || bogoPromoConfig?.name || 'PROMOTION'} BUNDLE</span>
                     </div>
-
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <button
-                        type="button"
-                        className={styles.blueActionLink}
-                        onClick={() => openBogoSelectorForBundle(bundle.groupId)}
-                        title="Edit Free Products"
-                        style={{ fontSize: '0.75rem' }}
-                      >
-                        Edit Free Products
-                      </button>
+                      <button type="button" className={styles.blueActionLink} onClick={() => openBogoSelectorForBundle(bundle.groupId)} style={{ fontSize: '0.75rem' }}>Edit Free Products</button>
                       <span className={styles.pipeDivider}>|</span>
-                      <button
-                        type="button"
-                        className={styles.blueActionLink}
-                        title="Remove bundle"
-                        onClick={() => setBundleRemovalTarget({ promoGroupId: bundle.groupId, itemId: bundle.items[0]?.id })}
-                        style={{ fontSize: '0.75rem', color: '#dc2626' }}
-                      >
-                        Remove
-                      </button>
+                      <button type="button" className={styles.blueActionLink} onClick={() => setBundleRemovalTarget({ promoGroupId: bundle.groupId, itemId: bundle.items[0]?.id })} style={{ fontSize: '0.75rem', color: '#dc2626' }}>Remove</button>
                     </div>
                   </div>
-
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                     {bundle.items.map((item) => (
                       <div key={item.id} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
                         <div style={{ width: '48px', height: '62px', borderRadius: '4px', overflow: 'hidden', background: '#fff', border: '1px solid #e4e4e7', position: 'relative', flexShrink: 0 }}>
-                          {item.image ? (
-                            <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <ShoppingBag size={18} color="#a1a1aa" style={{ margin: '20px auto' }} />
-                          )}
-                          {item.isFree && (
-                            <span style={{ position: 'absolute', top: 2, left: 2, background: '#FFC800', color: '#000', fontSize: '0.55rem', fontWeight: 900, padding: '0.05rem 0.25rem', borderRadius: '2px' }}>
-                              FREE
-                            </span>
-                          )}
+                          {item.image ? <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ShoppingBag size={18} color="#a1a1aa" style={{ margin: '20px auto' }} />}
+                          {item.isFree && <span style={{ position: 'absolute', top: 2, left: 2, background: '#FFC800', color: '#000', fontSize: '0.55rem', fontWeight: 900, padding: '0.05rem 0.25rem', borderRadius: '2px' }}>FREE</span>}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#09090b', lineHeight: 1.3 }}>
-                            {item.name}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#71717a', margin: '2px 0' }}>
-                            Size: <strong>{item.size}</strong> | Color: <strong>{item.color}</strong>
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#71717a', marginBottom: '4px' }}>
-                            Qty: {item.quantity}
-                          </div>
+                          <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#09090b', lineHeight: 1.3, wordBreak: 'break-word' }}>{item.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#71717a', margin: '2px 0' }}>Size: <strong>{item.size}</strong> | Color: <strong>{item.color}</strong></div>
+                          <div style={{ fontSize: '0.75rem', color: '#71717a', marginBottom: '4px' }}>Qty: {item.quantity}</div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleEditOrderItem(item)}
-                              className={styles.blueActionLink}
-                              style={{ fontSize: '0.75rem' }}
-                            >
-                              Edit Item
-                            </button>
+                            <button type="button" onClick={() => handleEditOrderItem(item)} className={styles.blueActionLink} style={{ fontSize: '0.75rem' }}>Edit Item</button>
                             <span className={styles.pipeDivider}>|</span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveOrderItem(item)}
-                              className={styles.blueActionLink}
-                              style={{ fontSize: '0.75rem' }}
-                            >
-                              Remove
-                            </button>
+                            <button type="button" onClick={() => handleRemoveOrderItem(item)} className={styles.blueActionLink} style={{ fontSize: '0.75rem' }}>Remove</button>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ textAlign: 'right', whiteSpace: 'nowrap', flexShrink: 0 }}>
                           {item.isFree ? (
                             <div>
-                              <div style={{ fontSize: '0.72rem', color: '#a1a1aa', textDecoration: 'line-through' }}>
-                                ₹{((item.originalPrice || item.price || 0) * item.quantity).toFixed(2)}
-                              </div>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#16a34a' }}>
-                                FREE (₹0)
-                              </span>
+                              <div style={{ fontSize: '0.72rem', color: '#a1a1aa', textDecoration: 'line-through' }}>₹{((item.originalPrice || item.price || 0) * item.quantity).toFixed(2)}</div>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#16a34a' }}>FREE (₹0)</span>
                             </div>
                           ) : (
                             <div>
-                              <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#09090b' }}>
-                                ₹{(item.price * item.quantity).toFixed(2)}
-                              </div>
-                              <span style={{ fontSize: '0.65rem', fontWeight: 800, background: '#fef3c7', color: '#92400e', padding: '1px 5px', borderRadius: '3px' }}>
-                                PAID
-                              </span>
+                              <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#09090b' }}>₹{(item.price * item.quantity).toFixed(2)}</div>
+                              <span style={{ fontSize: '0.65rem', fontWeight: 800, background: '#fef3c7', color: '#92400e', padding: '1px 5px', borderRadius: '3px' }}>PAID</span>
                             </div>
                           )}
                         </div>
@@ -2331,74 +2087,153 @@ export default function CheckoutClient() {
                 </div>
               ))}
 
-              {/* 2. Regular Individual Items */}
+              {/* Regular Items */}
               {regularCheckoutItems.map((item) => (
-                <div
-                  key={item.id}
-                  style={{
-                    display: 'flex',
-                    gap: '0.75rem',
-                    alignItems: 'flex-start',
-                    fontSize: '0.85rem',
-                    padding: '0.65rem 0',
-                    borderBottom: '1px solid #f4f4f5',
-                  }}
-                >
-                  <div style={{ width: '52px', height: '66px', borderRadius: '4px', overflow: 'hidden', background: '#f4f4f5', flexShrink: 0, border: '1px solid #e4e4e7', position: 'relative' }}>
-                    {item.image ? (
-                      <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <ShoppingBag size={20} color="#a1a1aa" style={{ margin: '22px auto' }} />
-                    )}
+                <div key={item.id} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', padding: '0.65rem 0', borderBottom: '1px solid #f4f4f5' }}>
+                  <div style={{ width: '52px', height: '66px', borderRadius: '4px', overflow: 'hidden', background: '#f4f4f5', flexShrink: 0, border: '1px solid #e4e4e7' }}>
+                    {item.image ? <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ShoppingBag size={20} color="#a1a1aa" style={{ margin: '22px auto' }} />}
                   </div>
-
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, color: '#09090b', lineHeight: 1.3 }}>
-                      {item.name}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#71717a', margin: '2px 0' }}>
-                      Size: <strong>{item.size}</strong> | Color: <strong>{item.color}</strong>
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: '#71717a', marginBottom: '4px' }}>
-                      Qty: {item.quantity}
-                    </div>
-
+                    <div style={{ fontWeight: 700, color: '#09090b', lineHeight: 1.3, fontSize: '0.85rem', wordBreak: 'break-word' }}>{item.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#71717a', margin: '2px 0' }}>Size: <strong>{item.size}</strong> | Color: <strong>{item.color}</strong></div>
+                    <div style={{ fontSize: '0.75rem', color: '#71717a', marginBottom: '4px' }}>Qty: {item.quantity}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleEditOrderItem(item)}
-                        className={styles.blueActionLink}
-                      >
-                        Edit Item
-                      </button>
+                      <button type="button" onClick={() => handleEditOrderItem(item)} className={styles.blueActionLink} style={{ fontSize: '0.75rem' }}>Edit Item</button>
                       <span className={styles.pipeDivider}>|</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveOrderItem(item)}
-                        className={styles.blueActionLink}
-                      >
-                        Remove
-                      </button>
+                      <button type="button" onClick={() => handleRemoveOrderItem(item)} className={styles.blueActionLink} style={{ fontSize: '0.75rem' }}>Remove</button>
                     </div>
                   </div>
-
-                  <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <div style={{ fontWeight: 800, color: '#09090b', fontSize: '0.95rem' }}>
-                      ₹{(item.price * item.quantity).toFixed(2)}
-                    </div>
+                  <div style={{ textAlign: 'right', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    <div style={{ fontWeight: 800, color: '#09090b', fontSize: '0.95rem' }}>₹{(item.price * item.quantity).toFixed(2)}</div>
                   </div>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* ========================================================= */}
+          {/* STEP 3: PAYMENT METHOD                                     */}
+          {/* ========================================================= */}
+          <div className={`${styles.stepCard} ${currentStep === 3 ? styles.stepCardActive : ''}`}>
+            <div className={styles.stepHeader} style={{ marginBottom: '1rem' }}>
+              <div className={styles.stepHeaderLeft}>
+                <span className={styles.stepNumber}>3</span>
+                <div style={{ minWidth: 0 }}>
+                  <h2 className={styles.stepTitle}>Payment Method</h2>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#71717a', lineHeight: 1.4 }}>
+                    100% secure payment with instant confirmation.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {orderError && (
+              <div className={styles.deliveryBadgeError} style={{ marginBottom: '1rem' }}>
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                <span>{orderError}</span>
+              </div>
+            )}
+
+            {/* Online Payment Tile */}
+            <div
+              onClick={() => setPaymentMethod('ONLINE_RAZORPAY')}
+              className={`${styles.paymentTile} ${paymentMethod === 'ONLINE_RAZORPAY' ? styles.paymentTileSelected : ''}`}
+              style={{ border: `1.5px solid ${paymentMethod === 'ONLINE_RAZORPAY' ? '#2563eb' : '#e4e4e7'}` }}
+            >
+              <div className={styles.radioCircle} style={{ border: `2px solid ${paymentMethod === 'ONLINE_RAZORPAY' ? '#2563eb' : '#cbd5e1'}` }}>
+                {paymentMethod === 'ONLINE_RAZORPAY' && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2563eb' }} />}
+              </div>
+              <div className={styles.paymentDetails}>
+                <div className={styles.paymentTileHeader}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className={styles.paymentTitle}>Online Payment</div>
+                    <div className={styles.paymentSubtitle}>UPI, Cards, NetBanking, Wallets</div>
+                  </div>
+                  <span className={styles.paymentBadge}>Recommended</span>
+                </div>
+              </div>
+            </div>
+
+            {/* COD Tile */}
+            <div
+              onClick={() => { if (isCodEligible) setPaymentMethod('COD'); }}
+              className={`${styles.paymentTile} ${paymentMethod === 'COD' ? styles.paymentTileSelected : ''} ${!isCodEligible ? styles.paymentTileDisabled : ''}`}
+              style={{ border: `1.5px solid ${paymentMethod === 'COD' ? '#2563eb' : '#e4e4e7'}`, marginTop: '0.75rem' }}
+            >
+              <div className={styles.radioCircle} style={{ border: `2px solid ${paymentMethod === 'COD' ? '#2563eb' : '#cbd5e1'}` }}>
+                {paymentMethod === 'COD' && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2563eb' }} />}
+              </div>
+              <div className={styles.paymentDetails}>
+                <div className={styles.paymentTileHeader}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className={styles.paymentTitle}>Cash on Delivery (COD)</div>
+                    <div className={styles.paymentSubtitle}>Pay ₹99 now to confirm; balance on delivery</div>
+                  </div>
+                  {!isCodEligible && (
+                    <span style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 700, flexShrink: 0 }}>
+                      {rawSubtotal < POLICY_CONFIG.shipping.codMinOrder ? `Min ₹${POLICY_CONFIG.shipping.codMinOrder}` : `Max ₹${POLICY_CONFIG.shipping.codMaxOrder}`}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* COD Info Box */}
+            {paymentMethod === 'COD' && (
+              <div className={styles.codInfoBox}>
+                <div className={styles.codInfoTitle}>Cash on Delivery</div>
+                <div style={{ marginBottom: '0.5rem', lineHeight: 1.45 }}>
+                  Pay ₹99 now to confirm your COD order.<br />
+                  The remaining amount will be payable when your order is delivered.
+                </div>
+                <div style={{ borderTop: '1px solid #fef3c7', paddingTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.8rem' }}>
+                  <div className={styles.codBreakdownRow} style={{ color: '#52525b' }}>
+                    <span>Order Total:</span>
+                    <strong>₹{finalPayable.toFixed(2)}</strong>
+                  </div>
+                  <div className={styles.codBreakdownRow} style={{ color: '#15803d' }}>
+                    <span>COD Confirmation Paid:</span>
+                    <strong>₹99.00</strong>
+                  </div>
+                  <div className={styles.codBreakdownRow} style={{ color: '#b45309' }}>
+                    <span>Remaining Payable on Delivery:</span>
+                    <strong>₹{Math.max(0, finalPayable - 99).toFixed(2)}</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Primary Payment CTA */}
+          <button
+            type="button"
+            disabled={processing || !addressConfirmed}
+            onClick={handlePlaceOrder}
+            className={styles.yellowPaymentCta}
+          >
+            {processing
+              ? (paymentMethod === 'ONLINE_RAZORPAY' ? 'CONNECTING TO RAZORPAY…' : 'CONNECTING FOR ₹99 COD…')
+              : paymentMethod === 'ONLINE_RAZORPAY'
+              ? `Pay ₹${finalPayable.toFixed(2)} Online →`
+              : 'Pay ₹99 & Confirm COD Order'}
+          </button>
+        </div>
+
+        {/* ============================================================= */}
+        {/* RIGHT COLUMN: PRICE SUMMARY + COUPON + GUARANTEE (desktop)   */}
+        {/* ============================================================= */}
+        <div style={{ position: 'sticky', top: '2rem' }}>
+          <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', boxSizing: 'border-box' }}>
 
             {/* Promo / Coupon Code Box */}
-            <div style={{ marginBottom: '1.25rem', borderTop: '1px solid #f4f4f5', paddingTop: '1rem' }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.65rem' }}>Promo Code</div>
               {appliedCoupon ? (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', gap: '0.5rem' }}>
                   <div>
                     <strong style={{ color: '#166534' }}>{appliedCoupon.code}</strong> applied (-₹{appliedCoupon.discount})
                   </div>
-                  <button type="button" onClick={handleRemoveCoupon} style={{ background: 'none', border: 'none', color: '#991b1b', fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+                  <button type="button" onClick={handleRemoveCoupon} style={{ background: 'none', border: 'none', color: '#991b1b', fontWeight: 700, cursor: 'pointer', padding: 0, flexShrink: 0 }}>
                     Remove
                   </button>
                 </div>
@@ -2410,13 +2245,13 @@ export default function CheckoutClient() {
                       placeholder="Enter Promo / Coupon Code"
                       value={couponInput}
                       onChange={e => setCouponInput(e.target.value)}
-                      style={{ flex: 1, height: '40px', padding: '0 0.75rem', border: '1px solid #d4d4d8', borderRadius: '6px', fontSize: '0.825rem' }}
+                      style={{ flex: 1, minWidth: 0, height: '40px', padding: '0 0.75rem', border: '1px solid #d4d4d8', borderRadius: '6px', fontSize: '0.825rem', boxSizing: 'border-box' }}
                     />
                     <button
                       type="button"
                       disabled={couponLoading || !couponInput.trim()}
                       onClick={handleApplyCoupon}
-                      style={{ height: '40px', padding: '0 1.15rem', background: '#09090b', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.825rem', fontWeight: 700, cursor: 'pointer' }}
+                      style={{ height: '40px', padding: '0 1rem', background: '#09090b', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.825rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
                     >
                       {couponLoading ? '...' : 'Apply'}
                     </button>
@@ -2432,74 +2267,74 @@ export default function CheckoutClient() {
 
             {/* Price Breakdown */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.85rem', borderTop: '1px solid #f4f4f5', paddingTop: '1rem', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#52525b' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#52525b', gap: '0.5rem' }}>
                 <span>Subtotal (Catalog Value)</span>
-                <span>₹{rawMrpTotal.toFixed(2)}</span>
+                <span style={{ flexShrink: 0 }}>₹{rawMrpTotal.toFixed(2)}</span>
               </div>
 
               {checkoutItems.some(i => i.isFree) && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 700 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 700, gap: '0.5rem' }}>
                   <span>{(checkoutItems.find(i => i.isFree)?.promotionRule || bogoPromoConfig?.name || 'Special Item')} Discount</span>
-                  <span>-₹{Math.max(0, rawMrpTotal - rawSubtotal).toFixed(2)}</span>
+                  <span style={{ flexShrink: 0 }}>-₹{Math.max(0, rawMrpTotal - rawSubtotal).toFixed(2)}</span>
                 </div>
               )}
 
               {mrpSavings > 0 && !checkoutItems.some(i => i.isFree) && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 600 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 600, gap: '0.5rem' }}>
                   <span>Special Item Discount</span>
-                  <span>-₹{mrpSavings.toFixed(2)}</span>
+                  <span style={{ flexShrink: 0 }}>-₹{mrpSavings.toFixed(2)}</span>
                 </div>
               )}
 
               {!checkoutItems.some(i => i.isFree) && mrpSavings === 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 600 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 600, gap: '0.5rem' }}>
                   <span>Special Item Discount</span>
-                  <span>-₹0.00</span>
+                  <span style={{ flexShrink: 0 }}>-₹0.00</span>
                 </div>
               )}
 
               {appliedCoupon && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 600 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 600, gap: '0.5rem' }}>
                   <span>Coupon Discount</span>
-                  <span>-₹{appliedCoupon.discount.toFixed(2)}</span>
+                  <span style={{ flexShrink: 0 }}>-₹{appliedCoupon.discount.toFixed(2)}</span>
                 </div>
               )}
 
               {autoOfferDiscount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 700, background: '#f0fdf4', padding: '0.4rem 0.6rem', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 700, background: '#f0fdf4', padding: '0.4rem 0.6rem', borderRadius: '6px', gap: '0.5rem' }}>
                   <span>🎁 Bundle Discount — ₹{autoOfferDiscount} OFF</span>
-                  <span>-₹{autoOfferDiscount.toFixed(2)}</span>
+                  <span style={{ flexShrink: 0 }}>-₹{autoOfferDiscount.toFixed(2)}</span>
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#52525b' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#52525b', gap: '0.5rem' }}>
                 <span>Standard Delivery</span>
-                <span style={{ color: '#16a34a', fontWeight: 700 }}>{shippingCharge === 0 ? 'FREE' : `₹${shippingCharge.toFixed(2)}`}</span>
+                <span style={{ color: '#16a34a', fontWeight: 700, flexShrink: 0 }}>{shippingCharge === 0 ? 'FREE' : `₹${shippingCharge.toFixed(2)}`}</span>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#52525b' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#52525b', gap: '0.5rem' }}>
                 <span>COD Handling Fee</span>
                 {paymentMethod === 'COD' ? (
-                  <span style={{ color: '#b45309', fontWeight: 600 }}>₹{codCharge.toFixed(2)}</span>
+                  <span style={{ color: '#b45309', fontWeight: 600, flexShrink: 0 }}>₹{codCharge.toFixed(2)}</span>
                 ) : (
-                  <span style={{ color: '#16a34a', fontWeight: 700 }}>FREE (₹0)</span>
+                  <span style={{ color: '#16a34a', fontWeight: 700, flexShrink: 0 }}>FREE (₹0)</span>
                 )}
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '1.25rem', color: '#09090b', borderTop: '1.5px solid #e4e4e7', paddingTop: '0.85rem', marginTop: '0.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '1.2rem', color: '#09090b', borderTop: '1.5px solid #e4e4e7', paddingTop: '0.85rem', marginTop: '0.35rem', gap: '0.5rem' }}>
                 <span>Total Amount</span>
-                <span>₹{finalPayable.toFixed(2)}</span>
+                <span style={{ flexShrink: 0 }}>₹{finalPayable.toFixed(2)}</span>
               </div>
 
               {paymentMethod === 'COD' && (
                 <div style={{ marginTop: '0.65rem', borderTop: '1px dashed #d4d4d8', paddingTop: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.8rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#15803d', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#15803d', fontWeight: 600, gap: '0.5rem' }}>
                     <span>COD Confirmation Paid (Pay Now):</span>
-                    <span>₹99.00</span>
+                    <span style={{ flexShrink: 0 }}>₹99.00</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#b45309', fontWeight: 700 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#b45309', fontWeight: 700, gap: '0.5rem' }}>
                     <span>Remaining Payable on Delivery:</span>
-                    <span>₹{Math.max(0, finalPayable - 99).toFixed(2)}</span>
+                    <span style={{ flexShrink: 0 }}>₹{Math.max(0, finalPayable - 99).toFixed(2)}</span>
                   </div>
                 </div>
               )}
@@ -2522,7 +2357,7 @@ export default function CheckoutClient() {
                 </li>
                 <li className={styles.buyerGuaranteeItem}>
                   <span className={styles.buyerGuaranteeBullet} />
-                  <span>Safe & Secure Payments</span>
+                  <span>Safe &amp; Secure Payments</span>
                 </li>
                 <li className={styles.buyerGuaranteeItem}>
                   <span className={styles.buyerGuaranteeBullet} />
