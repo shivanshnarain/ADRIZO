@@ -155,11 +155,13 @@ export const INITIAL_CATEGORY_CODES: Record<string, string> = {
   'trousers': 'TRS',
 };
 
-// 4. DEDICATED HOODIE PRODUCT TYPES (Strictly 3 Options)
+// 4. DEDICATED HOODIE PRODUCT TYPES (5 Options)
 export const INITIAL_HOODIE_PRODUCT_TYPES: InitialProductType[] = [
   { categorySlug: 'hoodies', name: 'Unisex Hoodie', code: 'UH', sortOrder: 1 },
   { categorySlug: 'hoodies', name: 'Regular Fit', code: 'RF', sortOrder: 2 },
   { categorySlug: 'hoodies', name: 'Slim Fit', code: 'SF', sortOrder: 3 },
+  { categorySlug: 'hoodies', name: "Men's Hoodie", code: 'MH', sortOrder: 4 },
+  { categorySlug: 'hoodies', name: "Women's Hoodie", code: 'WH', sortOrder: 5 },
 ];
 
 // 5. DEDICATED T-SHIRT PRODUCT TYPES (11 Styles)
@@ -193,11 +195,13 @@ export const INITIAL_PRODUCT_TYPES: InitialProductType[] = [
   { categorySlug: 't-shirt', name: 'Half Sleeve T-Shirt', code: 'HS', sortOrder: 10 },
   { categorySlug: 't-shirt', name: 'Full Sleeve T-Shirt', code: 'FS', sortOrder: 11 },
 
-  // Hoodies (plural & singular - strictly 3 options)
+  // Hoodies (plural & singular - 5 options)
   ...INITIAL_HOODIE_PRODUCT_TYPES,
   { categorySlug: 'hoodie', name: 'Unisex Hoodie', code: 'UH', sortOrder: 1 },
   { categorySlug: 'hoodie', name: 'Regular Fit', code: 'RF', sortOrder: 2 },
   { categorySlug: 'hoodie', name: 'Slim Fit', code: 'SF', sortOrder: 3 },
+  { categorySlug: 'hoodie', name: "Men's Hoodie", code: 'MH', sortOrder: 4 },
+  { categorySlug: 'hoodie', name: "Women's Hoodie", code: 'WH', sortOrder: 5 },
 
   // Shirt
   { categorySlug: 'shirt', name: 'Casual Shirt', code: 'CS', sortOrder: 1 },
@@ -263,10 +267,12 @@ export const INITIAL_PRODUCT_TYPE_CODES: Record<string, string> = {
   'Half Sleeve T-Shirt': 'HS',
   'Full Sleeve T-Shirt': 'FS',
 
-  // Hoodie types (Strictly 3 options)
+  // Hoodie types (5 options)
   'Unisex Hoodie': 'UH',
   'Regular Fit': 'RF',
   'Slim Fit': 'SF',
+  "Men's Hoodie": 'MH',
+  "Women's Hoodie": 'WH',
 
   // Shirt types
   'Casual Shirt': 'CS',

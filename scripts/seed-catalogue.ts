@@ -75,6 +75,8 @@ const PRODUCT_TYPES = [
   { categorySlug: 'hoodie', name: 'Unisex Hoodie', code: 'UH', sortOrder: 1 },
   { categorySlug: 'hoodie', name: 'Regular Fit',   code: 'RF', sortOrder: 2 },
   { categorySlug: 'hoodie', name: 'Slim Fit',      code: 'SF', sortOrder: 3 },
+  { categorySlug: 'hoodie', name: "Men's Hoodie",  code: 'MH', sortOrder: 4 },
+  { categorySlug: 'hoodie', name: "Women's Hoodie",code: 'WH', sortOrder: 5 },
   { categorySlug: 'jacket', name: 'Denim Jacket',     code: 'DN',  sortOrder: 1 },
   { categorySlug: 'jacket', name: 'Bomber Jacket',    code: 'BM',  sortOrder: 2 },
   { categorySlug: 'jacket', name: 'Puffer Jacket',    code: 'PF',  sortOrder: 3 },
