@@ -1,5 +1,60 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+
+let envFallbackLoaded = false;
+
+/**
+ * Ensures active production credentials from .env.vercel or .env are loaded
+ * and automatically overrides deprecated/placeholder credentials from stale Vercel dashboard states.
+ */
+export function loadEnvFallback() {
+  if (envFallbackLoaded) return;
+  envFallbackLoaded = true;
+
+  try {
+    const candidates = ['.env.vercel', '.env.local', '.env'];
+    for (const filename of candidates) {
+      const fullPath = path.resolve(process.cwd(), filename);
+      if (fs.existsSync(fullPath)) {
+        const content = fs.readFileSync(fullPath, 'utf-8');
+        for (const line of content.split('\n')) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
+          const eqIdx = trimmed.indexOf('=');
+          const key = trimmed.slice(0, eqIdx).trim();
+          const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+
+          if (key === 'RAZORPAY_KEY_ID' || key === 'NEXT_PUBLIC_RAZORPAY_KEY_ID' || key === 'RAZORPAY_KEY_SECRET') {
+            const currentVal = process.env[key];
+            if (
+              !currentVal ||
+              currentVal.includes('TYio72mColkjPN') ||
+              currentVal.includes('U074TAZdfZv0BCcCTm7DblVm') ||
+              currentVal.includes('REPLACE_WITH')
+            ) {
+              if (val && !val.includes('REPLACE_WITH')) {
+                process.env[key] = val;
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // Non-fatal fallback
+  }
+}
+
+/**
+ * Returns the authoritative active Razorpay Key ID for client and server.
+ */
+export function getRazorpayKeyId(): string {
+  loadEnvFallback();
+  const rawKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+  return rawKey?.trim().replace(/^["']|["']$/g, '') || '';
+}
 
 export const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
 
@@ -8,13 +63,14 @@ export const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
  * Returns false if keys are missing or using placeholder values.
  */
 export function isRazorpayConfigured(): boolean {
-  const rawKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-  const rawSecret = process.env.RAZORPAY_KEY_SECRET;
+  loadEnvFallback();
+  const rawKey = getRazorpayKeyId();
+  const rawSecret = process.env.RAZORPAY_KEY_SECRET?.trim().replace(/^["']|["']$/g, '');
 
   if (!rawKey || !rawSecret) return false;
 
-  const trimmedKey = rawKey.trim().replace(/^["']|["']$/g, '').toLowerCase();
-  const trimmedSecret = rawSecret.trim().replace(/^["']|["']$/g, '').toLowerCase();
+  const trimmedKey = rawKey.toLowerCase();
+  const trimmedSecret = rawSecret.toLowerCase();
 
   if (
     trimmedKey.includes('placeholder') ||
@@ -22,7 +78,9 @@ export function isRazorpayConfigured(): boolean {
     trimmedKey.includes('your_razorpay') ||
     trimmedSecret.includes('your_razorpay') ||
     trimmedKey === 'your_key_id' ||
-    trimmedSecret === 'your_key_secret'
+    trimmedSecret === 'your_key_secret' ||
+    trimmedKey.includes('tyio72mcolkjpn') ||
+    trimmedSecret.includes('u074tazdfzv0bccctm7dblvm')
   ) {
     return false;
   }
@@ -35,11 +93,9 @@ export function isRazorpayConfigured(): boolean {
  * Throws a clean descriptive error if keys are not configured.
  */
 export function getRazorpayInstance(): Razorpay {
-  const rawKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-  const rawSecret = process.env.RAZORPAY_KEY_SECRET;
-
-  const keyId = rawKey?.trim().replace(/^["']|["']$/g, '');
-  const keySecret = rawSecret?.trim().replace(/^["']|["']$/g, '');
+  loadEnvFallback();
+  const keyId = getRazorpayKeyId();
+  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim().replace(/^["']|["']$/g, '');
 
   if (!keyId || !keySecret || !isRazorpayConfigured()) {
     throw new Error('Razorpay API keys are not configured in environment variables.');

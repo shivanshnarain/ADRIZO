@@ -7,7 +7,8 @@ import { POLICY_CONFIG } from '@/config/policies';
 import { 
   isRazorpayConfigured, 
   getRazorpayInstance, 
-  generateOrderNumber 
+  generateOrderNumber,
+  getRazorpayKeyId,
 } from '@/lib/razorpay';
 import { resolveOrderFromSupabase } from '@/lib/order-resolver';
 import { sendOrderConfirmationEmail } from '@/lib/order-email';
@@ -544,7 +545,7 @@ export async function POST(req: NextRequest) {
         razorpayOrderId: razorpayOrder.id,
         amount: codConfirmationAmount * 100, // 9900 paise
         currency,
-        key: (process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID)?.trim(),
+        key: getRazorpayKeyId(),
         total: finalTotal,
         codConfirmationAmount,
         codRemainingAmount: Math.max(0, finalTotal - codConfirmationAmount),
@@ -642,7 +643,7 @@ export async function POST(req: NextRequest) {
         razorpayOrderId: razorpayOrder.id,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency || currency,
-        key: (process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID)?.trim(),
+        key: getRazorpayKeyId(),
         customer: {
           name: trimmedName,
           email: trimmedEmail,
