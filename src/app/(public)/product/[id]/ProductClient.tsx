@@ -61,7 +61,8 @@ export const COLOR_HEX_MAP: Record<string, string> = {
   'SAGE GREEN': '#8A9A86',
 };
 
-const LIGHT_YELLOW_ICON_COLOR = "#F6D060";
+// ADRIZO Brand Yellow for product accordion & accent icons
+const LIGHT_YELLOW_ICON_COLOR = "#FFC800";
 
 interface ProductClientProps {
   product: any;
@@ -734,27 +735,41 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
             {/* Dynamic Promotional OFFER Card - rendered ONLY if active and eligible */}
             {isProductPromoEligible && currentProductOffer && (
               <div className={styles.offerCardPurchaseArea}>
-                <div className={styles.offerCard}>
+                <div 
+                  className={styles.offerCard}
+                  onClick={handleViewOfferDetails}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="View promotional offer details"
+                >
                   <div className={styles.offerCardLeft}>
                     <div className={styles.offerIconWrap}>
-                      <Gift size={16} color="#000000" />
+                      <Gift size={22} strokeWidth={2} color="#000000" className={styles.offerGiftIcon} />
                     </div>
                     <div className={styles.offerTextWrap}>
                       <div className={styles.offerBadgeTitle}>
-                        {currentProductOffer.name || 'SPECIAL OFFER'}
+                        {(currentProductOffer.name && currentProductOffer.name !== 'SPECIAL OFFER')
+                          ? currentProductOffer.name.toUpperCase()
+                          : `BUY ${currentProductOffer.buyQuantity || 1} GET ${currentProductOffer.freeQuantity || 1} FREE`}
                       </div>
                       <div className={styles.offerBadgeSubtitle}>
-                        Buy {currentProductOffer.buyQuantity || 1} &amp; pick <strong>{currentProductOffer.freeQuantity || 1} additional {product.category?.name ? product.category.name : 'product'}{(currentProductOffer.freeQuantity || 1) > 1 && !product.category?.name?.endsWith('s') ? 's' : ''} FREE</strong>!
+                        Buy {currentProductOffer.buyQuantity || 1} &amp; pick {currentProductOffer.freeQuantity || 1} additional {product.category?.name ? (product.category.name.endsWith('s') ? product.category.name : `${product.category.name}s`) : 'items'} FREE!
                       </div>
                     </div>
                   </div>
                   <button
                     type="button"
                     className={styles.offerCtaBtn}
-                    onClick={handleViewOfferDetails}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewOfferDetails();
+                    }}
                   >
                     View Details
                   </button>
+                  <div className={styles.offerMobileArrow}>
+                    <ChevronRight size={18} strokeWidth={2.4} color="#000000" />
+                  </div>
                 </div>
               </div>
             )}

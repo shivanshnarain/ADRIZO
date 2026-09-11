@@ -567,6 +567,15 @@
   opacity: 0.88;
 }
 
+.offerMobileArrow {
+  display: none;
+}
+
+.offerGiftIcon {
+  width: 16px;
+  height: 16px;
+}
+
 /* ==========================================================================
    6. PURCHASE ACTION BUTTONS + SHARE BUTTON
    ========================================================================== */
@@ -1001,39 +1010,302 @@
     word-break: break-word;
   }
 
-  .relatedTitle {
-    font-size: 1.2rem;
+  /* 1. Mobile Product Information Accordion Cards */
+  .accordionScrollArea {
+    overflow: visible;
+    max-height: none;
+    padding-right: 0;
+    margin-top: 1.25rem;
+    margin-bottom: 0.85rem;
   }
 
-  .carouselItem {
-    flex: 0 0 72vw;
-    min-width: 200px;
-    max-width: 270px;
+  .accordionContainer {
+    border-top: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 0;
   }
 
+  .accordionItem {
+    background-color: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .accordionHeader {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    box-sizing: border-box;
+  }
+
+  .accordionTitleGroup {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: #111827;
+    letter-spacing: -0.01em;
+  }
+
+  .accordionIconLeft {
+    color: #FFC800;
+    stroke: #FFC800;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+  }
+
+  .accordionToggleIcon {
+    font-size: 18px;
+    font-weight: 400;
+    color: #111827;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .accordionBody {
+    padding: 12px 16px 16px 16px;
+    border-top: 1px solid #F3F4F6;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #4B5563;
+  }
+
+  /* 2. Buy 1 Get 1 Free Promotion Card */
+  .bottomPurchaseSection {
+    margin-top: 4px;
+    padding-top: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .offerCardPurchaseArea {
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .offerCard {
+    width: 100%;
+    background-color: #FEFCE8;
+    border: 1px solid #FEF08A;
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-sizing: border-box;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .offerCard:hover {
+    background-color: #FEF9C3;
+  }
+
+  .offerCardLeft {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .offerIconWrap {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 50%;
+    background-color: #FFC800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .offerGiftIcon {
+    width: 22px;
+    height: 22px;
+    stroke: #000000;
+    stroke-width: 2;
+  }
+
+  .offerTextWrap {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .offerBadgeTitle {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #000000;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .offerBadgeSubtitle {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #111827;
+    margin-top: 0;
+    line-height: 1.25;
+    white-space: normal;
+  }
+
+  .offerCtaBtn {
+    display: none !important;
+  }
+
+  .offerMobileArrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #000000;
+    padding-right: 2px;
+  }
+
+  /* 3. Mobile Action Buttons (Stack: ADD TO CART -> BUY NOW -> SHARE) */
   .actionButtonsRow {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.55rem;
+    flex-direction: column;
+    gap: 10px;
     width: 100%;
   }
 
   .addToCartBtn,
-  .buyNowBtn {
-    flex: 1 1 calc(50% - 0.35rem);
-    min-width: 130px;
+  .buyNowBtn,
+  .shareBtn {
+    width: 100%;
+    height: 50px;
+    min-height: 50px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
   }
 
-  .offerCard {
-    flex-direction: column;
-    align-items: stretch;
+  .addToCartBtn {
+    background-color: #FFFFFF;
+    color: #000000;
+    border: 2px solid #000000;
+  }
+
+  .addToCartBtn:hover:not(:disabled) {
+    background-color: #F9FAFB;
+    border-color: #000000;
+  }
+
+  .buyNowBtn {
+    background-color: #000000;
+    color: #FFFFFF;
+    border: 2px solid #000000;
+  }
+
+  .buyNowBtn:hover:not(:disabled) {
+    background-color: #1F2937;
+    border-color: #1F2937;
+  }
+
+  .shareBtn {
+    background-color: #FFFFFF;
+    color: #000000;
+    border: 1px solid #E5E7EB;
+  }
+
+  .shareBtn:hover {
+    background-color: #F9FAFB;
+    border-color: #D1D5DB;
+  }
+
+  .shareBtnSuccess {
+    border-color: #16a34a !important;
+    color: #16a34a !important;
+    background-color: #F0FDF4 !important;
+  }
+
+  /* 4. Spacing before "You May Also Like" and Mobile 2-Card Layout */
+  .relatedSection {
+    margin-top: 2rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid #F3F4F6;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .relatedHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
     gap: 0.75rem;
   }
 
-  .offerCtaBtn {
-    width: 100%;
-    text-align: center;
-    padding: 0.55rem 0;
+  .relatedTitle {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #111827;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+
+  .relatedSubtitle {
+    font-size: 0.8rem;
+    color: #6B7280;
+    margin-top: 2px;
+  }
+
+  .carouselTrack {
+    display: flex;
+    gap: 12px;
+    padding: 4px 2px 1rem 2px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .carouselTrack::-webkit-scrollbar {
+    display: none;
+  }
+
+  .carouselItem {
+    flex: 0 0 calc(50% - 6px);
+    min-width: 155px;
+    max-width: 220px;
+    scroll-snap-align: start;
+    box-sizing: border-box;
   }
 
   .lightboxPrevBtn {
@@ -1047,17 +1319,7 @@
 
 @media (max-width: 440px) {
   .pageContainer {
-    padding: 0.5rem 10px 2.5rem;
-  }
-
-  .actionButtonsRow {
-    flex-direction: column;
-  }
-
-  .addToCartBtn,
-  .buyNowBtn,
-  .shareBtn {
-    flex: 1 1 100%;
-    width: 100%;
+    padding: 0.5rem 12px 2.5rem;
   }
 }
+
