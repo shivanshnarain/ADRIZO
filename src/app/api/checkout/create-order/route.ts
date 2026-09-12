@@ -440,22 +440,6 @@ export async function POST(req: NextRequest) {
 
     // 8. Handle CASH ON DELIVERY (COD) with MANDATORY ₹99 INSTANT CONFIRMATION PAYMENT
     if (paymentMethod === 'COD') {
-      const { codMinOrder, codMaxOrder } = POLICY_CONFIG.shipping;
-
-      if (finalTotal < codMinOrder) {
-        return NextResponse.json({
-          success: false,
-          error: `Cash on Delivery is only available for orders of ₹${codMinOrder} and above. Add ₹${codMinOrder - finalTotal} more to your order or pay online via UPI/Card to complete purchase.`
-        }, { status: 400 });
-      }
-
-      if (finalTotal > codMaxOrder) {
-        return NextResponse.json({
-          success: false,
-          error: `Cash on Delivery is limited to orders up to ₹${codMaxOrder}. Please choose Online Payment via UPI/Cards to complete this purchase.`
-        }, { status: 400 });
-      }
-
       const codConfigStatus = getRazorpayConfigStatus();
       if (!codConfigStatus.configured) {
         return NextResponse.json({
@@ -468,10 +452,13 @@ export async function POST(req: NextRequest) {
       const rzp = getRazorpayInstance();
       const currency = process.env.RAZORPAY_CURRENCY || 'INR';
 
-      // Create Razorpay Order specifically for the ₹99 mandatory confirmation payment (9900 paise)
-      const codConfirmationAmount = 99;
+      // Dynamic calculation: customer pays ₹99 (or full total if <= ₹99) online, remaining balance on delivery
+      const codConfirmationAmount = Math.min(99, finalTotal);
+      const codRemainingAmount = Math.max(0, finalTotal - codConfirmationAmount);
+
+      // Create Razorpay Order specifically for the COD confirmation advance payment
       const razorpayOrder = await rzp.orders.create({
-        amount: codConfirmationAmount * 100, // 9900 paise
+        amount: Math.round(codConfirmationAmount * 100), // in paise
         currency,
         receipt: `${orderNumber}-COD99`,
         notes: {
@@ -481,7 +468,8 @@ export async function POST(req: NextRequest) {
           customerEmail: trimmedEmail,
           customerPhone: trimmedPhone,
           orderTotal: String(finalTotal),
-          codRemainingAmount: String(Math.max(0, finalTotal - codConfirmationAmount)),
+          codConfirmationAmount: String(codConfirmationAmount),
+          codRemainingAmount: String(codRemainingAmount),
         }
       });
 

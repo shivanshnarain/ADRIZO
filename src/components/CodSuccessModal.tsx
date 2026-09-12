@@ -63,7 +63,7 @@ export default function CodSuccessModal({
         <p className={styles.subtitle}>
           {isPrepaid
             ? 'Your online payment was successful and your order is confirmed.'
-            : 'Your ₹99 confirmation payment was received and your Cash on Delivery order is confirmed.'}
+            : `Your ₹${codConfirmationPaid} confirmation payment was received and your Cash on Delivery order is confirmed.`}
         </p>
 
         <div className={styles.detailsCard}>

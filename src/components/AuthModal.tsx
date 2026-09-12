@@ -13,6 +13,7 @@ export default function AuthModal() {
   const [mode, setMode] = useState<AuthMode>('SIGN_IN');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const [resetMessage, setResetMessage] = useState('');
 
   // Sync mode with context when modal opens
@@ -20,6 +21,7 @@ export default function AuthModal() {
     if (isAuthModalOpen) {
       setMode(authModalMode || 'SIGN_IN');
       setError('');
+      setErrorCode('');
       setResetMessage('');
     }
   }, [isAuthModalOpen, authModalMode]);
@@ -106,6 +108,7 @@ export default function AuthModal() {
 
       const data = await res.json();
       if (res.ok && data.success) {
+        setErrorCode('');
         if (data.role === 'ADMIN' || data.redirect === '/admin/dashboard') {
           window.location.href = data.redirect || '/admin/dashboard';
           return;
@@ -117,6 +120,7 @@ export default function AuthModal() {
           window.location.href = authRedirectUrl;
         }
       } else {
+        setErrorCode(data.code || '');
         setError(data.error || 'Invalid email or password. Please try again.');
       }
     } catch {
@@ -248,9 +252,38 @@ export default function AuthModal() {
         <div className={styles.contentColumn}>
           {/* Error Alert */}
           {error && (
-            <div className={styles.errorAlert}>
-              <AlertCircle size={16} style={{ flexShrink: 0 }} />
-              <span>{error}</span>
+            <div className={styles.errorAlert} style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                <span>{error}</span>
+              </div>
+              {errorCode === 'USER_NOT_FOUND' && mode === 'SIGN_IN' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSignUpEmail(signInEmail);
+                    setMode('SIGN_UP');
+                    setError('');
+                    setErrorCode('');
+                  }}
+                  style={{
+                    background: '#09090b',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.4rem 0.75rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    marginTop: '0.2rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}
+                >
+                  Create Account with {signInEmail} →
+                </button>
+              )}
             </div>
           )}
 
@@ -271,6 +304,7 @@ export default function AuthModal() {
                 onClick={() => {
                   setMode('SIGN_IN');
                   setError('');
+                  setErrorCode('');
                 }}
               >
                 Sign In
@@ -281,6 +315,7 @@ export default function AuthModal() {
                 onClick={() => {
                   setMode('PHONE_OTP');
                   setError('');
+                  setErrorCode('');
                 }}
               >
                 Phone OTP
@@ -291,6 +326,7 @@ export default function AuthModal() {
                 onClick={() => {
                   setMode('SIGN_UP');
                   setError('');
+                  setErrorCode('');
                 }}
               >
                 Create Account

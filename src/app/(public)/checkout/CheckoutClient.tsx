@@ -183,6 +183,7 @@ export default function CheckoutClient() {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [loginErrorCode, setLoginErrorCode] = useState('');
 
   // Signup form
   const [signupName, setSignupName] = useState('');
@@ -198,9 +199,19 @@ export default function CheckoutClient() {
   const [forgotMessage, setForgotMessage] = useState('');
   const [forgotError, setForgotError] = useState('');
 
+  const switchAuthTab = (tab: 'otp' | 'login' | 'signup' | 'forgot') => {
+    setLoginError('');
+    setLoginErrorCode('');
+    setSignupError('');
+    setForgotError('');
+    setForgotMessage('');
+    setAuthTab(tab);
+  };
+
   const handleInlineLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setLoginErrorCode('');
     setLoginLoading(true);
 
     try {
@@ -212,9 +223,11 @@ export default function CheckoutClient() {
 
       const data = await res.json();
       if (res.ok && data.success) {
+        setLoginErrorCode('');
         await fetchUser();
         setCurrentStep(2);
       } else {
+        setLoginErrorCode(data.code || '');
         setLoginError(data.error || 'Invalid email or password.');
       }
     } catch {
@@ -881,8 +894,9 @@ export default function CheckoutClient() {
   const [paymentMethod, setPaymentMethod] = useState<'ONLINE_RAZORPAY' | 'COD'>('ONLINE_RAZORPAY');
   const [onlineCategory, setOnlineCategory] = useState<'UPI' | 'CARD' | 'NETBANKING' | 'WALLET'>('UPI');
 
-  const isCodEligible = rawSubtotal >= POLICY_CONFIG.shipping.codMinOrder && rawSubtotal <= POLICY_CONFIG.shipping.codMaxOrder;
-  const codCharge = paymentMethod === 'COD' ? POLICY_CONFIG.shipping.codHandlingFee : 0;
+  // COD is always selectable for all valid cart totals without arbitrary max value restrictions
+  const isCodEligible = checkoutItems.length > 0;
+  const codCharge = 0; // ₹99 is an advance confirmation payment against total, not an extra surcharge
 
   // Coupon State
   const [couponInput, setCouponInput] = useState('');
@@ -934,6 +948,10 @@ export default function CheckoutClient() {
 
   const discountAmount = (appliedCoupon ? appliedCoupon.discount : 0) + autoOfferDiscount;
   const finalPayable = Math.max(0, rawSubtotal - discountAmount + shippingCharge + codCharge);
+
+  // Dynamic COD Calculation: customer pays ₹99 (or full total if <= ₹99) online, remaining balance on delivery
+  const codConfirmationPayable = Math.min(99, finalPayable);
+  const codRemainingPayable = Math.max(0, finalPayable - codConfirmationPayable);
 
   // Terms Consent
   const [consentChecked, setConsentChecked] = useState(true);
@@ -1346,7 +1364,7 @@ export default function CheckoutClient() {
                   <button
                     type="button"
                     className={`${styles.authTabBtn} ${authTab === 'otp' ? styles.authTabBtnActive : ''}`}
-                    onClick={() => { setAuthTab('otp'); }}
+                    onClick={() => switchAuthTab('otp')}
                   >
                     <Phone size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px' }} />
                     <span>Phone OTP</span>
@@ -1354,7 +1372,7 @@ export default function CheckoutClient() {
                   <button
                     type="button"
                     className={`${styles.authTabBtn} ${authTab === 'login' ? styles.authTabBtnActive : ''}`}
-                    onClick={() => { setAuthTab('login'); setLoginError(''); }}
+                    onClick={() => switchAuthTab('login')}
                   >
                     <LogIn size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px' }} />
                     <span>Email Sign In</span>
@@ -1362,7 +1380,7 @@ export default function CheckoutClient() {
                   <button
                     type="button"
                     className={`${styles.authTabBtn} ${authTab === 'signup' ? styles.authTabBtnActive : ''}`}
-                    onClick={() => { setAuthTab('signup'); setSignupError(''); }}
+                    onClick={() => switchAuthTab('signup')}
                   >
                     <UserPlus size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px' }} />
                     <span>Create Account</span>
@@ -1370,7 +1388,7 @@ export default function CheckoutClient() {
                   <button
                     type="button"
                     className={`${styles.authTabBtn} ${authTab === 'forgot' ? styles.authTabBtnActive : ''}`}
-                    onClick={() => { setAuthTab('forgot'); setForgotError(''); setForgotMessage(''); }}
+                    onClick={() => switchAuthTab('forgot')}
                   >
                     <KeyRound size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-1px' }} />
                     <span>Reset</span>
@@ -1397,7 +1415,7 @@ export default function CheckoutClient() {
                       Prefer email and password?{' '}
                       <button
                         type="button"
-                        onClick={() => setAuthTab('login')}
+                        onClick={() => switchAuthTab('login')}
                         style={{ background: 'none', border: 'none', color: '#09090b', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                       >
                         Sign in with Password
@@ -1410,9 +1428,37 @@ export default function CheckoutClient() {
                 {authTab === 'login' && (
                   <form onSubmit={handleInlineLogin}>
                     {loginError && (
-                      <div className={styles.deliveryBadgeError} style={{ marginBottom: '1rem' }}>
-                        <AlertCircle size={15} />
-                        <span>{loginError}</span>
+                      <div className={styles.deliveryBadgeError} style={{ marginBottom: '1rem', flexDirection: 'column', alignItems: 'flex-start', gap: '0.6rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                          <span>{loginError}</span>
+                        </div>
+                        {loginErrorCode === 'USER_NOT_FOUND' && (
+                          <div style={{ marginTop: '0.25rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSignupEmail(loginEmail);
+                                switchAuthTab('signup');
+                              }}
+                              style={{
+                                background: '#09090b',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '0.45rem 0.85rem',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem'
+                              }}
+                            >
+                              Create Account with {loginEmail} →
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className={styles.formGroup}>
@@ -1431,7 +1477,7 @@ export default function CheckoutClient() {
                         <label className={styles.formLabel}>Password *</label>
                         <button
                           type="button"
-                          onClick={() => setAuthTab('forgot')}
+                          onClick={() => switchAuthTab('forgot')}
                           style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
                         >
                           Forgot Password?
@@ -1458,7 +1504,10 @@ export default function CheckoutClient() {
                       New customer?{' '}
                       <button
                         type="button"
-                        onClick={() => setAuthTab('signup')}
+                        onClick={() => {
+                          setSignupEmail(loginEmail);
+                          switchAuthTab('signup');
+                        }}
                         style={{ background: 'none', border: 'none', color: '#09090b', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                       >
                         Create an account
@@ -1541,7 +1590,7 @@ export default function CheckoutClient() {
                       Already have an account?{' '}
                       <button
                         type="button"
-                        onClick={() => setAuthTab('login')}
+                        onClick={() => switchAuthTab('login')}
                         style={{ background: 'none', border: 'none', color: '#09090b', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                       >
                         Sign In
@@ -1588,7 +1637,7 @@ export default function CheckoutClient() {
                       Remembered your password?{' '}
                       <button
                         type="button"
-                        onClick={() => setAuthTab('login')}
+                        onClick={() => switchAuthTab('login')}
                         style={{ background: 'none', border: 'none', color: '#09090b', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                       >
                         Back to Sign In
@@ -2194,9 +2243,9 @@ export default function CheckoutClient() {
 
             {/* COD Tile */}
             <div
-              onClick={() => { if (isCodEligible) setPaymentMethod('COD'); }}
-              className={`${styles.paymentTile} ${paymentMethod === 'COD' ? styles.paymentTileSelected : ''} ${!isCodEligible ? styles.paymentTileDisabled : ''}`}
-              style={{ border: `1.5px solid ${paymentMethod === 'COD' ? '#2563eb' : '#e4e4e7'}`, marginTop: '0.75rem' }}
+              onClick={() => setPaymentMethod('COD')}
+              className={`${styles.paymentTile} ${paymentMethod === 'COD' ? styles.paymentTileSelected : ''}`}
+              style={{ border: `1.5px solid ${paymentMethod === 'COD' ? '#2563eb' : '#e4e4e7'}`, marginTop: '0.75rem', cursor: 'pointer' }}
             >
               <div className={styles.radioCircle} style={{ border: `2px solid ${paymentMethod === 'COD' ? '#2563eb' : '#cbd5e1'}` }}>
                 {paymentMethod === 'COD' && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2563eb' }} />}
@@ -2205,13 +2254,8 @@ export default function CheckoutClient() {
                 <div className={styles.paymentTileHeader}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className={styles.paymentTitle}>Cash on Delivery (COD)</div>
-                    <div className={styles.paymentSubtitle}>Pay ₹99 now to confirm; balance on delivery</div>
+                    <div className={styles.paymentSubtitle}>Pay ₹{codConfirmationPayable} online now to confirm; balance on delivery</div>
                   </div>
-                  {!isCodEligible && (
-                    <span style={{ fontSize: '0.72rem', color: '#b45309', fontWeight: 700, flexShrink: 0 }}>
-                      {rawSubtotal < POLICY_CONFIG.shipping.codMinOrder ? `Min ₹${POLICY_CONFIG.shipping.codMinOrder}` : `Max ₹${POLICY_CONFIG.shipping.codMaxOrder}`}
-                    </span>
-                  )}
                 </div>
               </div>
             </div>
@@ -2221,8 +2265,8 @@ export default function CheckoutClient() {
               <div className={styles.codInfoBox}>
                 <div className={styles.codInfoTitle}>Cash on Delivery</div>
                 <div style={{ marginBottom: '0.5rem', lineHeight: 1.45 }}>
-                  Pay ₹99 now to confirm your COD order.<br />
-                  The remaining amount will be payable when your order is delivered.
+                  Pay ₹{codConfirmationPayable} online now as advance confirmation.<br />
+                  The remaining balance of ₹{codRemainingPayable.toFixed(2)} is payable in cash or UPI upon delivery.
                 </div>
                 <div style={{ borderTop: '1px solid #fef3c7', paddingTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.8rem' }}>
                   <div className={styles.codBreakdownRow} style={{ color: '#52525b' }}>
@@ -2230,12 +2274,12 @@ export default function CheckoutClient() {
                     <strong>₹{finalPayable.toFixed(2)}</strong>
                   </div>
                   <div className={styles.codBreakdownRow} style={{ color: '#15803d' }}>
-                    <span>COD Confirmation Paid:</span>
-                    <strong>₹99.00</strong>
+                    <span>COD Confirmation Paid Now:</span>
+                    <strong>₹{codConfirmationPayable.toFixed(2)}</strong>
                   </div>
                   <div className={styles.codBreakdownRow} style={{ color: '#b45309' }}>
                     <span>Remaining Payable on Delivery:</span>
-                    <strong>₹{Math.max(0, finalPayable - 99).toFixed(2)}</strong>
+                    <strong>₹{codRemainingPayable.toFixed(2)}</strong>
                   </div>
                 </div>
               </div>
@@ -2250,10 +2294,10 @@ export default function CheckoutClient() {
             className={styles.yellowPaymentCta}
           >
             {processing
-              ? (paymentMethod === 'ONLINE_RAZORPAY' ? 'CONNECTING TO RAZORPAY…' : 'CONNECTING FOR ₹99 COD…')
+              ? (paymentMethod === 'ONLINE_RAZORPAY' ? 'CONNECTING TO RAZORPAY…' : `CONNECTING FOR ₹${codConfirmationPayable} COD…`)
               : paymentMethod === 'ONLINE_RAZORPAY'
               ? `Pay ₹${finalPayable.toFixed(2)} Online →`
-              : 'Pay ₹99 & Confirm COD Order'}
+              : `Pay ₹${codConfirmationPayable} & Confirm COD Order`}
           </button>
         </div>
 
@@ -2352,11 +2396,7 @@ export default function CheckoutClient() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#52525b', gap: '0.5rem' }}>
                 <span>COD Handling Fee</span>
-                {paymentMethod === 'COD' ? (
-                  <span style={{ color: '#b45309', fontWeight: 600, flexShrink: 0 }}>₹{codCharge.toFixed(2)}</span>
-                ) : (
-                  <span style={{ color: '#16a34a', fontWeight: 700, flexShrink: 0 }}>FREE (₹0)</span>
-                )}
+                <span style={{ color: '#16a34a', fontWeight: 700, flexShrink: 0 }}>FREE (₹0)</span>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '1.2rem', color: '#09090b', borderTop: '1.5px solid #e4e4e7', paddingTop: '0.85rem', marginTop: '0.35rem', gap: '0.5rem' }}>
@@ -2367,12 +2407,12 @@ export default function CheckoutClient() {
               {paymentMethod === 'COD' && (
                 <div style={{ marginTop: '0.65rem', borderTop: '1px dashed #d4d4d8', paddingTop: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.8rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: '#15803d', fontWeight: 600, gap: '0.5rem' }}>
-                    <span>COD Confirmation Paid (Pay Now):</span>
-                    <span style={{ flexShrink: 0 }}>₹99.00</span>
+                    <span>COD Advance (Pay Now Online):</span>
+                    <span style={{ flexShrink: 0 }}>₹{codConfirmationPayable.toFixed(2)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: '#b45309', fontWeight: 700, gap: '0.5rem' }}>
-                    <span>Remaining Payable on Delivery:</span>
-                    <span style={{ flexShrink: 0 }}>₹{Math.max(0, finalPayable - 99).toFixed(2)}</span>
+                    <span>Remaining Balance on Delivery:</span>
+                    <span style={{ flexShrink: 0 }}>₹{codRemainingPayable.toFixed(2)}</span>
                   </div>
                 </div>
               )}

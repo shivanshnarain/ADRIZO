@@ -94,8 +94,8 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
       list = ['https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&q=80&w=1200'];
     }
 
-    const hero = list.map((url) => getOptimizedImageUrl(url, { width: 1000, quality: 'auto', format: 'auto' }));
-    const thumbs = list.map((url) => getOptimizedImageUrl(url, { width: 160, height: 200, crop: 'fill', quality: 'auto', format: 'auto' }));
+    const hero = list.map((url) => getOptimizedImageUrl(url, { width: 1000, crop: 'limit', quality: 'auto', format: 'auto' }));
+    const thumbs = list.map((url) => getOptimizedImageUrl(url, { width: 160, crop: 'limit', quality: 'auto', format: 'auto' }));
     return { heroImages: hero, thumbnailImages: thumbs, imagesList: hero };
   }, [product.images, product.imagesRaw]);
 
@@ -138,6 +138,17 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
+
+  // Dynamic aspect ratio preservation to never crop product photography
+  const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, string>>({});
+
+  const handleImageLoaded = (idx: number, e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth && img.naturalHeight) {
+      const ratio = `${img.naturalWidth} / ${img.naturalHeight}`;
+      setImageAspectRatios((prev) => (prev[idx] === ratio ? prev : { ...prev, [idx]: ratio }));
+    }
+  };
 
   // Exclusive accordion state: only ONE accordion can ever be open at a time
   const [activeAccordion, setActiveAccordion] = useState<string | null>(null);
@@ -603,6 +614,7 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
           >
             <div 
               className={styles.mainImageCard}
+              style={imageAspectRatios[activeImageIndex] ? { aspectRatio: imageAspectRatios[activeImageIndex] } : undefined}
               onClick={handleMainImageClick}
               onTouchStart={handleMainImageTouchStart}
               onTouchMove={handleMainImageTouchMove}
@@ -622,6 +634,7 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                     loading={idx === 0 ? "eager" : "lazy"}
                     fetchPriority={idx === 0 ? "high" : "low"}
                     decoding={idx === 0 ? "sync" : "async"}
+                    onLoad={(e) => handleImageLoaded(idx, e)}
                   />
                 );
               })}

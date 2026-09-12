@@ -59,8 +59,44 @@ export async function POST(request: Request) {
     });
 
     if (authError || !authData.user) {
+      let userExists = false;
+      try {
+        const { getAdminClient } = await import('@/lib/supabase/admin');
+        const adminClient = getAdminClient();
+        const { data: usersData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+        if (usersData?.users?.some(u => u.email?.trim().toLowerCase() === cleanEmail)) {
+          userExists = true;
+        }
+      } catch (checkErr) {
+        console.warn('[Check User Existence Error]', checkErr);
+      }
+
+      if (!userExists) {
+        try {
+          const { prisma } = await import('@/lib/prisma');
+          const pUser = await prisma.user.findFirst({ where: { email: cleanEmail } });
+          if (pUser) userExists = true;
+        } catch {}
+      }
+
+      if (!userExists) {
+        return NextResponse.json(
+          {
+            success: false,
+            code: 'USER_NOT_FOUND',
+            error: 'No account found with this email. Please create an account to continue.',
+            email: cleanEmail,
+          },
+          { status: 404 }
+        );
+      }
+
       return NextResponse.json(
-        { error: authError?.message || 'Invalid email or password' },
+        {
+          success: false,
+          code: 'INVALID_PASSWORD',
+          error: 'Incorrect password. Please try again or click Forgot Password.',
+        },
         { status: 401 }
       );
     }
