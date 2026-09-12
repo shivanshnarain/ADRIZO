@@ -17,12 +17,15 @@ import {
   ShieldCheck,
   Feather,
   Gift,
+  Star,
 } from 'lucide-react';
 import styles from './product.module.css';
 import { useCart } from '../../../../context/CartContext';
 import { getOptimizedImageUrl } from '@/lib/image-utils';
 import SizeChartModal from '@/components/SizeChartModal';
 import ProductCard from '@/components/ProductCard';
+import ProductReviewsSection from '@/components/ProductReviewsSection';
+import { ProductRatingStats } from '@/types/review';
 import { getProductPricing, calculateDiscountPercentage, formatCurrency } from '@/lib/pricing';
 
 export const COLOR_HEX_MAP: Record<string, string> = {
@@ -138,6 +141,11 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
+  const [ratingStats, setRatingStats] = useState<ProductRatingStats>({
+    averageRating: 0,
+    totalReviews: 0,
+    ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+  });
 
   // Dynamic aspect ratio preservation to never crop product photography
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, string>>({});
@@ -683,6 +691,33 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
             {/* 1. Product Title (Prominent at top, no breadcrumbs) */}
             <h1 className={styles.productTitle}>{product.name.toUpperCase()}</h1>
 
+            {/* Star Rating snippet linking to Customer Reviews */}
+            <a
+              href="#customer-reviews"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '0.825rem',
+                color: '#71717a',
+                textDecoration: 'none',
+                marginTop: '0.35rem',
+                marginBottom: '0.5rem',
+                cursor: 'pointer'
+              }}
+              title="View customer reviews and ratings"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#FFC800' }}>
+                <Star size={14} fill="#FFC800" stroke="#FFC800" />
+              </div>
+              <span style={{ fontWeight: 700, color: '#09090b' }}>
+                {ratingStats.totalReviews > 0 ? ratingStats.averageRating.toFixed(1) : '5.0'}
+              </span>
+              <span style={{ color: '#71717a' }}>
+                ({ratingStats.totalReviews > 0 ? `${ratingStats.totalReviews} review${ratingStats.totalReviews > 1 ? 's' : ''}` : 'Verified Quality'})
+              </span>
+            </a>
+
             {/* 2. Pricing Row: Selling Price + Crossed MRP + Dynamic Discount Badge */}
             <div className={styles.priceRow}>
               <span className={styles.mainPrice}>{formattedSellingPrice}</span>
@@ -953,7 +988,17 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
       </div>
 
       {/* ========================================================= */}
-      {/* 3. "YOU MAY ALSO LIKE" RELATED PRODUCTS CAROUSEL          */}
+      {/* 3. CUSTOMER REVIEWS & RATINGS (FIRESTORE)                 */}
+      {/* ========================================================= */}
+      <ProductReviewsSection
+        productId={product.id}
+        productSlug={product.slug || product.id}
+        productName={product.name}
+        onRatingStatsLoaded={setRatingStats}
+      />
+
+      {/* ========================================================= */}
+      {/* 4. "YOU MAY ALSO LIKE" RELATED PRODUCTS CAROUSEL          */}
       {/* ========================================================= */}
       {filteredRelatedProducts.length > 0 && (
         <section className={styles.relatedSection} aria-label="Related Products">

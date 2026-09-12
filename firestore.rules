@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isValidReviewCreate() {
+      let data = request.resource.data;
+      return data.rating is number
+        && data.rating >= 1 && data.rating <= 5
+        && data.reviewText is string && data.reviewText.size() >= 3 && data.reviewText.size() <= 1000
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 60
+        && data.productId is string && data.productId.size() > 0
+        && data.status == 'pending'
+        && data.verifiedPurchase == false; // Clients cannot self-declare verified purchase
+    }
+
+    // Customer Reviews Collection
+    match /reviews/{reviewId} {
+      // 1. Public can ONLY read approved reviews (or users can read their own pending review)
+      allow read: if resource.data.status == 'approved'
+                  || (isAuthenticated() && resource.data.userId == request.auth.uid);
+
+      // 2. Authenticated users can create reviews strictly with pending status
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid
+                    && isValidReviewCreate();
+
+      // 3. Normal clients cannot update or delete reviews directly (moderated via secure admin backend)
+      allow update, delete: if false;
+    }
+
+    // Default deny all other documents
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
