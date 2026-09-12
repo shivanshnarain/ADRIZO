@@ -118,8 +118,8 @@ export default function HomeProductSection({ products }: HomeProductSectionProps
         </div>
       ) : (
         <div className={styles.featuredProductGrid}>
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+          {filteredProducts.map((product, idx) => (
+            <ProductCard key={product.id} product={product} priority={idx < 4} />
           ))}
         </div>
       )}

@@ -33,9 +33,10 @@ export interface ProductCardProps {
   };
   badgeText?: string;
   brandText?: string;
+  priority?: boolean;
 }
 
-export default function ProductCard({ product, badgeText, brandText }: ProductCardProps) {
+export default function ProductCard({ product, badgeText, brandText, priority = false }: ProductCardProps) {
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
 
@@ -216,7 +217,9 @@ export default function ProductCard({ product, badgeText, brandText }: ProductCa
             src={imageList[activeImageIndex] || imageList[0]}
             alt={activeImageIndex === 0 ? product.name : `${product.name} - View ${activeImageIndex + 1}`}
             className={styles.productImage}
-            loading={activeImageIndex === 0 ? "eager" : "lazy"}
+            loading={priority && activeImageIndex === 0 ? "eager" : "lazy"}
+            fetchPriority={priority && activeImageIndex === 0 ? "high" : "low"}
+            decoding="async"
             onError={(e) => {
               (e.target as HTMLImageElement).src =
                 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=800';

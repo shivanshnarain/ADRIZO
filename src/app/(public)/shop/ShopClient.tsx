@@ -465,8 +465,8 @@ export default function ShopClient({
               </div>
             ) : (
               <div className={styles.productGrid}>
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                {filteredProducts.map((product, idx) => (
+                  <ProductCard key={product.id} product={product} priority={idx < 6} />
                 ))}
               </div>
             )}

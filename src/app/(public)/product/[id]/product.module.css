@@ -937,6 +937,66 @@
     position: static;
   }
 
+  .gallerySection {
+    position: relative;
+    width: 100%;
+    height: auto;
+    display: block;
+    margin-bottom: 1.25rem;
+  }
+
+  .mainImageWrapper {
+    width: 100%;
+    height: auto;
+    position: relative;
+    display: block;
+  }
+
+  .mainImageCard {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 0.96;
+    height: auto;
+    max-height: 80vh;
+    background: #F3F4F6;
+    border-radius: 12px;
+    overflow: hidden;
+    display: block;
+    cursor: default;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .mainHeroImg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    padding: 0;
+    margin: 0;
+    display: block;
+    border-radius: 12px;
+    box-sizing: border-box;
+    transition: opacity 0.25s ease;
+  }
+
+  .mainHeroImgHidden {
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .mainHeroImgActive {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 2;
+  }
+
   .accordionScrollArea {
     overflow-y: visible;
     max-height: none;
@@ -974,6 +1034,7 @@
   .gallerySection {
     position: relative;
     width: 100%;
+    height: auto;
     display: block;
     margin-bottom: 0.85rem;
   }
@@ -982,15 +1043,18 @@
     width: 100%;
     height: auto;
     position: relative;
+    display: block;
   }
 
   .mainImageCard {
+    position: relative;
     width: 100%;
+    aspect-ratio: 1 / 0.96;
     height: auto;
-    background: transparent;
+    max-height: 80vh;
+    background: #F3F4F6;
     border-radius: 12px;
     overflow: hidden;
-    position: relative;
     display: block;
     cursor: default;
     border: none;
@@ -1000,11 +1064,13 @@
   }
 
   .mainHeroImg {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: auto;
-    max-height: 80vh;
-    object-fit: contain;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
     padding: 0;
     margin: 0;
     display: block;
@@ -1014,13 +1080,15 @@
   }
 
   .mainHeroImgHidden {
-    display: none !important;
     opacity: 0;
+    pointer-events: none;
+    z-index: 1;
   }
 
   .mainHeroImgActive {
-    display: block !important;
     opacity: 1;
+    pointer-events: auto;
+    z-index: 2;
   }
 
   /* Five Floating Product Thumbnail Cards Overlaid on Bottom of Main Image */
@@ -1433,4 +1501,59 @@
     padding: 0.5rem 12px 2.5rem;
   }
 }
+
+/* ==========================================================================
+   10. PRODUCT DETAIL SKELETON / LOADING STYLES
+   ========================================================================== */
+
+@keyframes skeletonPulseAnimation {
+  0% {
+    background-color: #F3F4F6;
+  }
+  50% {
+    background-color: #E5E7EB;
+  }
+  100% {
+    background-color: #F3F4F6;
+  }
+}
+
+.skeletonPulse {
+  background-color: #F3F4F6 !important;
+  animation: skeletonPulseAnimation 1.6s ease-in-out infinite !important;
+  border-color: #E5E7EB !important;
+  border-radius: 4px;
+}
+
+.skeletonLine {
+  background-color: #F3F4F6;
+  border-radius: 4px;
+  animation: skeletonPulseAnimation 1.6s ease-in-out infinite;
+}
+
+.skeletonTitle {
+  width: 75%;
+  height: 38px;
+  margin-bottom: 0.85rem;
+}
+
+.skeletonPrice {
+  width: 45%;
+  height: 30px;
+  margin-bottom: 1.5rem;
+}
+
+.skeletonLabel {
+  width: 60px;
+  height: 16px;
+  margin-bottom: 0.65rem;
+}
+
+.skeletonBtn {
+  width: 100%;
+  height: 52px;
+  border-radius: 8px;
+  margin-top: 1.5rem;
+}
+
 

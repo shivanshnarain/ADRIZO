@@ -73,24 +73,31 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
   const { addToCart, openBogoSelectorFor, openBuyNowPromoModal, bogoPromoConfig, activeOffers } = useCart();
   const router = useRouter();
 
-  // 1. Resolve Images List
-  let imagesList: string[] = [];
-  if (product.images && product.images.length > 0) {
-    imagesList = product.images.map((img: any) => getOptimizedImageUrl(img.url, { width: 1400 }));
-  } else if (product.imagesRaw) {
-    try {
-      const parsed = JSON.parse(product.imagesRaw || '[]');
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        imagesList = parsed.map((url: string) => getOptimizedImageUrl(url, { width: 1400 }));
+  // 1. Resolve Images List & Device-Optimized CDN URLs
+  const { heroImages, thumbnailImages, imagesList } = useMemo(() => {
+    let list: string[] = [];
+    if (product.images && product.images.length > 0) {
+      list = product.images.map((img: any) => typeof img === 'string' ? img : (img?.url || img?.secure_url || ''));
+    } else if (product.imagesRaw) {
+      try {
+        const parsed = JSON.parse(product.imagesRaw || '[]');
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          list = parsed.map((item: any) => typeof item === 'string' ? item : (item?.url || item?.secure_url || ''));
+        }
+      } catch {
+        list = [];
       }
-    } catch {
-      imagesList = [];
     }
-  }
 
-  if (imagesList.length === 0) {
-    imagesList = ['https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&q=80&w=1200'];
-  }
+    list = list.filter(Boolean);
+    if (list.length === 0) {
+      list = ['https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&q=80&w=1200'];
+    }
+
+    const hero = list.map((url) => getOptimizedImageUrl(url, { width: 1000, quality: 'auto', format: 'auto' }));
+    const thumbs = list.map((url) => getOptimizedImageUrl(url, { width: 160, height: 200, crop: 'fill', quality: 'auto', format: 'auto' }));
+    return { heroImages: hero, thumbnailImages: thumbs, imagesList: hero };
+  }, [product.images, product.imagesRaw]);
 
   // 2. Resolve Sizes (e.g. S, M, L, XL, XXL or 28, 30, 32, 34, 36, 38)
   let sizes: string[] = [];
@@ -574,10 +581,13 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                     aria-label={`View image ${idx + 1}`}
                   >
                     <img 
-                      src={img} 
+                      src={thumbnailImages[idx] || img} 
                       alt={`${product.name} thumbnail ${idx + 1}`} 
                       className={styles.thumbImg}
                       loading="lazy"
+                      decoding="async"
+                      width={76}
+                      height={96}
                     />
                   </button>
                 );
@@ -610,6 +620,8 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                     alt={`${product.name} view ${idx + 1}`}
                     className={`${styles.mainHeroImg} ${isCurrent ? styles.mainHeroImgActive : styles.mainHeroImgHidden}`}
                     loading={idx === 0 ? "eager" : "lazy"}
+                    fetchPriority={idx === 0 ? "high" : "low"}
+                    decoding={idx === 0 ? "sync" : "async"}
                   />
                 );
               })}
@@ -632,10 +644,13 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                       aria-label={`View image ${idx + 1}`}
                     >
                       <img 
-                        src={img} 
+                        src={thumbnailImages[idx] || img} 
                         alt={`${product.name} thumbnail ${idx + 1}`} 
                         className={styles.thumbImg}
                         loading="lazy"
+                        decoding="async"
+                        width={56}
+                        height={70}
                       />
                     </button>
                   );

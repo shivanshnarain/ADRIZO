@@ -1,6 +1,7 @@
 import { prisma } from '../../../../lib/prisma';
 import ProductClient from './ProductClient';
 import { notFound } from 'next/navigation';
+import { getOptimizedImageUrl } from '@/lib/image-utils';
 
 export const revalidate = 60;
 
@@ -52,5 +53,40 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
     notFound();
   }
 
-  return <ProductClient product={product} initialRelatedProducts={relatedProducts} />;
+  // Preload primary hero image in HTML head
+  let primaryHeroUrl: string | null = null;
+  if (product.images && product.images.length > 0) {
+    const first = product.images[0];
+    const rawUrl = typeof first === 'string' ? first : (first?.url || first?.secure_url || '');
+    if (rawUrl) {
+      primaryHeroUrl = getOptimizedImageUrl(rawUrl, { width: 1000, quality: 'auto', format: 'auto' });
+    }
+  } else if (product.imagesRaw) {
+    try {
+      const parsed = JSON.parse(product.imagesRaw || '[]');
+      if (Array.isArray(parsed) && parsed[0]) {
+        const first = parsed[0];
+        const rawUrl = typeof first === 'string' ? first : (first?.url || first?.secure_url || '');
+        if (rawUrl) {
+          primaryHeroUrl = getOptimizedImageUrl(rawUrl, { width: 1000, quality: 'auto', format: 'auto' });
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return (
+    <>
+      {primaryHeroUrl && (
+        <link
+          rel="preload"
+          as="image"
+          href={primaryHeroUrl}
+          fetchPriority="high"
+        />
+      )}
+      <ProductClient product={product} initialRelatedProducts={relatedProducts} />
+    </>
+  );
 }
