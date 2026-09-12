@@ -47,8 +47,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // 1. Authenticate Customer
-    const customer = await getAuthenticatedCustomer();
-    if (!customer || !customer.id || customer.id === 'admin') {
+    const customer = await getAuthenticatedCustomer({ allowAdmin: true });
+    if (!customer || !customer.id) {
       return NextResponse.json({
         success: false,
         error: 'Please sign in to write a review.',

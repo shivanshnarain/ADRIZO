@@ -515,31 +515,45 @@
    EMPTY STATE & LOAD MORE
    ========================================================================== */
 
-.emptyStateCard {
+.compactEmptyState {
   background: #fafafa;
-  border: 1.5px dashed #e4e4e7;
-  border-radius: 12px;
-  padding: 3rem 1.5rem;
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  padding: 1.5rem 1.25rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
 }
 
-.emptyStateTitle {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #09090b;
-  margin: 0.75rem 0 0.35rem;
+.compactEmptyText {
+  font-size: 0.9rem;
+  color: #52525b;
+  margin: 0;
+  line-height: 1.4;
+  font-weight: 500;
 }
 
-.emptyStateSubtitle {
-  font-size: 0.875rem;
-  color: #71717a;
-  max-width: 360px;
-  line-height: 1.45;
-  margin-bottom: 1.25rem;
+.compactWriteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #09090b;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.825rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.compactWriteBtn:hover {
+  background: #27272a;
 }
 
 .loadMoreRow {

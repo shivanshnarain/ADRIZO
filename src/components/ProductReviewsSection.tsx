@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useId } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Star, 
   CheckCircle2, 
@@ -9,7 +9,6 @@ import {
   X, 
   Loader2, 
   MessageSquare,
-  ShieldCheck,
   Check
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -37,7 +36,7 @@ export default function ProductReviewsSection({
   productName = 'Product',
   onRatingStatsLoaded,
 }: ProductReviewsSectionProps) {
-  const { user, openAuthModal } = useAuth();
+  const { user, loading: authLoading, openAuthModal } = useAuth();
 
   // Reviews Data State
   const [reviews, setReviews] = useState<CustomerReview[]>([]);
@@ -50,7 +49,7 @@ export default function ProductReviewsSection({
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [fetchError, setFetchError] = useState('');
+  const [, setFetchError] = useState('');
 
   // Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -110,8 +109,7 @@ export default function ProductReviewsSection({
 
   // Handle "Write a Review" button click
   const handleWriteReviewClick = () => {
-    if (!user) {
-      // Prompt user to sign in using existing ADRIZO auth modal
+    if (!user && !authLoading) {
       openAuthModal('SIGN_IN');
       return;
     }
@@ -128,6 +126,7 @@ export default function ProductReviewsSection({
 
     if (!user) {
       openAuthModal('SIGN_IN');
+      setSubmitError('Please sign in to submit your review.');
       return;
     }
 
@@ -154,6 +153,8 @@ export default function ProductReviewsSection({
     }
 
     setSubmitting(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
     try {
       const res = await fetch('/api/reviews', {
@@ -167,6 +168,7 @@ export default function ProductReviewsSection({
           rating: selectedRating,
           reviewText: cleanText,
         }),
+        signal: controller.signal,
       });
 
       const data = await res.json();
@@ -177,6 +179,8 @@ export default function ProductReviewsSection({
         );
         setReviewText('');
         setSelectedRating(5);
+        // Refresh reviews and statistics
+        await loadReviews(1, false);
         // Collapse form automatically after 4 seconds
         setTimeout(() => {
           setIsFormOpen(false);
@@ -184,9 +188,14 @@ export default function ProductReviewsSection({
       } else {
         setSubmitError(data.error || 'Failed to submit review. Please try again.');
       }
-    } catch {
-      setSubmitError('Network failure. Please check your internet connection.');
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setSubmitError('Submission timed out. Please try again.');
+      } else {
+        setSubmitError('Network failure. Please check your internet connection.');
+      }
     } finally {
+      clearTimeout(timeoutId);
       setSubmitting(false);
     }
   };
@@ -228,25 +237,75 @@ export default function ProductReviewsSection({
     <section id="customer-reviews" className={styles.reviewsContainer} aria-label="Customer Reviews">
       <div className={styles.reviewsDivider} />
 
-      {/* Header Row */}
+      {/* 1. Header Row */}
       <div className={styles.sectionHeaderRow}>
         <div className={styles.titleGroup}>
           <span className={styles.sectionTag}>Verified Feedback</span>
           <h2 className={styles.sectionTitle}>Customer Reviews</h2>
         </div>
 
-        <button
-          type="button"
-          onClick={handleWriteReviewClick}
-          className={`${styles.writeReviewBtn} ${isFormOpen ? styles.writeReviewBtnActive : ''}`}
-          aria-expanded={isFormOpen}
-        >
-          {isFormOpen ? <X size={16} /> : <Edit3 size={16} />}
-          <span>{isFormOpen ? 'Close Form' : 'Write a Review'}</span>
-        </button>
+        {!isFormOpen && (
+          <button
+            type="button"
+            onClick={handleWriteReviewClick}
+            className={styles.writeReviewBtn}
+            aria-expanded={false}
+          >
+            <Edit3 size={16} />
+            <span>Write a Review</span>
+          </button>
+        )}
       </div>
 
-      {/* Review Submission Form Panel */}
+      {/* 2. Rating Summary Card */}
+      {loading ? (
+        <div className={styles.summaryCard}>
+          <div className={styles.overallRatingCol}>
+            <div className={`${styles.skeletonPulse}`} style={{ width: '80px', height: '56px', marginBottom: '8px' }} />
+            <div className={`${styles.skeletonPulse}`} style={{ width: '110px', height: '20px' }} />
+          </div>
+          <div className={styles.ratingDistributionCol}>
+            {[5, 4, 3, 2, 1].map(s => (
+              <div key={s} className={`${styles.skeletonPulse}`} style={{ width: '100%', height: '14px' }} />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className={styles.summaryCard}>
+          <div className={styles.overallRatingCol}>
+            <div className={styles.bigRatingNumber}>
+              {stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : '0.0'}
+            </div>
+            {renderStars(stats.averageRating, 20)}
+            <div className={styles.totalReviewsCaption}>
+              {stats.totalReviews === 1
+                ? 'Based on 1 customer review'
+                : `Based on ${stats.totalReviews.toLocaleString('en-IN')} customer reviews`}
+            </div>
+          </div>
+
+          {/* Rating Distribution Bars */}
+          <div className={styles.ratingDistributionCol}>
+            {[5, 4, 3, 2, 1].map(ratingLevel => {
+              const count = (stats.ratingDistribution as any)[ratingLevel] || 0;
+              const percent = stats.totalReviews > 0 ? (count / stats.totalReviews) * 100 : 0;
+              return (
+                <div key={ratingLevel} className={styles.distRow}>
+                  <span className={styles.starLabel}>
+                    {ratingLevel} <Star size={12} fill="#FFC800" stroke="#FFC800" />
+                  </span>
+                  <div className={styles.progressBarTrack} role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
+                    <div className={styles.progressBarFill} style={{ width: `${percent}%` }} />
+                  </div>
+                  <span className={styles.distCount}>{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 3. Write a Review Form (when toggled open) */}
       {isFormOpen && (
         <div className={styles.reviewFormPanel}>
           <div className={styles.formHeader}>
@@ -369,128 +428,76 @@ export default function ProductReviewsSection({
         </div>
       )}
 
-      {/* Loading Skeleton */}
-      {loading ? (
-        <div className={styles.summaryCard}>
-          <div className={styles.overallRatingCol}>
-            <div className={`${styles.skeletonPulse}`} style={{ width: '80px', height: '56px', marginBottom: '8px' }} />
-            <div className={`${styles.skeletonPulse}`} style={{ width: '110px', height: '20px' }} />
-          </div>
-          <div className={styles.ratingDistributionCol}>
-            {[5, 4, 3, 2, 1].map(s => (
-              <div key={s} className={`${styles.skeletonPulse}`} style={{ width: '100%', height: '14px' }} />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Summary Card */}
-          <div className={styles.summaryCard}>
-            <div className={styles.overallRatingCol}>
-              <div className={styles.bigRatingNumber}>
-                {stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : '0.0'}
-              </div>
-              {renderStars(stats.averageRating, 20)}
-              <div className={styles.totalReviewsCaption}>
-                {stats.totalReviews === 1
-                  ? 'Based on 1 customer review'
-                  : `Based on ${stats.totalReviews.toLocaleString('en-IN')} customer reviews`}
-              </div>
-            </div>
-
-            {/* Rating Distribution Bars */}
-            <div className={styles.ratingDistributionCol}>
-              {[5, 4, 3, 2, 1].map(ratingLevel => {
-                const count = (stats.ratingDistribution as any)[ratingLevel] || 0;
-                const percent = stats.totalReviews > 0 ? (count / stats.totalReviews) * 100 : 0;
-                return (
-                  <div key={ratingLevel} className={styles.distRow}>
-                    <span className={styles.starLabel}>
-                      {ratingLevel} <Star size={12} fill="#FFC800" stroke="#FFC800" />
-                    </span>
-                    <div className={styles.progressBarTrack} role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
-                      <div className={styles.progressBarFill} style={{ width: `${percent}%` }} />
+      {/* 4. Actual Customer Reviews List / Compact Empty State */}
+      {!loading && (
+        reviews.length > 0 ? (
+          <div className={styles.reviewsList}>
+            {reviews.map(review => {
+              const initial = (review.customerName || 'C').charAt(0).toUpperCase();
+              return (
+                <article key={review.id} className={styles.reviewCard}>
+                  <div className={styles.reviewCardHeader}>
+                    <div className={styles.authorInfo}>
+                      <div className={styles.avatarCircle} aria-hidden="true">
+                        {initial}
+                      </div>
+                      <div className={styles.authorMeta}>
+                        <div className={styles.authorNameRow}>
+                          <span className={styles.authorName}>{review.customerName}</span>
+                          {review.verifiedPurchase && (
+                            <span className={styles.verifiedBadge}>
+                              <Check size={11} strokeWidth={3} />
+                              <span>Verified Purchase</span>
+                            </span>
+                          )}
+                        </div>
+                        <time className={styles.reviewDate} dateTime={review.createdAt}>
+                          {formatReviewDate(review.createdAt)}
+                        </time>
+                      </div>
                     </div>
-                    <span className={styles.distCount}>{count}</span>
+
+                    <div className={styles.reviewStars}>
+                      {renderStars(review.rating, 15)}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  <p className={styles.reviewBodyText}>{review.reviewText}</p>
+                </article>
+              );
+            })}
           </div>
+        ) : !isFormOpen ? (
+          /* Sleek, compact empty state only rendered when form is closed */
+          <div className={styles.compactEmptyState}>
+            <MessageSquare size={24} color="#a1a1aa" strokeWidth={1.5} />
+            <p className={styles.compactEmptyText}>
+              No customer reviews yet. Be the first to share your experience.
+            </p>
+            <button
+              type="button"
+              onClick={handleWriteReviewClick}
+              className={styles.compactWriteBtn}
+            >
+              <Edit3 size={14} />
+              <span>Write a Review</span>
+            </button>
+          </div>
+        ) : null /* When form is open and 0 reviews, render nothing redundant below */
+      )}
 
-          {/* Reviews List */}
-          {reviews.length > 0 ? (
-            <div className={styles.reviewsList}>
-              {reviews.map(review => {
-                const initial = (review.customerName || 'C').charAt(0).toUpperCase();
-                return (
-                  <article key={review.id} className={styles.reviewCard}>
-                    <div className={styles.reviewCardHeader}>
-                      <div className={styles.authorInfo}>
-                        <div className={styles.avatarCircle} aria-hidden="true">
-                          {initial}
-                        </div>
-                        <div className={styles.authorMeta}>
-                          <div className={styles.authorNameRow}>
-                            <span className={styles.authorName}>{review.customerName}</span>
-                            {review.verifiedPurchase && (
-                              <span className={styles.verifiedBadge}>
-                                <Check size={11} strokeWidth={3} />
-                                <span>Verified Purchase</span>
-                              </span>
-                            )}
-                          </div>
-                          <time className={styles.reviewDate} dateTime={review.createdAt}>
-                            {formatReviewDate(review.createdAt)}
-                          </time>
-                        </div>
-                      </div>
-
-                      {/* Stars */}
-                      <div className={styles.reviewStars}>
-                        {renderStars(review.rating, 15)}
-                      </div>
-                    </div>
-
-                    {/* Review Body */}
-                    <p className={styles.reviewBodyText}>{review.reviewText}</p>
-                  </article>
-                );
-              })}
-            </div>
-          ) : (
-            /* Empty State */
-            <div className={styles.emptyStateCard}>
-              <MessageSquare size={36} color="#71717a" strokeWidth={1.5} />
-              <h3 className={styles.emptyStateTitle}>No Customer Reviews Yet</h3>
-              <p className={styles.emptyStateSubtitle}>
-                Be the first to share your experience with this handcrafted ADRIZO garment.
-              </p>
-              <button
-                type="button"
-                onClick={handleWriteReviewClick}
-                className={styles.writeReviewBtn}
-              >
-                <Edit3 size={15} />
-                <span>Write the First Review</span>
-              </button>
-            </div>
-          )}
-
-          {/* Load More Button */}
-          {hasMore && (
-            <div className={styles.loadMoreRow}>
-              <button
-                type="button"
-                onClick={() => loadReviews(page + 1, false)}
-                disabled={loadingMore}
-                className={styles.loadMoreBtn}
-              >
-                {loadingMore ? 'Loading More Reviews...' : 'Load More Reviews'}
-              </button>
-            </div>
-          )}
-        </>
+      {/* 5. Pagination / Load More */}
+      {hasMore && (
+        <div className={styles.loadMoreRow}>
+          <button
+            type="button"
+            onClick={() => loadReviews(page + 1, false)}
+            disabled={loadingMore}
+            className={styles.loadMoreBtn}
+          >
+            {loadingMore ? 'Loading More Reviews...' : 'Load More Reviews'}
+          </button>
+        </div>
       )}
     </section>
   );
