@@ -280,3 +280,23 @@ main, .admin-content {
   z-index: var(--z-toast, 2500) !important;
   pointer-events: auto !important;
 }
+
+/* ==========================================================================
+   BEST-EFFORT PRODUCT & SHOWCASE IMAGE PROTECTION
+   Prevents easy drag-to-save, right-click save, and mobile long-press menus
+   while completely preserving taps, clicks, swipe carousels, and zoom lightboxes.
+   ========================================================================== */
+img[data-protected-img="true"],
+.protected-image,
+.protected-image img,
+[data-protected-img="true"] img,
+img[src*="cloudinary.com"],
+img[src*="adrizo/products"],
+img[src*="unsplash.com"],
+img[src*="customer"] {
+  -webkit-touch-callout: none !important;
+  -webkit-user-drag: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+

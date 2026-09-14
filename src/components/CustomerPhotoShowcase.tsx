@@ -96,6 +96,9 @@ export default function CustomerPhotoShowcase({
           loading="eager"
           decoding="async"
           draggable={false}
+          onContextMenu={(e) => e.preventDefault()}
+          onDragStart={(e) => e.preventDefault()}
+          data-protected-img="true"
           onError={(e) => {
             const target = e.currentTarget;
             if (photo.imageUrl.startsWith('/uploads/customer-photos/')) {

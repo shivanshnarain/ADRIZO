@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from '@/context/AuthContext';
+import ImageProtection from '@/components/ImageProtection';
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.adrizo.com';
 
@@ -134,6 +135,7 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <AuthProvider>
           {children}
+          <ImageProtection />
         </AuthProvider>
       </body>
     </html>

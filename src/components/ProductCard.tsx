@@ -220,6 +220,10 @@ export default function ProductCard({ product, badgeText, brandText, priority = 
             loading={priority && activeImageIndex === 0 ? "eager" : "lazy"}
             fetchPriority={priority && activeImageIndex === 0 ? "high" : "low"}
             decoding="async"
+            draggable={false}
+            onContextMenu={(e) => e.preventDefault()}
+            onDragStart={(e) => e.preventDefault()}
+            data-protected-img="true"
             onError={(e) => {
               (e.target as HTMLImageElement).src =
                 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=800';

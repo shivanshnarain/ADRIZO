@@ -169,6 +169,8 @@ export default async function Home() {
                   alt={cat.name}
                   className={styles.categoryCardImage}
                   loading="lazy"
+                  draggable={false}
+                  data-protected-img="true"
                 />
                 <div className={styles.categoryCardArrow} aria-hidden="true">
                   <ArrowRight size={14} strokeWidth={2.5} color="#000000" />

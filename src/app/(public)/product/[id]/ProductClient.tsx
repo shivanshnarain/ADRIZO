@@ -27,6 +27,7 @@ import ProductCard from '@/components/ProductCard';
 import ProductReviewsSection from '@/components/ProductReviewsSection';
 import { ProductRatingStats } from '@/types/review';
 import { getProductPricing, calculateDiscountPercentage, formatCurrency } from '@/lib/pricing';
+import { executeShare } from '@/lib/share';
 
 export const COLOR_HEX_MAP: Record<string, string> = {
   'JET BLACK': '#111111',
@@ -541,33 +542,18 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
     });
   };
 
-  // Dynamic Canonical Product Share Handler
+  // Dynamic Canonical Product Share Handler (Native Web Share API with Clipboard Fallback)
   const handleShare = async () => {
     const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://adrizo.com/product/${product.slug || product.id}`;
-    const shareData = {
-      title: product.name,
+    const result = await executeShare({
+      title: `${product.name} | ADRIZO`,
       text: `Check out ${product.name} on ADRIZO`,
       url: shareUrl,
-    };
+    });
 
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (err: any) {
-        if (err.name === 'AbortError') return;
-      }
-    }
-
-    // Fallback to clipboard copy
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        setCopiedShare(true);
-        setTimeout(() => setCopiedShare(false), 2500);
-      } catch (e) {
-        prompt('Copy product link:', shareUrl);
-      }
+    if (result.status === 'copied') {
+      setCopiedShare(true);
+      setTimeout(() => setCopiedShare(false), 2500);
     }
   };
 
@@ -607,6 +593,10 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                       decoding="async"
                       width={76}
                       height={96}
+                      draggable={false}
+                      onContextMenu={(e) => e.preventDefault()}
+                      onDragStart={(e) => e.preventDefault()}
+                      data-protected-img="true"
                     />
                   </button>
                 );
@@ -643,6 +633,10 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                     fetchPriority={idx === 0 ? "high" : "low"}
                     decoding={idx === 0 ? "sync" : "async"}
                     onLoad={(e) => handleImageLoaded(idx, e)}
+                    draggable={false}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onDragStart={(e) => e.preventDefault()}
+                    data-protected-img="true"
                   />
                 );
               })}
@@ -672,6 +666,10 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                         decoding="async"
                         width={56}
                         height={70}
+                        draggable={false}
+                        onContextMenu={(e) => e.preventDefault()}
+                        onDragStart={(e) => e.preventDefault()}
+                        data-protected-img="true"
                       />
                     </button>
                   );
@@ -688,39 +686,59 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
         <div className={styles.productInfoSection}>
           {/* Top Fixed Information Zone */}
           <div className={styles.topInfoSection}>
-            {/* Breadcrumb Navigation */}
-            <nav
-              aria-label="Breadcrumb"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '0.4rem',
-                fontSize: '0.785rem',
-                color: '#71717a',
-                marginBottom: '0.5rem',
-              }}
-            >
-              <a href="/" style={{ color: '#71717a', textDecoration: 'none' }}>Home</a>
-              <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
-              <a href="/shop" style={{ color: '#71717a', textDecoration: 'none' }}>Shop</a>
-              {product.category && (
-                <>
+            <div className={styles.topInfoTitleHeader}>
+              <div className={styles.breadcrumbAndTitleWrap}>
+                {/* Breadcrumb Navigation */}
+                <nav
+                  aria-label="Breadcrumb"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '0.4rem',
+                    fontSize: '0.785rem',
+                    color: '#71717a',
+                    marginBottom: '0.5rem',
+                  }}
+                >
+                  <a href="/" style={{ color: '#71717a', textDecoration: 'none' }}>Home</a>
                   <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
-                  <a
-                    href={`/category/${product.category.slug || 'men'}`}
-                    style={{ color: '#71717a', textDecoration: 'none' }}
-                  >
-                    {product.category.name}
-                  </a>
-                </>
-              )}
-              <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
-              <span style={{ color: '#09090b', fontWeight: 600 }}>{product.name}</span>
-            </nav>
+                  <a href="/shop" style={{ color: '#71717a', textDecoration: 'none' }}>Shop</a>
+                  {product.category && (
+                    <>
+                      <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
+                      <a
+                        href={`/category/${product.category.slug || 'men'}`}
+                        style={{ color: '#71717a', textDecoration: 'none' }}
+                      >
+                        {product.category.name}
+                      </a>
+                    </>
+                  )}
+                  <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
+                  <span style={{ color: '#09090b', fontWeight: 600 }}>{product.name}</span>
+                </nav>
 
-            {/* 1. Product Title */}
-            <h1 className={styles.productTitle}>{product.name.toUpperCase()}</h1>
+                {/* 1. Product Title */}
+                <h1 className={styles.productTitle}>{product.name.toUpperCase()}</h1>
+              </div>
+
+              {/* Top-Right Share Button */}
+              <button
+                type="button"
+                className={styles.topRightProductShareBtn}
+                onClick={handleShare}
+                aria-label="Share product"
+                title={copiedShare ? "Product link copied!" : "Share product"}
+                id="product-top-right-share-btn"
+              >
+                {copiedShare ? (
+                  <Check size={18} strokeWidth={2.4} color="#16a34a" />
+                ) : (
+                  <Share2 size={18} strokeWidth={1.9} color="#09090b" />
+                )}
+              </button>
+            </div>
 
             {/* Star Rating snippet linking to Customer Reviews */}
             <a
@@ -988,31 +1006,39 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                 className={styles.addToCartBtn}
                 onClick={handleAddToCart}
                 disabled={maxStock <= 0}
+                id="product-add-to-cart-btn"
               >
                 <ShoppingCart size={16} strokeWidth={2.2} />
                 <span>{addedSuccess ? 'ADDED TO CART ✓' : 'ADD TO CART'}</span>
               </button>
 
-              <button 
-                type="button" 
-                className={styles.buyNowBtn}
-                onClick={handleBuyNow}
-                disabled={maxStock <= 0}
-              >
-                <Zap size={16} strokeWidth={2.4} fill="currentColor" />
-                <span>BUY NOW</span>
-              </button>
+              <div className={styles.buyNowRow}>
+                <button 
+                  type="button" 
+                  className={styles.buyNowBtn}
+                  onClick={handleBuyNow}
+                  disabled={maxStock <= 0}
+                  id="product-buy-now-btn"
+                >
+                  <Zap size={16} strokeWidth={2.4} fill="currentColor" />
+                  <span>BUY NOW</span>
+                </button>
 
-              <button
-                type="button"
-                className={`${styles.shareBtn} ${copiedShare ? styles.shareBtnSuccess : ''}`}
-                onClick={handleShare}
-                aria-label="Share product"
-                title={copiedShare ? "Link copied to clipboard!" : "Share product"}
-              >
-                {copiedShare ? <Check size={16} strokeWidth={2.5} color="#16a34a" /> : <Share2 size={16} strokeWidth={2.2} />}
-                <span className={styles.shareBtnLabel}>{copiedShare ? 'COPIED' : 'SHARE'}</span>
-              </button>
+                <button
+                  type="button"
+                  className={`${styles.squareShareBtn} ${copiedShare ? styles.squareShareBtnSuccess : ''}`}
+                  onClick={handleShare}
+                  aria-label="Share product"
+                  title={copiedShare ? "Product link copied!" : "Share product"}
+                  id="product-square-share-btn"
+                >
+                  {copiedShare ? (
+                    <Check size={18} strokeWidth={2.5} color="#16a34a" />
+                  ) : (
+                    <Share2 size={18} strokeWidth={2} color="#000000" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1105,7 +1131,11 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
             <img 
               src={imagesList[activeImageIndex] || imagesList[0]} 
               alt={`${product.name} full view`}
-              className={styles.lightboxImg} 
+              className={styles.lightboxImg}
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+              data-protected-img="true"
             />
 
             {imagesList.length > 1 && (
@@ -1135,7 +1165,14 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                       className={`${styles.lightboxThumbBtn} ${activeImageIndex === idx ? styles.lightboxThumbActive : ''}`}
                       onClick={() => setActiveImageIndex(idx)}
                     >
-                      <img src={img} alt={`Thumbnail ${idx + 1}`} />
+                      <img 
+                        src={img} 
+                        alt={`Thumbnail ${idx + 1}`}
+                        draggable={false}
+                        onContextMenu={(e) => e.preventDefault()}
+                        onDragStart={(e) => e.preventDefault()}
+                        data-protected-img="true"
+                      />
                     </button>
                   ))}
                 </div>

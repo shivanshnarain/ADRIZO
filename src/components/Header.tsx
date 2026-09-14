@@ -4,11 +4,12 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, User, Heart, ShoppingCart, Menu, X, ChevronDown, Truck, Sparkles, Package, MapPin, LogOut } from 'lucide-react';
+import { Search, User, Heart, ShoppingCart, Menu, X, ChevronDown, Truck, Sparkles, Package, MapPin, LogOut, Share2 } from 'lucide-react';
 import styles from './Header.module.css';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import AdrizoLogo from './AdrizoLogo';
+import { executeShare } from '@/lib/share';
 
 export default function Header() {
   const { itemCount, setIsCartOpen } = useCart();
@@ -109,6 +110,13 @@ export default function Header() {
     }, 150);
   };
 
+  const handleHeaderShare = async () => {
+    await executeShare({
+      title: typeof document !== 'undefined' ? document.title : 'ADRIZO',
+      url: typeof window !== 'undefined' ? window.location.href : 'https://adrizo.com',
+    });
+  };
+
   return (
     <header className={styles.navbarHeader}>
       {/* =========================================
@@ -157,8 +165,19 @@ export default function Header() {
           />
         </Link>
 
-        {/* Right Side: Search and Cart only */}
+        {/* Right Side: Share, Search and Cart */}
         <div className={styles.mobileRightActionIcons}>
+          <button
+            type="button"
+            className={styles.mobileIconBtn}
+            onClick={handleHeaderShare}
+            aria-label="Share"
+            title="Share"
+            id="mobile-share-btn"
+          >
+            <Share2 size={18} strokeWidth={1.8} />
+          </button>
+
           <button
             type="button"
             className={`${styles.mobileIconBtn} ${isSearchOpen ? styles.mobileIconBtnActive : ''}`}
@@ -404,6 +423,18 @@ export default function Header() {
                       <span className={styles.accountLoginLabel}>Account / Login</span>
                     </button>
                   )}
+
+                  {/* Share Icon */}
+                  <button
+                    type="button"
+                    onClick={handleHeaderShare}
+                    className={styles.iconButton}
+                    aria-label="Share"
+                    title="Share"
+                    id="desktop-header-share-btn"
+                  >
+                    <Share2 size={18} strokeWidth={1.8} />
+                  </button>
 
                   {/* 3. Wishlist / Favorite Icon */}
                   <Link
