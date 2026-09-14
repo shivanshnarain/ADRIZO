@@ -1,29 +1,16 @@
 import fs from 'fs';
 import path from 'path';
 import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  addDoc, 
-  doc, 
-  deleteDoc, 
-  orderBy,
-  serverTimestamp, 
-  Timestamp,
-} from 'firebase/firestore';
-import { 
   ref as storageRef, 
   uploadBytes, 
   getDownloadURL, 
   deleteObject, 
 } from 'firebase/storage';
-import { db, storage } from './firebase';
+import { storage } from './firebase';
 import { prisma } from './prisma';
 import { v4 as uuidv4 } from 'uuid';
 
 export const CUSTOMER_PHOTOS_COLLECTION = 'customerPhotos';
-const FIRESTORE_TIMEOUT_MS = 1500;
 const prismaCustomerPhoto = (prisma as any).customerPhoto;
 
 export interface CustomerPhotoItem {
@@ -51,7 +38,7 @@ export function invalidateCustomerPhotosCache(): void {
 /**
  * Execute a promise with a timeout to prevent indefinite hangs in Node.js
  */
-async function withTimeout<T>(promise: Promise<T>, timeoutMs = FIRESTORE_TIMEOUT_MS): Promise<T> {
+async function withTimeout<T>(promise: Promise<T>, timeoutMs = 2000): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) => 
@@ -60,36 +47,24 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs = FIRESTORE_TIMEOUT
   ]);
 }
 
-/**
- * Format timestamp or Date safely to an ISO string.
- */
-function toIsoString(val: any): string {
-  if (!val) return new Date().toISOString();
-  if (val instanceof Timestamp) return val.toDate().toISOString();
-  if (typeof val.toDate === 'function') return val.toDate().toISOString();
-  if (val.seconds) return new Date(val.seconds * 1000).toISOString();
-  if (val instanceof Date) return val.toISOString();
-  if (typeof val === 'string') return val;
-  return new Date().toISOString();
-}
 
 /**
  * Retrieve all customer photos, ordered by newest first.
- * Queries Firestore with graceful fallback to database.
+ * Queries primary database with optional cache bypass.
  */
-export async function getCustomerPhotos(): Promise<{
+export async function getCustomerPhotos(forceFresh = false): Promise<{
   row1: CustomerPhotoItem[];
   row2: CustomerPhotoItem[];
   all: CustomerPhotoItem[];
 }> {
-  // 1. Fast path: return fresh in-memory cache if available (0ms)
-  if (cachedPhotosData && Date.now() - cachedPhotosData.timestamp < CACHE_TTL_MS) {
+  // 1. Return fresh in-memory cache if available and not forced
+  if (!forceFresh && cachedPhotosData && Date.now() - cachedPhotosData.timestamp < CACHE_TTL_MS) {
     return cachedPhotosData;
   }
 
   let photos: CustomerPhotoItem[] = [];
 
-  // 2. Primary database query (sub-10ms)
+  // 2. Primary database query
   try {
     const dbPhotos = await prismaCustomerPhoto.findMany({
       orderBy: { createdAt: 'desc' },
@@ -100,35 +75,11 @@ export async function getCustomerPhotos(): Promise<{
         imageUrl: p.imageUrl,
         storagePath: p.storagePath,
         row: (p.row === 2 ? 2 : 1) as 1 | 2,
-        createdAt: p.createdAt.toISOString(),
+        createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : String(p.createdAt),
       }));
     }
   } catch (prismaErr) {
-    console.warn('[getCustomerPhotos Prisma Notice]:', prismaErr);
-  }
-
-  // 3. Fallback to Firestore if database was empty or errored
-  if (photos.length === 0) {
-    try {
-      const photosCol = collection(db, CUSTOMER_PHOTOS_COLLECTION);
-      const q = query(photosCol, orderBy('createdAt', 'desc'));
-      const snapshot = await withTimeout(getDocs(q), FIRESTORE_TIMEOUT_MS);
-
-      if (!snapshot.empty) {
-        photos = snapshot.docs.map((d) => {
-          const data = d.data();
-          return {
-            id: d.id,
-            imageUrl: data.imageUrl || '',
-            storagePath: data.storagePath || '',
-            row: (data.row === 2 ? 2 : 1) as 1 | 2,
-            createdAt: toIsoString(data.createdAt),
-          };
-        });
-      }
-    } catch (firestoreErr) {
-      // Offline fallback
-    }
+    console.error('[getCustomerPhotos Database Error]:', prismaErr);
   }
 
   const row1 = photos.filter((p) => p.row === 1);
@@ -141,7 +92,8 @@ export async function getCustomerPhotos(): Promise<{
 }
 
 /**
- * Upload a customer photo file and save metadata to Firebase Storage + Firestore + Database.
+ * Upload a customer photo file and save metadata to Firebase Storage + Database.
+ * Ensures consistent rollback if database write fails.
  */
 export async function uploadCustomerPhoto(
   fileBuffer: Buffer,
@@ -149,6 +101,10 @@ export async function uploadCustomerPhoto(
   mimeType: string,
   row: 1 | 2
 ): Promise<{ success: boolean; photo?: CustomerPhotoItem; error?: string }> {
+  let isFirebaseStorage = false;
+  let localCreatedFilePath: string | null = null;
+  let sRefToDelete: any = null;
+
   try {
     const extMatch = fileName.match(/\.([a-zA-Z0-9]+)$/);
     const ext = extMatch ? extMatch[1].toLowerCase() : 'jpg';
@@ -158,7 +114,7 @@ export async function uploadCustomerPhoto(
 
     let imageUrl = '';
 
-    // 1. Attempt Firebase Storage upload
+    // 1. Attempt Firebase Storage upload with safety timeout
     try {
       const sRef = storageRef(storage, storagePath);
       const uploadRes = await withTimeout(
@@ -166,11 +122,15 @@ export async function uploadCustomerPhoto(
           contentType: mimeType,
           customMetadata: { row: String(row) },
         }),
-        6000
+        5000
       );
       imageUrl = await withTimeout(getDownloadURL(uploadRes.ref), 4000);
+      if (imageUrl) {
+        isFirebaseStorage = true;
+        sRefToDelete = sRef;
+      }
     } catch (storageErr: any) {
-      console.warn('[Firebase Storage Notice]:', storageErr.message || storageErr.code);
+      console.warn('[Firebase Storage Notice]:', storageErr?.message || storageErr?.code || storageErr);
       
       // Resilient local public storage fallback in public/uploads/customer-photos
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'customer-photos');
@@ -179,6 +139,7 @@ export async function uploadCustomerPhoto(
       }
       const localFilePath = path.join(uploadDir, storageFileKey);
       fs.writeFileSync(localFilePath, fileBuffer);
+      localCreatedFilePath = localFilePath;
       imageUrl = `/uploads/customer-photos/${storageFileKey}`;
     }
 
@@ -186,52 +147,56 @@ export async function uploadCustomerPhoto(
       return { success: false, error: 'Failed to generate image storage URL.' };
     }
 
-    // 2. Primary database record
-    const dbRecord = await prismaCustomerPhoto.create({
-      data: {
-        imageUrl,
-        storagePath,
-        row,
-      },
-    });
-
-    const photoId = dbRecord.id;
-
-    // 3. Dual write to Cloud Firestore
+    // 2. Primary database record with rollback on failure
+    let dbRecord: any = null;
     try {
-      const photosCol = collection(db, CUSTOMER_PHOTOS_COLLECTION);
-      await withTimeout(
-        addDoc(photosCol, {
-          id: photoId,
+      dbRecord = await prismaCustomerPhoto.create({
+        data: {
           imageUrl,
           storagePath,
           row,
-          createdAt: serverTimestamp(),
-        }),
-        FIRESTORE_TIMEOUT_MS
-      );
-    } catch (firestoreWriteErr) {
-      // Non-blocking for primary record
+        },
+      });
+    } catch (dbErr: any) {
+      console.error('[uploadCustomerPhoto DB Insertion Error]:', dbErr);
+      // Clean up uploaded file to avoid orphaned storage files
+      if (isFirebaseStorage && sRefToDelete) {
+        try {
+          await deleteObject(sRefToDelete);
+        } catch {}
+      }
+      if (localCreatedFilePath && fs.existsSync(localCreatedFilePath)) {
+        try {
+          fs.unlinkSync(localCreatedFilePath);
+        } catch {}
+      }
+      return { success: false, error: 'Database write failed. Storage cleaned up.' };
     }
 
     const photoItem: CustomerPhotoItem = {
-      id: photoId,
-      imageUrl,
-      storagePath,
-      row,
-      createdAt: dbRecord.createdAt.toISOString(),
+      id: dbRecord.id,
+      imageUrl: dbRecord.imageUrl,
+      storagePath: dbRecord.storagePath,
+      row: (dbRecord.row === 2 ? 2 : 1) as 1 | 2,
+      createdAt: dbRecord.createdAt instanceof Date ? dbRecord.createdAt.toISOString() : new Date().toISOString(),
     };
 
     invalidateCustomerPhotosCache();
     return { success: true, photo: photoItem };
   } catch (err: any) {
     console.error('[uploadCustomerPhoto Exception]:', err);
-    return { success: false, error: err.message || 'Failed to upload customer photo' };
+    // Clean up if created
+    if (localCreatedFilePath && fs.existsSync(localCreatedFilePath)) {
+      try {
+        fs.unlinkSync(localCreatedFilePath);
+      } catch {}
+    }
+    return { success: false, error: err.message || 'Failed to upload customer photo.' };
   }
 }
 
 /**
- * Delete a customer photo from Firebase Storage and remove document from Firestore and DB.
+ * Delete a customer photo from Storage and remove document from Database.
  */
 export async function deleteCustomerPhoto(id: string): Promise<{ success: boolean; error?: string }> {
   try {
@@ -239,7 +204,7 @@ export async function deleteCustomerPhoto(id: string): Promise<{ success: boolea
       return { success: false, error: 'Valid photo ID is required for deletion.' };
     }
 
-    // 1. Locate photo in database or Firestore to obtain storagePath
+    // 1. Locate photo in database to obtain storagePath and imageUrl
     let photoRecord: { id: string; storagePath: string; imageUrl: string } | null = null;
 
     try {
@@ -247,40 +212,19 @@ export async function deleteCustomerPhoto(id: string): Promise<{ success: boolea
         where: { id },
       });
     } catch (findErr) {
-      // Continue to Firestore check
-    }
-
-    let firestoreDocId = id;
-    if (!photoRecord) {
-      try {
-        const photosCol = collection(db, CUSTOMER_PHOTOS_COLLECTION);
-        const q = query(photosCol, where('id', '==', id));
-        const snap = await withTimeout(getDocs(q), FIRESTORE_TIMEOUT_MS);
-        if (!snap.empty) {
-          const d = snap.docs[0];
-          firestoreDocId = d.id;
-          const data = d.data();
-          photoRecord = {
-            id,
-            storagePath: data.storagePath || '',
-            imageUrl: data.imageUrl || '',
-          };
-        }
-      } catch (fErr) {
-        // Continue
-      }
+      console.warn('[deleteCustomerPhoto findUnique error]:', findErr);
     }
 
     const storagePath = photoRecord?.storagePath;
     const imageUrl = photoRecord?.imageUrl;
 
-    // 2. Delete file from Firebase Storage
+    // 2. Delete file from Firebase Storage if applicable
     if (storagePath) {
       try {
         const sRef = storageRef(storage, storagePath);
         await withTimeout(deleteObject(sRef), 4000);
       } catch (storageDelErr: any) {
-        // If file not found or bucket disabled, check local fallback
+        // Safe ignore if not in Firebase Storage
       }
     }
 
@@ -297,21 +241,12 @@ export async function deleteCustomerPhoto(id: string): Promise<{ success: boolea
       }
     }
 
-    // 3. Delete from Firestore
-    try {
-      const docRef = doc(db, CUSTOMER_PHOTOS_COLLECTION, firestoreDocId);
-      await withTimeout(deleteDoc(docRef), FIRESTORE_TIMEOUT_MS);
-    } catch (fDelErr) {
-      // Non-blocking
-    }
-
-    // 4. Delete from Prisma
+    // 3. Delete from Prisma Database
     try {
       await prismaCustomerPhoto.delete({
         where: { id },
       });
     } catch (prismaDelErr: any) {
-      // If already deleted or not found
       if (prismaDelErr.code !== 'P2025') {
         console.warn('[Prisma delete warning]:', prismaDelErr);
       }
@@ -321,6 +256,7 @@ export async function deleteCustomerPhoto(id: string): Promise<{ success: boolea
     return { success: true };
   } catch (err: any) {
     console.error('[deleteCustomerPhoto Exception]:', err);
-    return { success: false, error: err.message || 'Failed to delete customer photo' };
+    return { success: false, error: err.message || 'Failed to delete customer photo.' };
   }
 }
+

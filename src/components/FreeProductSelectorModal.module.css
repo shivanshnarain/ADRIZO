@@ -9,7 +9,7 @@
   background-color: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 999999 !important;
+  z-index: var(--z-modal-backdrop, 2000) !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -685,7 +685,7 @@
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 10002;
+  z-index: var(--z-modal, 2010);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1110,7 +1110,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10001;
+  z-index: var(--z-modal, 2010);
   padding: 1rem;
   animation: fadeIn 0.15s ease-out;
 }

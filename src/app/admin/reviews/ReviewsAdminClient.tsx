@@ -16,6 +16,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { CustomerReview, ReviewStatus } from '@/types/review';
+import Portal from '@/components/Portal';
 import styles from '../admin.module.css';
 
 export default function ReviewsAdminClient() {
@@ -26,6 +27,7 @@ export default function ReviewsAdminClient() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [reviewToDelete, setReviewToDelete] = useState<CustomerReview | null>(null);
 
   // Fetch reviews from API
   const fetchReviews = useCallback(async (statusFilter: ReviewStatus | 'all' = activeTab) => {
@@ -97,10 +99,9 @@ export default function ReviewsAdminClient() {
   };
 
   // Moderation Action: Delete Review
-  const handleDeleteReview = async (reviewId: string) => {
-    if (!window.confirm('Are you sure you want to permanently delete this customer review? This cannot be undone.')) {
-      return;
-    }
+  const handleConfirmDelete = async () => {
+    if (!reviewToDelete) return;
+    const reviewId = reviewToDelete.id;
 
     setActionLoading(prev => ({ ...prev, [reviewId]: true }));
     try {
@@ -120,6 +121,7 @@ export default function ReviewsAdminClient() {
             [deletedReview.status]: Math.max(0, (prev as any)[deletedReview.status] - 1),
           }));
         }
+        setReviewToDelete(null);
       } else {
         showNotification('error', data.error || 'Failed to delete review.');
       }
@@ -192,24 +194,133 @@ export default function ReviewsAdminClient() {
 
       {/* Toast Notification */}
       {notification && (
-        <div
-          style={{
-            padding: '0.85rem 1.25rem',
-            borderRadius: '8px',
-            marginBottom: '1.25rem',
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            background: notification.type === 'success' ? '#f0fdf4' : '#fef2f2',
-            border: `1px solid ${notification.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
-            color: notification.type === 'success' ? '#166534' : '#991b1b',
-          }}
-        >
-          {notification.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
-          <span>{notification.message}</span>
-        </div>
+        <Portal>
+          <div
+            style={{
+              position: 'fixed',
+              top: '20px',
+              right: '20px',
+              zIndex: 'var(--z-toast, 2500)' as any,
+              backgroundColor: notification.type === 'success' ? '#10B981' : '#EF4444',
+              color: '#FFFFFF',
+              padding: '12px 20px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+            }}
+          >
+            {notification.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+            <span>{notification.message}</span>
+          </div>
+        </Portal>
+      )}
+
+      {/* Delete Review Confirmation Modal */}
+      {reviewToDelete && (
+        <Portal>
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.6)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              zIndex: 'var(--z-confirmation, 2100)' as any,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1rem',
+            }}
+            onClick={() => setReviewToDelete(null)}
+          >
+            <div
+              style={{
+                background: '#ffffff',
+                borderRadius: '12px',
+                width: '100%',
+                maxWidth: '460px',
+                padding: '1.5rem',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+                position: 'relative',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: '#fef2f2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#dc2626',
+                  flexShrink: 0
+                }}>
+                  <AlertTriangle size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#111827' }}>
+                    Delete Review
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#6b7280' }}>
+                    This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ background: '#f9fafb', padding: '0.85rem', borderRadius: '8px', marginBottom: '1.25rem', border: '1px solid #e5e7eb' }}>
+                <p style={{ margin: '0 0 0.4rem 0', fontWeight: 700, fontSize: '0.9rem', color: '#111827' }}>
+                  {reviewToDelete.customerName}
+                </p>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#4b5563', lineHeight: 1.4, maxHeight: '80px', overflowY: 'auto' }}>
+                  &ldquo;{reviewToDelete.reviewText}&rdquo;
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setReviewToDelete(null)}
+                  style={{
+                    padding: '0.6rem 1.2rem',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    background: '#ffffff',
+                    color: '#374151',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={actionLoading[reviewToDelete.id]}
+                  onClick={handleConfirmDelete}
+                  style={{
+                    padding: '0.6rem 1.2rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: '#dc2626',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    cursor: actionLoading[reviewToDelete.id] ? 'not-allowed' : 'pointer',
+                    opacity: actionLoading[reviewToDelete.id] ? 0.7 : 1,
+                  }}
+                >
+                  {actionLoading[reviewToDelete.id] ? 'Deleting...' : 'Permanently Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Portal>
       )}
 
       {/* Filter Tabs & Search Bar */}
@@ -410,7 +521,7 @@ export default function ReviewsAdminClient() {
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <button
                       type="button"
-                      onClick={() => handleDeleteReview(review.id)}
+                      onClick={() => setReviewToDelete(review)}
                       disabled={isBusy}
                       title="Permanently delete this review"
                       aria-label="Delete Review"

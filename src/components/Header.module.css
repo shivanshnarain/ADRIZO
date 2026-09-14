@@ -5,7 +5,7 @@
   width: 100%;
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: var(--z-navbar, 1000);
   background-color: #ffffff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   user-select: none;
@@ -257,7 +257,7 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   padding: 0.5rem 0;
   min-width: 180px;
-  z-index: 100;
+  z-index: var(--z-dropdown, 1100);
   animation: dropdownFadeIn 0.18s ease-out;
 }
 
@@ -452,7 +452,7 @@
   border-radius: 12px;
   box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.06);
   padding: 0.75rem;
-  z-index: 9999;
+  z-index: var(--z-dropdown, 1100);
   animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -710,7 +710,7 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
   padding: 1rem 1.25rem;
   animation: searchSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  z-index: 999;
+  z-index: var(--z-dropdown, 1100);
 }
 
 @keyframes searchSlideDown {
@@ -788,7 +788,7 @@
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
   padding: 1.25rem;
   animation: searchSlideDown 0.25s ease forwards;
-  z-index: 998;
+  z-index: var(--z-drawer, 1300);
 }
 
 .mobileNavLinks {

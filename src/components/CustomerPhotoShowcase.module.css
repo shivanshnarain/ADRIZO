@@ -54,50 +54,46 @@
   display: flex;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* Track containing the cards - animated via hardware-accelerated transform */
 .marqueeTrack {
   display: flex;
   flex-direction: row;
+  flex-shrink: 0;
   gap: 16px;
+  padding-right: 16px;
   width: max-content;
   will-change: transform;
 }
 
 /* ROW 1: Right -> Left continuous movement */
 .rowSlideLeft {
-  animation: scrollRightToLeft 42s linear infinite;
+  animation: scrollRightToLeft 38s linear infinite;
 }
 
 /* ROW 2: Left -> Right continuous movement */
 .rowSlideRight {
-  animation: scrollLeftToRight 42s linear infinite;
+  animation: scrollLeftToRight 38s linear infinite;
 }
 
-/* Keyframes: perfectly seamless 50% translation */
+/* Keyframes: mathematically seamless 100% translation with zero jump */
 @keyframes scrollRightToLeft {
   0% {
     transform: translate3d(0, 0, 0);
   }
   100% {
-    transform: translate3d(-50%, 0, 0);
+    transform: translate3d(-100%, 0, 0);
   }
 }
 
 @keyframes scrollLeftToRight {
   0% {
-    transform: translate3d(-50%, 0, 0);
+    transform: translate3d(-100%, 0, 0);
   }
   100% {
     transform: translate3d(0, 0, 0);
-  }
-}
-
-/* Pause marquee slightly on hover (optional subtle UX touch, keeps moving smoothly) */
-@media (hover: hover) {
-  .marqueeRow:hover .marqueeTrack {
-    animation-play-state: paused;
   }
 }
 
@@ -111,14 +107,22 @@
   position: relative;
   background-color: #f4f4f5;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: default;
 }
 
-@media (hover: hover) {
-  .photoCard:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-  }
+/* Anti-download transparent overlay */
+.photoShield {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .photoImage {
@@ -128,6 +132,9 @@
   display: block;
   border-radius: 12px;
   pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* Mobile Responsiveness */

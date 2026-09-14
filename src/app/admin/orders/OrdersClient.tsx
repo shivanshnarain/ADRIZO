@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Portal from '@/components/Portal';
 import { 
   Eye, 
   Check, 
@@ -597,26 +598,28 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
     <div>
       {/* Toast Notification */}
       {successToast && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          background: '#09090b',
-          color: '#FFC800',
-          padding: '0.85rem 1.25rem',
-          borderRadius: '8px',
-          border: '1px solid #FFC800',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontWeight: 700,
-          fontSize: '0.875rem',
-          zIndex: 999999
-        }}>
-          <Check size={18} />
-          <span>{successToast}</span>
-        </div>
+        <Portal>
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            background: '#09090b',
+            color: '#FFC800',
+            padding: '0.85rem 1.25rem',
+            borderRadius: '8px',
+            border: '1px solid #FFC800',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: 700,
+            fontSize: '0.875rem',
+            zIndex: 'var(--z-toast, 2500)' as any,
+          }}>
+            <Check size={18} />
+            <span>{successToast}</span>
+          </div>
+        </Portal>
       )}
 
       {!viewingOrder && (
@@ -2054,169 +2057,174 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
 
           {/* Update Order Status Modal */}
           {isUpdateModalOpen && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-              <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '460px', padding: '1.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#09090b' }}>Update Order Status</h3>
-                  <button type="button" onClick={() => setIsUpdateModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#71717a' }}>
-                    <X size={18} />
-                  </button>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '4px', color: '#09090b' }}>Order Status</label>
-                    <select
-                      value={editOrderStatus}
-                      onChange={e => setEditOrderStatus(e.target.value)}
-                      style={{ width: '100%', height: '38px', padding: '0 0.65rem', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.85rem' }}
-                    >
-                      <option value="PLACED">Placed</option>
-                      <option value="CONFIRMED">Confirmed</option>
-                      <option value="PROCESSING">Processing</option>
-                      <option value="SHIPPED">Shipped</option>
-                      <option value="DELIVERED">Delivered</option>
-                      <option value="CANCELLED">Cancelled</option>
-                    </select>
+            <Portal>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', zIndex: 'var(--z-modal-backdrop, 2000)' as any, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '460px', padding: '1.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', position: 'relative', zIndex: 'var(--z-modal, 2010)' as any }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#09090b' }}>Update Order Status</h3>
+                    <button type="button" onClick={() => setIsUpdateModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#71717a' }}>
+                      <X size={18} />
+                    </button>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '4px', color: '#09090b' }}>Payment Status</label>
-                    <select
-                      value={editPaymentStatus}
-                      onChange={e => setEditPaymentStatus(e.target.value)}
-                      style={{ width: '100%', height: '38px', padding: '0 0.65rem', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.85rem' }}
-                    >
-                      <option value="PENDING">Pending</option>
-                      <option value="PAID">Paid</option>
-                      <option value="FAILED">Failed</option>
-                      <option value="REFUNDED">Refunded</option>
-                    </select>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '4px', color: '#09090b' }}>Order Status</label>
+                      <select
+                        value={editOrderStatus}
+                        onChange={e => setEditOrderStatus(e.target.value)}
+                        style={{ width: '100%', height: '38px', padding: '0 0.65rem', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.85rem' }}
+                      >
+                        <option value="PLACED">Placed</option>
+                        <option value="CONFIRMED">Confirmed</option>
+                        <option value="PROCESSING">Processing</option>
+                        <option value="SHIPPED">Shipped</option>
+                        <option value="DELIVERED">Delivered</option>
+                        <option value="CANCELLED">Cancelled</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '4px', color: '#09090b' }}>Payment Status</label>
+                      <select
+                        value={editPaymentStatus}
+                        onChange={e => setEditPaymentStatus(e.target.value)}
+                        style={{ width: '100%', height: '38px', padding: '0 0.65rem', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.85rem' }}
+                      >
+                        <option value="PENDING">Pending</option>
+                        <option value="PAID">Paid</option>
+                        <option value="FAILED">Failed</option>
+                        <option value="REFUNDED">Refunded</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem' }}>
-                  <button type="button" onClick={() => setIsUpdateModalOpen(false)} style={{ padding: '0.6rem 1.15rem', background: '#f4f4f5', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.8125rem', cursor: 'pointer' }}>Cancel</button>
-                  <button type="button" onClick={handleSaveStatusModal} disabled={loading} style={{ padding: '0.6rem 1.25rem', background: '#09090b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.8125rem', cursor: loading ? 'not-allowed' : 'pointer' }}>
-                    {loading ? 'Updating...' : 'Save Updates'}
-                  </button>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem' }}>
+                    <button type="button" onClick={() => setIsUpdateModalOpen(false)} style={{ padding: '0.6rem 1.15rem', background: '#f4f4f5', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.8125rem', cursor: 'pointer' }}>Cancel</button>
+                    <button type="button" onClick={handleSaveStatusModal} disabled={loading} style={{ padding: '0.6rem 1.25rem', background: '#09090b', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.8125rem', cursor: loading ? 'not-allowed' : 'pointer' }}>
+                      {loading ? 'Updating...' : 'Save Updates'}
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Portal>
           )}
 
           {/* Contact Customer Modal */}
           {isContactModalOpen && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-              <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '480px', padding: '1.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#09090b' }}>Contact Customer</h3>
-                  <button type="button" onClick={() => setIsContactModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#71717a' }}>
-                    <X size={18} />
-                  </button>
-                </div>
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '1.25rem', fontSize: '0.825rem' }}>
-                  <p style={{ margin: '0 0 4px 0' }}><strong>Customer:</strong> {viewingOrder.customerName}</p>
-                  <p style={{ margin: '0 0 4px 0' }}><strong>Email:</strong> {viewingOrder.customerEmail || '—'}</p>
-                  <p style={{ margin: 0 }}><strong>Phone:</strong> +91 {viewingOrder.customerPhone || '—'}</p>
-                </div>
-
-                {contactError && (
-                  <div style={{
-                    background: '#fef2f2',
-                    border: '1px solid #fca5a5',
-                    color: '#991b1b',
-                    padding: '0.65rem 0.85rem',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
-                    marginBottom: '1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    <AlertCircle size={15} style={{ flexShrink: 0 }} />
-                    <span>{contactError}</span>
+            <Portal>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', zIndex: 'var(--z-modal-backdrop, 2000)' as any, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                <div style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '480px', padding: '1.5rem', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', position: 'relative', zIndex: 'var(--z-modal, 2010)' as any }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#09090b' }}>Contact Customer</h3>
+                    <button type="button" onClick={() => setIsContactModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#71717a' }}>
+                      <X size={18} />
+                    </button>
                   </div>
-                )}
-
-                {contactSuccess && (
-                  <div style={{
-                    background: '#f0fdf4',
-                    border: '1px solid #86efac',
-                    color: '#166534',
-                    padding: '0.65rem 0.85rem',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
-                    marginBottom: '1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    <Check size={15} style={{ flexShrink: 0 }} />
-                    <span>{contactSuccess}</span>
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '1.25rem', fontSize: '0.825rem' }}>
+                    <p style={{ margin: '0 0 4px 0' }}><strong>Customer:</strong> {viewingOrder.customerName}</p>
+                    <p style={{ margin: '0 0 4px 0' }}><strong>Email:</strong> {viewingOrder.customerEmail || '—'}</p>
+                    <p style={{ margin: 0 }}><strong>Phone:</strong> +91 {viewingOrder.customerPhone || '—'}</p>
                   </div>
-                )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => handleSendInvoice('EMAIL')}
-                    disabled={contactLoading}
-                    style={{
+                  {contactError && (
+                    <div style={{
+                      background: '#fef2f2',
+                      border: '1px solid #fca5a5',
+                      color: '#991b1b',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '6px',
+                      fontSize: '0.8rem',
+                      marginBottom: '1rem',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                      padding: '0.75rem 1rem',
-                      background: '#09090b',
-                      color: '#fff',
-                      border: 'none',
+                      gap: '0.5rem'
+                    }}>
+                      <AlertCircle size={16} />
+                      <span>{contactError}</span>
+                    </div>
+                  )}
+
+                  {contactSuccess && (
+                    <div style={{
+                      background: '#f0fdf4',
+                      border: '1px solid #86efac',
+                      color: '#166534',
+                      padding: '0.65rem 0.85rem',
                       borderRadius: '6px',
-                      fontWeight: 700,
-                      fontSize: '0.8125rem',
-                      cursor: contactLoading ? 'not-allowed' : 'pointer',
-                      opacity: contactLoading ? 0.7 : 1
-                    }}
-                  >
-                    <Mail size={16} />
-                    <span>{contactLoading ? 'Generating & Sending PDF Invoice...' : `Send Invoice to ${viewingOrder.customerEmail || 'Customer'}`}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSendInvoice('WHATSAPP')}
-                    disabled={contactLoading}
-                    style={{
+                      fontSize: '0.8rem',
+                      marginBottom: '1rem',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                      padding: '0.75rem 1rem',
-                      background: '#25D366',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontWeight: 700,
-                      fontSize: '0.8125rem',
-                      cursor: contactLoading ? 'not-allowed' : 'pointer',
-                      opacity: contactLoading ? 0.7 : 1
-                    }}
-                  >
-                    <MessageSquare size={16} />
-                    <span>Send Invoice on WhatsApp (+91 {viewingOrder.customerPhone || '—'})</span>
-                  </button>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setIsContactModalOpen(false);
-                      setContactError('');
-                      setContactSuccess('');
-                    }} 
-                    style={{ padding: '0.5rem 1rem', background: '#f4f4f5', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.8125rem', cursor: 'pointer' }}
-                  >
-                    Close
-                  </button>
+                      gap: '0.5rem'
+                    }}>
+                      <Check size={16} />
+                      <span>{contactSuccess}</span>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleSendInvoice('EMAIL')}
+                      disabled={contactLoading || !viewingOrder.customerEmail}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        background: '#09090b',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        cursor: contactLoading || !viewingOrder.customerEmail ? 'not-allowed' : 'pointer',
+                        opacity: contactLoading || !viewingOrder.customerEmail ? 0.7 : 1
+                      }}
+                    >
+                      <Mail size={16} />
+                      <span>Send Invoice via Email ({viewingOrder.customerEmail || 'No Email'})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSendInvoice('WHATSAPP')}
+                      disabled={contactLoading}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        background: '#22c55e',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        cursor: contactLoading ? 'not-allowed' : 'pointer',
+                        opacity: contactLoading ? 0.7 : 1
+                      }}
+                    >
+                      <MessageSquare size={16} />
+                      <span>Send Invoice on WhatsApp (+91 {viewingOrder.customerPhone || '—'})</span>
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setIsContactModalOpen(false);
+                        setContactError('');
+                        setContactSuccess('');
+                      }} 
+                      style={{ padding: '0.5rem 1rem', background: '#f4f4f5', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.8125rem', cursor: 'pointer' }}
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Portal>
           )}
         </div>
       ) : (
@@ -2455,285 +2463,294 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
 
       {/* Delete Order Confirmation Modal */}
       {isDeleteModalOpen && orderToDelete && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.55)',
-          backdropFilter: 'blur(2px)',
-          zIndex: 999999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem'
-        }}>
+        <Portal>
           <div style={{
-            background: '#ffffff',
-            borderRadius: '12px',
-            width: '100%',
-            maxWidth: '440px',
-            padding: '1.5rem',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
-            border: '1px solid #e4e4e7'
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 'var(--z-confirmation, 2100)' as any,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
           }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', marginBottom: '1.15rem' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: '#fee2e2',
-                color: '#dc2626',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <AlertTriangle size={20} />
-              </div>
-              <div>
-                <h3 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', fontWeight: 800, color: '#09090b' }}>
-                  Delete Order Permanently?
-                </h3>
-                <p style={{ margin: 0, fontSize: '0.8125rem', color: '#64748b', lineHeight: 1.5 }}>
-                  This order and its related order data will be permanently removed from the database. This action cannot be undone.
-                </p>
-              </div>
-            </div>
-
             <div style={{
-              background: '#f8fafc',
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0',
-              padding: '0.75rem 1rem',
-              marginBottom: '1.25rem',
-              fontSize: '0.775rem',
-              color: '#475569'
+              background: '#ffffff',
+              borderRadius: '12px',
+              width: '100%',
+              maxWidth: '440px',
+              padding: '1.5rem',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
+              border: '1px solid #e4e4e7'
             }}>
-              <div><strong>Order:</strong> #{orderToDelete.orderNumber || (orderToDelete.id ? orderToDelete.id.slice(0, 8).toUpperCase() : '—')}</div>
-              <div style={{ marginTop: '2px' }}><strong>Customer:</strong> {orderToDelete.customerName} ({orderToDelete.customerEmail || 'No email'})</div>
-              <div style={{ marginTop: '2px' }}>
-                <strong>Total:</strong> ₹{Number(orderToDelete.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} | <strong>Method:</strong> {orderToDelete.paymentMethod}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!deleteLoading) {
-                    setIsDeleteModalOpen(false);
-                    setOrderToDelete(null);
-                  }
-                }}
-                disabled={deleteLoading}
-                style={{
-                  padding: '0.6rem 1.15rem',
-                  background: '#ffffff',
-                  border: '1px solid #d4d4d8',
-                  borderRadius: '6px',
-                  fontSize: '0.8125rem',
-                  fontWeight: 700,
-                  color: '#334155',
-                  cursor: deleteLoading ? 'not-allowed' : 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteOrder}
-                disabled={deleteLoading}
-                style={{
-                  padding: '0.6rem 1.25rem',
-                  background: '#dc2626',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '0.8125rem',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  cursor: deleteLoading ? 'not-allowed' : 'pointer',
-                  display: 'inline-flex',
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', marginBottom: '1.15rem' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: '#fee2e2',
+                  color: '#dc2626',
+                  display: 'flex',
                   alignItems: 'center',
-                  gap: '0.4rem',
-                  boxShadow: '0 2px 6px rgba(220, 38, 38, 0.25)'
-                }}
-              >
-                <Trash2 size={14} />
-                <span>{deleteLoading ? 'Permanently Deleting...' : 'Permanently Delete'}</span>
-              </button>
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <AlertTriangle size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', fontWeight: 800, color: '#09090b' }}>
+                    Delete Order Permanently?
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.8125rem', color: '#64748b', lineHeight: 1.5 }}>
+                    This order and its related order data will be permanently removed from the database. This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                padding: '0.75rem 1rem',
+                marginBottom: '1.25rem',
+                fontSize: '0.775rem',
+                color: '#475569'
+              }}>
+                <div><strong>Order:</strong> #{orderToDelete.orderNumber || (orderToDelete.id ? orderToDelete.id.slice(0, 8).toUpperCase() : '—')}</div>
+                <div style={{ marginTop: '2px' }}><strong>Customer:</strong> {orderToDelete.customerName} ({orderToDelete.customerEmail || 'No email'})</div>
+                <div style={{ marginTop: '2px' }}>
+                  <strong>Total:</strong> ₹{Number(orderToDelete.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} | <strong>Method:</strong> {orderToDelete.paymentMethod}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!deleteLoading) {
+                      setIsDeleteModalOpen(false);
+                      setOrderToDelete(null);
+                    }
+                  }}
+                  disabled={deleteLoading}
+                  style={{
+                    padding: '0.6rem 1.15rem',
+                    background: '#ffffff',
+                    border: '1px solid #d4d4d8',
+                    borderRadius: '6px',
+                    fontSize: '0.8125rem',
+                    fontWeight: 700,
+                    color: '#334155',
+                    cursor: deleteLoading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteOrder}
+                  disabled={deleteLoading}
+                  style={{
+                    padding: '0.6rem 1.25rem',
+                    background: '#dc2626',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.8125rem',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    cursor: deleteLoading ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: '0 2px 6px rgba(220, 38, 38, 0.25)'
+                  }}
+                >
+                  <Trash2 size={14} />
+                  <span>{deleteLoading ? 'Permanently Deleting...' : 'Permanently Delete'}</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {/* Phase 3 Live Shipment Tracking Modal */}
       {trackingModalOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          zIndex: 999999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem'
-        }}>
+        <Portal>
           <div style={{
-            background: '#ffffff',
-            borderRadius: '12px',
-            width: '100%',
-            maxWidth: '560px',
-            maxHeight: '85vh',
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(3px)',
+            WebkitBackdropFilter: 'blur(3px)',
+            zIndex: 'var(--z-modal-backdrop, 2000)' as any,
             display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-            overflow: 'hidden'
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
           }}>
-            {/* Modal Header */}
             <div style={{
-              padding: '1.25rem 1.5rem',
-              borderBottom: '1px solid #e2e8f0',
+              background: '#ffffff',
+              borderRadius: '12px',
+              width: '100%',
+              maxWidth: '560px',
+              maxHeight: '85vh',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: '#f8fafc'
+              flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              overflow: 'hidden',
+              position: 'relative',
+              zIndex: 'var(--z-modal, 2010)' as any
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: '#6366f1',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Navigation size={16} />
+              {/* Modal Header */}
+              <div style={{
+                padding: '1.25rem 1.5rem',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: '#f8fafc'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: '#6366f1',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Navigation size={16} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                      Live Shipment Tracking
+                    </h3>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '0.725rem', color: '#64748b' }}>
+                      AWB #{viewingOrder?.trackingId || '—'} • {viewingOrder?.deliveryPartner || 'Courier'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
-                    Live Shipment Tracking
-                  </h3>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '0.725rem', color: '#64748b' }}>
-                    AWB #{viewingOrder?.trackingId || '—'} • {viewingOrder?.deliveryPartner || 'Courier'}
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setTrackingModalOpen(false)}
+                  style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                >
+                  <X size={20} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setTrackingModalOpen(false)}
-                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
 
-            {/* Modal Body */}
-            <div style={{ padding: '1.25rem 1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {trackingLoading ? (
-                <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-                  <RotateCw size={24} className={styles.spin} color="#6366f1" />
-                  <span>Connecting to courier network &amp; fetching live scans...</span>
-                </div>
-              ) : (
-                <>
-                  {/* Status Banner */}
-                  <div style={{ background: '#f1f5f9', borderRadius: '8px', padding: '1rem', border: '1px solid #e2e8f0' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.775rem' }}>
-                      <div>
-                        <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem' }}>Current Status</span>
-                        <strong style={{ color: '#4338ca', fontSize: '0.9rem', display: 'inline-block', marginTop: '2px' }}>
-                          {trackingData?.currentStatus || viewingOrder?.trackingStatus || 'AWB ASSIGNED'}
-                        </strong>
-                      </div>
-                      <div>
-                        <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem' }}>Estimated Delivery</span>
-                        <strong style={{ color: '#059669', fontSize: '0.85rem', display: 'inline-block', marginTop: '2px' }}>
-                          {trackingData?.etd || 'Within 3-5 days'}
-                        </strong>
-                      </div>
-                      <div>
-                        <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem' }}>Courier Partner</span>
-                        <span style={{ color: '#0f172a', fontWeight: 600 }}>
-                          {trackingData?.courierName || viewingOrder?.deliveryPartner || 'Standard Courier'}
-                        </span>
-                      </div>
-                      <div>
-                        <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem' }}>Destination</span>
-                        <span style={{ color: '#0f172a', fontWeight: 600 }}>
-                          {viewingOrder?.city ? `${viewingOrder.city} (${viewingOrder.pincode})` : viewingOrder?.pincode || 'India'}
-                        </span>
+              {/* Modal Body */}
+              <div style={{ padding: '1.25rem 1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {trackingLoading ? (
+                  <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                    <RotateCw size={24} className={styles.spin} color="#6366f1" />
+                    <span>Connecting to courier network &amp; fetching live scans...</span>
+                  </div>
+                ) : (
+                  <>
+                    {/* Status Banner */}
+                    <div style={{ background: '#f1f5f9', borderRadius: '8px', padding: '1rem', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.775rem' }}>
+                        <div>
+                          <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem' }}>Current Status</span>
+                          <strong style={{ color: '#4338ca', fontSize: '0.9rem', display: 'inline-block', marginTop: '2px' }}>
+                            {trackingData?.currentStatus || viewingOrder?.trackingStatus || 'AWB ASSIGNED'}
+                          </strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem' }}>Estimated Delivery</span>
+                          <strong style={{ color: '#059669', fontSize: '0.85rem', display: 'inline-block', marginTop: '2px' }}>
+                            {trackingData?.etd || 'Within 3-5 days'}
+                          </strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem' }}>Courier Partner</span>
+                          <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                            {trackingData?.courierName || viewingOrder?.deliveryPartner || 'Standard Courier'}
+                          </span>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem' }}>Destination</span>
+                          <span style={{ color: '#0f172a', fontWeight: 600 }}>
+                            {viewingOrder?.city ? `${viewingOrder.city} (${viewingOrder.pincode})` : viewingOrder?.pincode || 'India'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Scans Timeline */}
-                  <div>
-                    <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.75rem 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      Shipment Journey &amp; Scans
-                    </h4>
+                    {/* Scans Timeline */}
+                    <div>
+                      <h4 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.75rem 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Shipment Journey &amp; Scans
+                      </h4>
 
-                    {trackingData?.activities && trackingData.activities.length > 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', position: 'relative', paddingLeft: '1.25rem' }}>
-                        <div style={{ position: 'absolute', top: '8px', bottom: '8px', left: '5px', width: '2px', background: '#e2e8f0' }} />
-                        {trackingData.activities.map((act: any, idx: number) => (
-                          <div key={idx} style={{ position: 'relative' }}>
-                            <div style={{
-                              position: 'absolute',
-                              left: '-1.25rem',
-                              top: '4px',
-                              width: '10px',
-                              height: '10px',
-                              borderRadius: '50%',
-                              background: idx === 0 ? '#6366f1' : '#cbd5e1',
-                              border: '2px solid #fff',
-                              boxShadow: '0 0 0 2px ' + (idx === 0 ? '#6366f1' : '#e2e8f0')
-                            }} />
-                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>
-                              {act.activity || act.status}
+                      {trackingData?.activities && trackingData.activities.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', position: 'relative', paddingLeft: '1.25rem' }}>
+                          <div style={{ position: 'absolute', top: '8px', bottom: '8px', left: '5px', width: '2px', background: '#e2e8f0' }} />
+                          {trackingData.activities.map((act: any, idx: number) => (
+                            <div key={idx} style={{ position: 'relative' }}>
+                              <div style={{
+                                position: 'absolute',
+                                left: '-1.25rem',
+                                top: '4px',
+                                width: '10px',
+                                height: '10px',
+                                borderRadius: '50%',
+                                background: idx === 0 ? '#6366f1' : '#cbd5e1',
+                                border: '2px solid #fff',
+                                boxShadow: '0 0 0 2px ' + (idx === 0 ? '#6366f1' : '#e2e8f0')
+                              }} />
+                              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>
+                                {act.activity || act.status}
+                              </div>
+                              <div style={{ fontSize: '0.725rem', color: '#64748b', display: 'flex', gap: '0.5rem', marginTop: '2px' }}>
+                                <span>{act.date}</span>
+                                {act.location && <span>• {act.location}</span>}
+                              </div>
                             </div>
-                            <div style={{ fontSize: '0.725rem', color: '#64748b', display: 'flex', gap: '0.5rem', marginTop: '2px' }}>
-                              <span>{act.date}</span>
-                              {act.location && <span>• {act.location}</span>}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ background: '#fafafa', border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '1.25rem', textAlign: 'center', fontSize: '0.785rem', color: '#64748b' }}>
-                        <Truck size={28} color="#94a3b8" style={{ margin: '0 auto 0.5rem' }} />
-                        <p style={{ margin: 0, fontWeight: 600, color: '#334155' }}>Shipment Registered with Courier</p>
-                        <p style={{ margin: '4px 0 0 0', fontSize: '0.725rem' }}>
-                          AWB <strong>{viewingOrder?.trackingId}</strong> is generated. Live transit checkpoints will appear as the courier scans the package during transit.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ background: '#fafafa', border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '1.25rem', textAlign: 'center', fontSize: '0.785rem', color: '#64748b' }}>
+                          <Truck size={28} color="#94a3b8" style={{ margin: '0 auto 0.5rem' }} />
+                          <p style={{ margin: 0, fontWeight: 600, color: '#334155' }}>Shipment Registered with Courier</p>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '0.725rem' }}>
+                            AWB <strong>{viewingOrder?.trackingId}</strong> is generated. Live transit checkpoints will appear as the courier scans the package during transit.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
 
-            {/* Modal Footer */}
-            <div style={{ padding: '0.85rem 1.5rem', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={() => setTrackingModalOpen(false)}
-                style={{
-                  padding: '0.5rem 1.15rem',
-                  background: '#09090b',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '0.775rem',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                Close
-              </button>
+              {/* Modal Footer */}
+              <div style={{ padding: '0.85rem 1.5rem', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setTrackingModalOpen(false)}
+                  style={{
+                    padding: '0.5rem 1.15rem',
+                    background: '#09090b',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '0.775rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
     </div>
   );

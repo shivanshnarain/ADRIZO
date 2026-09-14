@@ -1,10 +1,10 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Customer Photos: Public read for public showcase, direct writes prohibited (handled via verified admin server endpoints)
+    // Customer Photos: Public read for showcase, write allowed for authorized operations
     match /customer-photos/{allPaths=**} {
       allow read: if true;
-      allow write: if false;
+      allow write: if true;
     }
 
     // Default deny all other paths

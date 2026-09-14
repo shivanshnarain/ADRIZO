@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, Search, Check, AlertTriangle, FolderTree } from 'lucide-react';
 import styles from '../admin.module.css';
+import Portal from '@/components/Portal';
 import { createCategory, updateCategory, deleteCategory } from '../../../actions/categories';
 
 export default function CategoriesClient({ initialCategories }: { initialCategories: any[] }) {
@@ -142,26 +143,28 @@ export default function CategoriesClient({ initialCategories }: { initialCategor
     <div>
       {/* Toast Notification */}
       {successToast && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          background: '#09090b',
-          color: '#FFC800',
-          padding: '0.85rem 1.25rem',
-          borderRadius: '8px',
-          border: '1px solid #FFC800',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontWeight: 700,
-          fontSize: '0.875rem',
-          zIndex: 999999
-        }}>
-          <Check size={18} />
-          <span>{successToast}</span>
-        </div>
+        <Portal>
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            background: '#09090b',
+            color: '#FFC800',
+            padding: '0.85rem 1.25rem',
+            borderRadius: '8px',
+            border: '1px solid #FFC800',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: 700,
+            fontSize: '0.875rem',
+            zIndex: 'var(--z-toast, 2500)' as any,
+          }}>
+            <Check size={18} />
+            <span>{successToast}</span>
+          </div>
+        </Portal>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>

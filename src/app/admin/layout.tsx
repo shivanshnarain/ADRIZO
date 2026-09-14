@@ -56,6 +56,63 @@ export default function AdminLayout({
       .catch(() => {});
   }, [pathname]);
 
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  // Close dropdowns on outside click or Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSearchOpen(false);
+        setProfileOpen(false);
+        setNotificationsOpen(false);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(`.${styles.headerSearch}`)) {
+        setSearchOpen(false);
+      }
+      if (!target.closest(`.${styles.userCardWrapper}`)) {
+        setProfileOpen(false);
+      }
+      if (!target.closest(`.${styles.iconBtn}`)) {
+        setNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
+  const searchItems = [
+    { label: 'All Products', href: '/admin/products', category: 'Products' },
+    { label: 'Add New Product', href: '/admin/products?action=add', category: 'Products' },
+    { label: 'Product Configuration', href: '/admin/settings', category: 'Products' },
+    { label: 'All Orders', href: '/admin/orders', category: 'Orders' },
+    { label: 'Pending Orders', href: '/admin/orders?status=PENDING', category: 'Orders' },
+    { label: 'Customers Directory', href: '/admin/customers', category: 'Customers' },
+    { label: 'Customer Photos', href: '/admin/customer-photos', category: 'CMS' },
+    { label: 'Customer Reviews', href: '/admin/reviews', category: 'CMS' },
+    { label: 'Hero Banners', href: '/admin/banners', category: 'CMS' },
+    { label: 'Store Settings', href: '/admin/settings?tab=general', category: 'Settings' },
+  ];
+
+  const filteredSearchItems = searchQuery.trim() === '' 
+    ? searchItems.slice(0, 6)
+    : searchItems.filter(item => item.label.toLowerCase().includes(searchQuery.toLowerCase()) || item.category.toLowerCase().includes(searchQuery.toLowerCase()));
+
   // If viewing the admin login page, don't show the dashboard shell
   if (pathname === '/admin/login') {
     return <>{children}</>;
@@ -241,30 +298,118 @@ export default function AdminLayout({
                 type="text" 
                 placeholder="Search products, orders, customers..." 
                 className={styles.headerSearchInput}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSearchOpen(true);
+                }}
+                onFocus={() => setSearchOpen(true)}
+                id="admin-global-search-input"
               />
               <span className={styles.searchShortcut}>⌘K</span>
+
+              {/* Search Suggestions Dropdown */}
+              {searchOpen && (
+                <div className={styles.searchDropdown} id="admin-search-dropdown">
+                  <div className={styles.searchSectionHeader}>
+                    {searchQuery.trim() ? `Search Results (${filteredSearchItems.length})` : 'Quick Navigation'}
+                  </div>
+                  {filteredSearchItems.map((item, idx) => (
+                    <Link
+                      key={idx}
+                      href={item.href}
+                      className={styles.searchResultItem}
+                      onClick={() => setSearchOpen(false)}
+                    >
+                      <span>{item.label}</span>
+                      <span className={styles.searchResultMeta}>{item.category}</span>
+                    </Link>
+                  ))}
+                  {filteredSearchItems.length === 0 && (
+                    <div style={{ padding: '0.75rem', fontSize: '0.8rem', color: '#94a3b8', textAlign: 'center' }}>
+                      No matching destinations found.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
           <div className={styles.headerRight}>
-            <button className={styles.iconBtn} aria-label="Notifications">
+            <button 
+              className={styles.iconBtn} 
+              aria-label="Notifications"
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              id="admin-notifications-btn"
+            >
               <Bell size={18} />
               <span className={styles.yellowBadge}>2</span>
             </button>
+            {notificationsOpen && (
+              <div className={styles.notificationsDropdown} id="admin-notifications-dropdown">
+                <div style={{ fontSize: '0.8125rem', fontWeight: 700, paddingBottom: '0.5rem', borderBottom: '1px solid #f1f5f9', marginBottom: '0.5rem' }}>
+                  Notifications (2)
+                </div>
+                <div style={{ fontSize: '0.75rem', padding: '0.4rem 0', color: '#334155' }}>
+                  • <strong>Customer Photos:</strong> Showcase updated with latest active photos.
+                </div>
+                <div style={{ fontSize: '0.75rem', padding: '0.4rem 0', color: '#334155' }}>
+                  • <strong>Orders:</strong> 2 new orders awaiting dispatch sync.
+                </div>
+              </div>
+            )}
+
             <button className={styles.iconBtn} aria-label="Messages">
               <Mail size={18} />
             </button>
 
-            <div className={styles.userCard}>
-              <div className={styles.userAvatar}>
-                <span style={{ fontWeight: 800, fontSize: '0.875rem', color: '#000' }}>
-                  {adminUser?.email ? adminUser.email.charAt(0).toUpperCase() : 'A'}
-                </span>
+            <div className={styles.userCardWrapper}>
+              <div 
+                className={styles.userCard}
+                onClick={() => setProfileOpen(!profileOpen)}
+                id="admin-profile-trigger"
+              >
+                <div className={styles.userAvatar}>
+                  <span style={{ fontWeight: 800, fontSize: '0.875rem', color: '#000' }}>
+                    {adminUser?.email ? adminUser.email.charAt(0).toUpperCase() : 'A'}
+                  </span>
+                </div>
+                <div className={styles.userInfo}>
+                  <span className={styles.userName}>{adminUser?.email || 'ADRIZO Admin'}</span>
+                  <span className={styles.userRole}>{adminUser?.role === 'ADMIN' ? 'Super Administrator' : 'Administrator'}</span>
+                </div>
+                <ChevronDown size={14} style={{ color: '#94a3b8', marginLeft: '2px' }} />
               </div>
-              <div className={styles.userInfo}>
-                <span className={styles.userName}>{adminUser?.email || 'ADRIZO Admin'}</span>
-                <span className={styles.userRole}>{adminUser?.role === 'ADMIN' ? 'Super Administrator' : 'Administrator'}</span>
-              </div>
+
+              {/* Admin Profile Dropdown Menu */}
+              {profileOpen && (
+                <div className={styles.profileDropdown} id="admin-profile-dropdown">
+                  <div className={styles.profileDropdownHeader}>
+                    <div className={styles.profileDropdownEmail}>{adminUser?.email || 'care.adrizo@gmail.com'}</div>
+                    <div className={styles.profileDropdownRole}>{adminUser?.role === 'ADMIN' ? 'Super Administrator' : 'Administrator'}</div>
+                  </div>
+                  <Link 
+                    href="/admin/settings?tab=general" 
+                    className={styles.profileDropdownItem}
+                    onClick={() => setProfileOpen(false)}
+                  >
+                    <Settings size={15} />
+                    <span>Store Settings</span>
+                  </Link>
+                  <button 
+                    type="button"
+                    className={`${styles.profileDropdownItem} ${styles.profileDropdownItemDanger}`}
+                    onClick={async () => {
+                      setProfileOpen(false);
+                      await fetch('/api/admin/logout', { method: 'POST' });
+                      window.location.href = '/admin/login';
+                    }}
+                  >
+                    <LogOut size={15} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>

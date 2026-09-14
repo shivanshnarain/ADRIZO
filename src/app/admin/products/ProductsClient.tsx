@@ -3,6 +3,7 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Portal from '@/components/Portal';
 import { 
   Plus, 
   Edit, 
@@ -1211,65 +1212,69 @@ export default function ProductsClient({
     <div className={formStyles.pageContainer}>
       {/* Toast Notification */}
       {successToast && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          background: '#09090b',
-          color: '#FFC800',
-          padding: '0.85rem 1.25rem',
-          borderRadius: '8px',
-          border: '1px solid #FFC800',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontWeight: 700,
-          fontSize: '0.875rem',
-          zIndex: 999999
-        }}>
-          <Check size={18} />
-          <span>{successToast}</span>
-        </div>
+        <Portal>
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            background: '#09090b',
+            color: '#FFC800',
+            padding: '0.85rem 1.25rem',
+            borderRadius: '8px',
+            border: '1px solid #FFC800',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: 700,
+            fontSize: '0.875rem',
+            zIndex: 'var(--z-toast, 2500)' as any,
+          }}>
+            <Check size={18} />
+            <span>{successToast}</span>
+          </div>
+        </Portal>
       )}
 
       {/* Delete Confirmation Modal */}
       {productToDelete && (
-        <div className={formStyles.modalOverlay}>
-          <div className={formStyles.modalCard}>
-            <h3 className={formStyles.modalTitle}>
-              <AlertTriangle size={20} color="#ef4444" />
-              <span>Delete Product?</span>
-            </h3>
-            <div className={formStyles.modalBody}>
-              Are you sure you want to delete:
-              <span className={formStyles.modalProductName}>
-                {productToDelete.name}
-              </span>
-              This action will remove the product and its variants from the database. This action cannot be undone.
-            </div>
-            <div className={formStyles.modalFooter}>
-              <button
-                type="button"
-                className={formStyles.secondaryBtn}
-                onClick={() => setProductToDelete(null)}
-                disabled={isDeleting}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={formStyles.dangerRedBtn}
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-                id="btn-confirm-delete"
-              >
-                <Trash2 size={14} />
-                <span>{isDeleting ? 'Deleting...' : 'Delete Product'}</span>
-              </button>
+        <Portal>
+          <div className={formStyles.modalOverlay}>
+            <div className={formStyles.modalCard}>
+              <h3 className={formStyles.modalTitle}>
+                <AlertTriangle size={20} color="#ef4444" />
+                <span>Delete Product?</span>
+              </h3>
+              <div className={formStyles.modalBody}>
+                Are you sure you want to delete:
+                <span className={formStyles.modalProductName}>
+                  {productToDelete.name}
+                </span>
+                This action will remove the product and its variants from the database. This action cannot be undone.
+              </div>
+              <div className={formStyles.modalFooter}>
+                <button
+                  type="button"
+                  className={formStyles.secondaryBtn}
+                  onClick={() => setProductToDelete(null)}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={formStyles.dangerRedBtn}
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  id="btn-confirm-delete"
+                >
+                  <Trash2 size={14} />
+                  <span>{isDeleting ? 'Deleting...' : 'Delete Product'}</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {!isEditing ? (

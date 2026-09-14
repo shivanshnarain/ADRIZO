@@ -6,6 +6,7 @@ import { useCart, CartItem } from '../context/CartContext';
 import { useRouter } from 'next/navigation';
 import FreeProductSelectorModal from './FreeProductSelectorModal';
 import ForgottenFreeItemsModal from './ForgottenFreeItemsModal';
+import Portal from '@/components/Portal';
 
 export default function CartSidebar() {
   const router = useRouter();
@@ -103,15 +104,16 @@ export default function CartSidebar() {
 
   return (
     <>
-      <div 
-        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000 }}
-        onClick={() => setIsCartOpen(false)}
-      />
-      <div style={{ 
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: 'min(100vw, 440px)', 
-        backgroundColor: 'var(--white)', zIndex: 1001, display: 'flex', flexDirection: 'column',
-        boxShadow: '-4px 0 25px rgba(0,0,0,0.15)', boxSizing: 'border-box'
-      }}>
+      <Portal>
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 'var(--z-drawer, 1300)' as any }}
+          onClick={() => setIsCartOpen(false)}
+        />
+        <div style={{ 
+          position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: 'min(100vw, 440px)', 
+          backgroundColor: 'var(--white)', zIndex: 'calc(var(--z-drawer, 1300) + 1)' as any, display: 'flex', flexDirection: 'column',
+          boxShadow: '-4px 0 25px rgba(0,0,0,0.15)', boxSizing: 'border-box'
+        }}>
         {/* Header */}
         <div style={{ padding: '1.25rem clamp(1rem, 4vw, 1.5rem)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-gray)' }}>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
@@ -427,6 +429,7 @@ export default function CartSidebar() {
           </div>
         )}
       </div>
+      </Portal>
 
       <FreeProductSelectorModal />
       <ForgottenFreeItemsModal

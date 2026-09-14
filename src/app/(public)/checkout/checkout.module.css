@@ -1177,7 +1177,7 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(4px);
-  z-index: 999999;
+  z-index: var(--z-modal-backdrop, 2000);
   display: flex;
   align-items: center;
   justify-content: center;

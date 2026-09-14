@@ -24,6 +24,7 @@ import {
   Gift,
   X
 } from 'lucide-react';
+import Portal from '@/components/Portal';
 import styles from '../admin.module.css';
 import { 
   createCategory, 
@@ -624,17 +625,33 @@ export default function SettingsClient({
       </div>
 
       {/* TOAST ALERTS */}
-      {successMessage && (
-        <div style={{ padding: '0.75rem 1rem', background: '#dcfce7', color: '#166534', borderRadius: '6px', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
-          <CheckCircle2 size={16} />
-          <span>{successMessage}</span>
-        </div>
-      )}
-      {errorMessage && (
-        <div style={{ padding: '0.75rem 1rem', background: '#fee2e2', color: '#991b1b', borderRadius: '6px', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
-          <AlertTriangle size={16} />
-          <span>{errorMessage}</span>
-        </div>
+      {(successMessage || errorMessage) && (
+        <Portal>
+          <div
+            style={{
+              position: 'fixed',
+              top: '20px',
+              right: '20px',
+              zIndex: 'var(--z-toast, 2500)' as any,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}
+          >
+            {successMessage && (
+              <div style={{ padding: '0.75rem 1.25rem', background: '#dcfce7', border: '1px solid #bbf7d0', color: '#166534', borderRadius: '8px', boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                <CheckCircle2 size={18} />
+                <span>{successMessage}</span>
+              </div>
+            )}
+            {errorMessage && (
+              <div style={{ padding: '0.75rem 1.25rem', background: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b', borderRadius: '8px', boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                <AlertTriangle size={18} />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+          </div>
+        </Portal>
       )}
 
       {/* NAVIGATION TABS */}
@@ -858,60 +875,62 @@ export default function SettingsClient({
 
           {/* Add / Edit Category Modal */}
           {isCatModalOpen && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-              <div style={{ background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '450px', padding: '1.5rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0' }}>{editingCatId ? 'Edit Category' : 'Add Category'}</h3>
-                <form onSubmit={handleSaveCategory}>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Category Name *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={catName} 
-                      onChange={e => setCatName(e.target.value)} 
-                      style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                    />
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Short Code (for SKU, e.g. TSH) *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      maxLength={4}
-                      value={catCode} 
-                      onChange={e => setCatCode(e.target.value.toUpperCase())} 
-                      style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px', textTransform: 'uppercase' }}
-                    />
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sort Order</label>
+            <Portal>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', zIndex: 'var(--z-modal-backdrop, 2000)' as any, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                <div style={{ background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '450px', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)' }}>
+                  <h3 style={{ margin: '0 0 1rem 0' }}>{editingCatId ? 'Edit Category' : 'Add Category'}</h3>
+                  <form onSubmit={handleSaveCategory}>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Category Name *</label>
                       <input 
-                        type="number" 
-                        value={catOrder} 
-                        onChange={e => setCatOrder(e.target.value)} 
+                        type="text" 
+                        required 
+                        value={catName} 
+                        onChange={e => setCatName(e.target.value)} 
                         style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                       />
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Status</label>
-                      <select 
-                        value={catStatus} 
-                        onChange={e => setCatStatus(e.target.value)}
-                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                      >
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="INACTIVE">INACTIVE</option>
-                      </select>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Short Code (for SKU, e.g. TSH) *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        maxLength={4}
+                        value={catCode} 
+                        onChange={e => setCatCode(e.target.value.toUpperCase())} 
+                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px', textTransform: 'uppercase' }}
+                      />
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem' }}>
-                    <button type="button" onClick={() => setIsCatModalOpen(false)} style={{ padding: '0.55rem 1rem', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-                    <button type="submit" disabled={loading} style={{ padding: '0.55rem 1.25rem', background: '#FFC800', color: '#000000', fontWeight: 700, border: '1px solid #eab308', borderRadius: '6px', cursor: 'pointer' }}>Save</button>
-                  </div>
-                </form>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sort Order</label>
+                        <input 
+                          type="number" 
+                          value={catOrder} 
+                          onChange={e => setCatOrder(e.target.value)} 
+                          style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Status</label>
+                        <select 
+                          value={catStatus} 
+                          onChange={e => setCatStatus(e.target.value)}
+                          style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                        >
+                          <option value="ACTIVE">ACTIVE</option>
+                          <option value="INACTIVE">INACTIVE</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem' }}>
+                      <button type="button" onClick={() => setIsCatModalOpen(false)} style={{ padding: '0.55rem 1rem', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>Cancel</button>
+                      <button type="submit" disabled={loading} style={{ padding: '0.55rem 1.25rem', background: '#FFC800', color: '#000000', fontWeight: 700, border: '1px solid #eab308', borderRadius: '6px', cursor: 'pointer' }}>Save</button>
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
+            </Portal>
           )}
         </div>
       )}
@@ -991,72 +1010,74 @@ export default function SettingsClient({
 
           {/* Add / Edit Product Type Modal */}
           {isTypeModalOpen && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-              <div style={{ background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '450px', padding: '1.5rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0' }}>{editingTypeId ? 'Edit Product Type' : 'Add Product Type'}</h3>
-                <form onSubmit={handleSaveProductType}>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Assign Category *</label>
-                    <select
-                      value={typeCatId}
-                      onChange={e => setTypeCatId(e.target.value)}
-                      style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                    >
-                      {categories.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Style Name (e.g. Henley T-Shirt) *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={typeName} 
-                      onChange={e => setTypeName(e.target.value)} 
-                      style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                    />
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Short Code (for SKU, e.g. HEN, ZP) *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      maxLength={4}
-                      value={typeCode} 
-                      onChange={e => setTypeCode(e.target.value.toUpperCase())} 
-                      style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px', textTransform: 'uppercase' }}
-                    />
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sort Order</label>
+            <Portal>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', zIndex: 'var(--z-modal-backdrop, 2000)' as any, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                <div style={{ background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '450px', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)' }}>
+                  <h3 style={{ margin: '0 0 1rem 0' }}>{editingTypeId ? 'Edit Product Type' : 'Add Product Type'}</h3>
+                  <form onSubmit={handleSaveProductType}>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Assign Category *</label>
+                      <select
+                        value={typeCatId}
+                        onChange={e => setTypeCatId(e.target.value)}
+                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                      >
+                        {categories.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Style Name (e.g. Henley T-Shirt) *</label>
                       <input 
-                        type="number" 
-                        value={typeOrder} 
-                        onChange={e => setTypeOrder(e.target.value)} 
+                        type="text" 
+                        required 
+                        value={typeName} 
+                        onChange={e => setTypeName(e.target.value)} 
                         style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                       />
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Status</label>
-                      <select 
-                        value={typeStatus} 
-                        onChange={e => setTypeStatus(e.target.value)}
-                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                      >
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="INACTIVE">INACTIVE</option>
-                      </select>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Short Code (for SKU, e.g. HEN, ZP) *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        maxLength={4}
+                        value={typeCode} 
+                        onChange={e => setTypeCode(e.target.value.toUpperCase())} 
+                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px', textTransform: 'uppercase' }}
+                      />
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem' }}>
-                    <button type="button" onClick={() => setIsTypeModalOpen(false)} style={{ padding: '0.55rem 1rem', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-                    <button type="submit" disabled={loading} style={{ padding: '0.55rem 1.25rem', background: '#FFC800', color: '#000000', fontWeight: 700, border: '1px solid #eab308', borderRadius: '6px', cursor: 'pointer' }}>Save</button>
-                  </div>
-                </form>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sort Order</label>
+                        <input 
+                          type="number" 
+                          value={typeOrder} 
+                          onChange={e => setTypeOrder(e.target.value)} 
+                          style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Status</label>
+                        <select 
+                          value={typeStatus} 
+                          onChange={e => setTypeStatus(e.target.value)}
+                          style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                        >
+                          <option value="ACTIVE">ACTIVE</option>
+                          <option value="INACTIVE">INACTIVE</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem' }}>
+                      <button type="button" onClick={() => setIsTypeModalOpen(false)} style={{ padding: '0.55rem 1rem', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>Cancel</button>
+                      <button type="submit" disabled={loading} style={{ padding: '0.55rem 1.25rem', background: '#FFC800', color: '#000000', fontWeight: 700, border: '1px solid #eab308', borderRadius: '6px', cursor: 'pointer' }}>Save</button>
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
+            </Portal>
           )}
         </div>
       )}
@@ -1137,57 +1158,59 @@ export default function SettingsClient({
 
           {/* Add / Edit Color Modal */}
           {isColorModalOpen && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-              <div style={{ background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '400px', padding: '1.5rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0' }}>{editingColorId ? 'Edit Color' : 'Add Custom Color'}</h3>
-                <form onSubmit={handleSaveColor}>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Color Name *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={colorName} 
-                      onChange={e => setColorName(e.target.value.toUpperCase())} 
-                      placeholder="e.g. SAGE GREEN"
-                      style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px', textTransform: 'uppercase' }}
-                    />
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Short Code (for SKU, e.g. SGR) *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      maxLength={4}
-                      value={colorCode} 
-                      onChange={e => setColorCode(e.target.value.toUpperCase())} 
-                      placeholder="e.g. SGR"
-                      style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px', textTransform: 'uppercase' }}
-                    />
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Hex Color Value</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <input 
-                        type="color" 
-                        value={colorHex} 
-                        onChange={e => setColorHex(e.target.value)} 
-                        style={{ width: '40px', height: '40px', border: 'none', cursor: 'pointer', borderRadius: '4px' }}
-                      />
+            <Portal>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', zIndex: 'var(--z-modal-backdrop, 2000)' as any, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                <div style={{ background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '400px', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)' }}>
+                  <h3 style={{ margin: '0 0 1rem 0' }}>{editingColorId ? 'Edit Color' : 'Add Custom Color'}</h3>
+                  <form onSubmit={handleSaveColor}>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Color Name *</label>
                       <input 
                         type="text" 
-                        value={colorHex} 
-                        onChange={e => setColorHex(e.target.value)} 
-                        style={{ flex: 1, padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                        required 
+                        value={colorName} 
+                        onChange={e => setColorName(e.target.value.toUpperCase())} 
+                        placeholder="e.g. SAGE GREEN"
+                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px', textTransform: 'uppercase' }}
                       />
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem' }}>
-                    <button type="button" onClick={() => setIsColorModalOpen(false)} style={{ padding: '0.55rem 1rem', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-                    <button type="submit" disabled={loading} style={{ padding: '0.55rem 1.25rem', background: '#FFC800', color: '#000000', fontWeight: 700, border: '1px solid #eab308', borderRadius: '6px', cursor: 'pointer' }}>Save</button>
-                  </div>
-                </form>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Short Code (for SKU, e.g. SGR) *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        maxLength={4}
+                        value={colorCode} 
+                        onChange={e => setColorCode(e.target.value.toUpperCase())} 
+                        placeholder="e.g. SGR"
+                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px', textTransform: 'uppercase' }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Hex Color Value</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <input 
+                          type="color" 
+                          value={colorHex} 
+                          onChange={e => setColorHex(e.target.value)} 
+                          style={{ width: '40px', height: '40px', border: 'none', cursor: 'pointer', borderRadius: '4px' }}
+                        />
+                        <input 
+                          type="text" 
+                          value={colorHex} 
+                          onChange={e => setColorHex(e.target.value)} 
+                          style={{ flex: 1, padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem' }}>
+                      <button type="button" onClick={() => setIsColorModalOpen(false)} style={{ padding: '0.55rem 1rem', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>Cancel</button>
+                      <button type="submit" disabled={loading} style={{ padding: '0.55rem 1.25rem', background: '#FFC800', color: '#000000', fontWeight: 700, border: '1px solid #eab308', borderRadius: '6px', cursor: 'pointer' }}>Save</button>
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
+            </Portal>
           )}
         </div>
       )}
@@ -1245,37 +1268,39 @@ export default function SettingsClient({
 
           {/* Add / Edit Size Modal */}
           {isSizeModalOpen && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-              <div style={{ background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '380px', padding: '1.5rem' }}>
-                <h3 style={{ margin: '0 0 1rem 0' }}>{editingSizeId ? 'Edit Size' : 'Add Size'}</h3>
-                <form onSubmit={handleSaveSize}>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Size Label *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={sizeName} 
-                      onChange={e => setSizeName(e.target.value.toUpperCase())} 
-                      placeholder="e.g. 6XL or 34"
-                      style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                    />
-                  </div>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sort Order</label>
-                    <input 
-                      type="number" 
-                      value={sizeOrder} 
-                      onChange={e => setSizeOrder(e.target.value)} 
-                      style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem' }}>
-                    <button type="button" onClick={() => setIsSizeModalOpen(false)} style={{ padding: '0.55rem 1rem', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>Cancel</button>
-                    <button type="submit" disabled={loading} style={{ padding: '0.55rem 1.25rem', background: '#FFC800', color: '#000000', fontWeight: 700, border: '1px solid #eab308', borderRadius: '6px', cursor: 'pointer' }}>Save</button>
-                  </div>
-                </form>
+            <Portal>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', zIndex: 'var(--z-modal-backdrop, 2000)' as any, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                <div style={{ background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '380px', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)' }}>
+                  <h3 style={{ margin: '0 0 1rem 0' }}>{editingSizeId ? 'Edit Size' : 'Add Size'}</h3>
+                  <form onSubmit={handleSaveSize}>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Size Label *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={sizeName} 
+                        onChange={e => setSizeName(e.target.value.toUpperCase())} 
+                        placeholder="e.g. 6XL or 34"
+                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '0.25rem' }}>Sort Order</label>
+                      <input 
+                        type="number" 
+                        value={sizeOrder} 
+                        onChange={e => setSizeOrder(e.target.value)} 
+                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1.5rem' }}>
+                      <button type="button" onClick={() => setIsSizeModalOpen(false)} style={{ padding: '0.55rem 1rem', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>Cancel</button>
+                      <button type="submit" disabled={loading} style={{ padding: '0.55rem 1.25rem', background: '#FFC800', color: '#000000', fontWeight: 700, border: '1px solid #eab308', borderRadius: '6px', cursor: 'pointer' }}>Save</button>
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
+            </Portal>
           )}
         </div>
       )}
@@ -1554,71 +1579,74 @@ export default function SettingsClient({
 
           {/* Add Coupon Modal */}
           {isCouponModalOpen && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-              <div style={{ background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '420px', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)' }}>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 800 }}>Create Promo Discount</h3>
-                <form onSubmit={handleAddCoupon}>
-                  <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '0.25rem' }}>Promo Code *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="e.g. SUMMER25"
-                      value={couponCode} 
-                      onChange={e => setCouponCode(e.target.value.toUpperCase())} 
-                      style={{ width: '100%', height: '38px', padding: '0 0.75rem', border: '1px solid #d4d4d8', borderRadius: '6px', textTransform: 'uppercase', fontFamily: 'monospace', fontWeight: 700 }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '0.25rem' }}>Discount Type</label>
-                      <select 
-                        value={couponType} 
-                        onChange={e => setCouponType(e.target.value)}
-                        style={{ width: '100%', height: '38px', padding: '0 0.5rem', border: '1px solid #d4d4d8', borderRadius: '6px', background: '#fff', fontSize: '0.8125rem', fontWeight: 700 }}
-                      >
-                        <option value="PERCENT">Percentage (% OFF)</option>
-                        <option value="FLAT">Flat Amount (₹ OFF)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '0.25rem' }}>Value ({couponType === 'PERCENT' ? '%' : '₹'})</label>
+            <Portal>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', zIndex: 'var(--z-modal-backdrop, 2000)' as any, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                <div style={{ background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '420px', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', fontWeight: 800 }}>Create Promo Discount</h3>
+                  <form onSubmit={handleAddCoupon}>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '0.25rem' }}>Promo Code *</label>
                       <input 
-                        type="number" 
+                        type="text" 
                         required 
-                        min="1"
-                        value={couponValue} 
-                        onChange={e => setCouponValue(e.target.value)} 
-                        style={{ width: '100%', height: '38px', padding: '0 0.75rem', border: '1px solid #d4d4d8', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 700 }}
+                        placeholder="e.g. SUMMER25"
+                        value={couponCode} 
+                        onChange={e => setCouponCode(e.target.value.toUpperCase())} 
+                        style={{ width: '100%', height: '38px', padding: '0 0.75rem', border: '1px solid #d4d4d8', borderRadius: '6px', textTransform: 'uppercase', fontFamily: 'monospace', fontWeight: 700 }}
                       />
                     </div>
-                  </div>
 
-                  <div style={{ marginBottom: '1.25rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '0.25rem' }}>Minimum Cart Spend (₹)</label>
-                    <input 
-                      type="number" 
-                      min="0"
-                      value={couponMinSpend} 
-                      onChange={e => setCouponMinSpend(e.target.value)} 
-                      style={{ width: '100%', height: '38px', padding: '0 0.75rem', border: '1px solid #d4d4d8', borderRadius: '6px', fontSize: '0.85rem' }}
-                    />
-                  </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '0.25rem' }}>Discount Type</label>
+                        <select 
+                          value={couponType} 
+                          onChange={e => setCouponType(e.target.value)}
+                          style={{ width: '100%', height: '38px', padding: '0 0.5rem', border: '1px solid #d4d4d8', borderRadius: '6px', background: '#fff', fontSize: '0.8125rem', fontWeight: 700 }}
+                        >
+                          <option value="PERCENT">Percentage (% OFF)</option>
+                          <option value="FLAT">Flat Amount (₹ OFF)</option>
+                        </select>
+                      </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                    <button type="button" onClick={() => setIsCouponModalOpen(false)} style={{ padding: '0.5rem 1rem', border: '1px solid #d4d4d8', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-                    <button type="submit" disabled={loading} style={{ padding: '0.5rem 1.25rem', background: '#FFC800', color: '#000000', fontWeight: 800, border: '1px solid #eab308', borderRadius: '6px', cursor: 'pointer' }}>Create Coupon</button>
-                  </div>
-                </form>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '0.25rem' }}>Value ({couponType === 'PERCENT' ? '%' : '₹'})</label>
+                        <input 
+                          type="number" 
+                          required 
+                          min="1"
+                          value={couponValue} 
+                          onChange={e => setCouponValue(e.target.value)} 
+                          style={{ width: '100%', height: '38px', padding: '0 0.75rem', border: '1px solid #d4d4d8', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 700 }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: '1.25rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, marginBottom: '0.25rem' }}>Minimum Cart Spend (₹)</label>
+                      <input 
+                        type="number" 
+                        min="0"
+                        value={couponMinSpend} 
+                        onChange={e => setCouponMinSpend(e.target.value)} 
+                        style={{ width: '100%', height: '38px', padding: '0 0.75rem', border: '1px solid #d4d4d8', borderRadius: '6px', fontSize: '0.85rem' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                      <button type="button" onClick={() => setIsCouponModalOpen(false)} style={{ padding: '0.5rem 1rem', border: '1px solid #d4d4d8', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                      <button type="submit" disabled={loading} style={{ padding: '0.55rem 1.25rem', background: '#FFC800', color: '#000000', fontWeight: 800, border: '1px solid #eab308', borderRadius: '6px', cursor: 'pointer' }}>Create Coupon</button>
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
+            </Portal>
           )}
 
           {/* Create / Edit Promotional Offer Modal */}
           {isOfferModalOpen && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+            <Portal>
+              <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 'var(--z-modal-backdrop, 2000)' as any, padding: '1rem' }}>
               <div style={{ background: '#fff', borderRadius: '12px', padding: '1.75rem', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', border: '1px solid #e4e4e7', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #f4f4f5', paddingBottom: '0.85rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -1799,6 +1827,7 @@ export default function SettingsClient({
                 </form>
               </div>
             </div>
+            </Portal>
           )}
         </div>
       )}

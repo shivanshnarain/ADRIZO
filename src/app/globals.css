@@ -14,6 +14,24 @@
   /* Legacy vars for safety, avoid removing immediately */
   --primary-yellow: #FFC800;
   --deep-yellow: #e6b400;
+
+  /* ==========================================================================
+     GLOBAL Z-INDEX LAYERING ARCHITECTURE
+     Hierarchy: Base < Sticky < Navbar < Dropdown < Popover < Drawer < Modal Backdrop < Modal < Confirmation < Error Dialog < Toast
+     ========================================================================== */
+  --z-base: 1;
+  --z-card: 10;
+  --z-sticky: 100;
+  --z-sidebar: 900;
+  --z-navbar: 1000;
+  --z-dropdown: 1100;
+  --z-popover: 1200;
+  --z-drawer: 1300;
+  --z-modal-backdrop: 2000;
+  --z-modal: 2010;
+  --z-confirmation: 2100;
+  --z-error-dialog: 2200;
+  --z-toast: 2500;
 }
 
 * {
@@ -215,4 +233,50 @@ main, .admin-content {
 @keyframes pageFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* ==========================================================================
+   GLOBAL OVERLAY & MODAL SYSTEM UTILITIES
+   Guarantees all floating UI appears cleanly above the navbar and page content
+   ========================================================================== */
+.global-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(3px) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+  z-index: var(--z-modal-backdrop, 2000) !important;
+}
+
+.global-modal-content {
+  position: relative !important;
+  z-index: var(--z-modal, 2010) !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  outline: none !important;
+}
+
+.global-confirmation-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+  z-index: var(--z-confirmation, 2100) !important;
+}
+
+.global-toast-container {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: var(--z-toast, 2500) !important;
+  pointer-events: auto !important;
 }
