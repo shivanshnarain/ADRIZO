@@ -79,7 +79,7 @@ export default function NotFound() {
         }}
       >
         <Link
-          href="/category/all"
+          href="/shop"
           style={{
             display: 'inline-flex',
             alignItems: 'center',

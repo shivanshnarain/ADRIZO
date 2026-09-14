@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/reviews
- * Authenticated customer endpoint: submits a new review with pending status.
+ * Authenticated customer endpoint: submits a new review with automatic approval for instant visibility.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     // 3. Server-side purchase verification (prevents client spoofing)
     const verifiedPurchase = await checkVerifiedPurchase(customer, productId.trim());
 
-    // 4. Save to Cloud Firestore with status: "pending"
+    // 4. Save review with status: "approved" for instant availability
     const result = await createCustomerReview({
       productId: productId.trim(),
       productSlug: productSlug ? String(productSlug).trim() : undefined,
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Thank you! Your review has been submitted and is awaiting approval.',
+      message: 'Thank you! Your review has been submitted.',
       reviewId: result.reviewId,
     });
   } catch (err: any) {

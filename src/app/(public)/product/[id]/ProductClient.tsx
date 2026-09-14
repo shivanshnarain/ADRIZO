@@ -601,7 +601,7 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                   >
                     <img 
                       src={thumbnailImages[idx] || img} 
-                      alt={`${product.name} thumbnail ${idx + 1}`} 
+                      alt={`ADRIZO ${product.name} thumbnail ${idx + 1}`} 
                       className={styles.thumbImg}
                       loading="lazy"
                       decoding="async"
@@ -637,7 +637,7 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                   <img 
                     key={idx}
                     src={img} 
-                    alt={`${product.name} view ${idx + 1}`}
+                    alt={`ADRIZO ${product.name}${product.color ? ` in ${product.color}` : ''} - View ${idx + 1}`}
                     className={`${styles.mainHeroImg} ${isCurrent ? styles.mainHeroImgActive : styles.mainHeroImgHidden}`}
                     loading={idx === 0 ? "eager" : "lazy"}
                     fetchPriority={idx === 0 ? "high" : "low"}
@@ -666,7 +666,7 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                     >
                       <img 
                         src={thumbnailImages[idx] || img} 
-                        alt={`${product.name} thumbnail ${idx + 1}`} 
+                        alt={`ADRIZO ${product.name} thumbnail ${idx + 1}`} 
                         className={styles.thumbImg}
                         loading="lazy"
                         decoding="async"
@@ -688,7 +688,38 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
         <div className={styles.productInfoSection}>
           {/* Top Fixed Information Zone */}
           <div className={styles.topInfoSection}>
-            {/* 1. Product Title (Prominent at top, no breadcrumbs) */}
+            {/* Breadcrumb Navigation */}
+            <nav
+              aria-label="Breadcrumb"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.4rem',
+                fontSize: '0.785rem',
+                color: '#71717a',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <a href="/" style={{ color: '#71717a', textDecoration: 'none' }}>Home</a>
+              <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
+              <a href="/shop" style={{ color: '#71717a', textDecoration: 'none' }}>Shop</a>
+              {product.category && (
+                <>
+                  <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
+                  <a
+                    href={`/category/${product.category.slug || 'men'}`}
+                    style={{ color: '#71717a', textDecoration: 'none' }}
+                  >
+                    {product.category.name}
+                  </a>
+                </>
+              )}
+              <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
+              <span style={{ color: '#09090b', fontWeight: 600 }}>{product.name}</span>
+            </nav>
+
+            {/* 1. Product Title */}
             <h1 className={styles.productTitle}>{product.name.toUpperCase()}</h1>
 
             {/* Star Rating snippet linking to Customer Reviews */}

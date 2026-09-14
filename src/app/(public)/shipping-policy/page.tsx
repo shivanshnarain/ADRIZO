@@ -2,9 +2,20 @@ import { POLICY_CONFIG } from '@/config/policies';
 import styles from '../policies.module.css';
 import { Metadata } from 'next';
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.adrizo.com';
+
 export const metadata: Metadata = {
-  title: `${POLICY_CONFIG.companyName} Shipping Policy`,
-  description: `Read the official Shipping Policy for ${POLICY_CONFIG.companyName}.`,
+  title: `${POLICY_CONFIG.companyName} Shipping Policy — Delivery Timelines & Charges`,
+  description: `Official Shipping Policy for ADRIZO. Free express shipping on orders above ₹${POLICY_CONFIG.shipping.freeShippingThreshold} across India. Estimated delivery 2–4 business days in metro cities.`,
+  alternates: {
+    canonical: `${siteUrl}/shipping-policy`,
+  },
+  openGraph: {
+    title: `${POLICY_CONFIG.companyName} Shipping Policy`,
+    description: `Official Shipping Policy for ADRIZO. Free shipping above ₹${POLICY_CONFIG.shipping.freeShippingThreshold} across India.`,
+    url: `${siteUrl}/shipping-policy`,
+    siteName: 'ADRIZO',
+  },
 };
 
 export default function ShippingPolicy() {

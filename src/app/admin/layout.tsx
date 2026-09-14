@@ -20,7 +20,8 @@ import {
   Menu,
   HelpCircle,
   Sliders,
-  Star
+  Star,
+  Camera
 } from 'lucide-react';
 import styles from './admin.module.css';
 
@@ -161,7 +162,16 @@ export default function AdminLayout({
             <span>CMS / Hero Banners</span>
           </Link>
 
-          {/* 6. Customer Reviews */}
+          {/* 6. Customer Photos */}
+          <Link 
+            href="/admin/customer-photos" 
+            className={`${styles.navItem} ${pathname.includes('/admin/customer-photos') ? styles.navItemActive : ''}`}
+          >
+            <Camera size={18} />
+            <span>Customer Photos</span>
+          </Link>
+
+          {/* 7. Customer Reviews */}
           <Link 
             href="/admin/reviews" 
             className={`${styles.navItem} ${pathname.includes('/admin/reviews') ? styles.navItemActive : ''}`}

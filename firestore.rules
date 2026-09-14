@@ -14,23 +14,31 @@ service cloud.firestore {
         && data.reviewText is string && data.reviewText.size() >= 3 && data.reviewText.size() <= 1000
         && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 60
         && data.productId is string && data.productId.size() > 0
-        && data.status == 'pending'
+        && (data.status == 'approved' || data.status == 'pending')
         && data.verifiedPurchase == false; // Clients cannot self-declare verified purchase
     }
 
     // Customer Reviews Collection
     match /reviews/{reviewId} {
-      // 1. Public can ONLY read approved reviews (or users can read their own pending review)
+      // 1. Public can ONLY read approved reviews (or users can read their own review)
       allow read: if resource.data.status == 'approved'
                   || (isAuthenticated() && resource.data.userId == request.auth.uid);
 
-      // 2. Authenticated users can create reviews strictly with pending status
+      // 2. Authenticated users can create reviews strictly with valid review fields
       allow create: if isAuthenticated()
                     && request.resource.data.userId == request.auth.uid
                     && isValidReviewCreate();
 
       // 3. Normal clients cannot update or delete reviews directly (moderated via secure admin backend)
       allow update, delete: if false;
+    }
+
+    // Customer Photos Collection (Showcase)
+    match /customerPhotos/{photoId} {
+      // 1. Public can read customer photos for showcase display
+      allow read: if true;
+      // 2. Direct client-side writes disallowed; all mutations handled via verified admin API
+      allow write: if false;
     }
 
     // Default deny all other documents

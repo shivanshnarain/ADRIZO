@@ -177,7 +177,7 @@ export async function getApprovedProductReviews(
 }
 
 /**
- * Submit a customer review in "pending" status.
+ * Submit a customer review in "approved" status for instant visibility.
  * Never hangs: completes immediately in database and writes to Cloud Firestore.
  */
 export async function createCustomerReview(data: {
@@ -198,7 +198,29 @@ export async function createCustomerReview(data: {
     const cleanSlug = (data.productSlug || cleanProductId).trim();
     const cleanName = (data.productName || 'Garment Product').trim();
 
-    // 1. Primary write to Prisma MongoDB
+    // 0. Duplicate submission debounce protection (15 seconds window for identical user + product + text)
+    if (data.userId) {
+      try {
+        const recentDuplicate = await prismaReview.findFirst({
+          where: {
+            productId: cleanProductId,
+            userId: data.userId,
+            reviewText: cleanReviewText,
+            createdAt: {
+              gte: new Date(Date.now() - 15000),
+            },
+          },
+        });
+        if (recentDuplicate) {
+          return { success: true, reviewId: recentDuplicate.id };
+        }
+      } catch (dupErr) {
+        // If query fails, continue with creation
+        console.warn('[createCustomerReview Duplicate Check Warning]:', dupErr);
+      }
+    }
+
+    // 1. Primary write to Prisma MongoDB (automatically approved)
     const createdReview = await prismaReview.create({
       data: {
         productId: cleanProductId,
@@ -209,7 +231,7 @@ export async function createCustomerReview(data: {
         rating: cleanRating,
         reviewText: cleanReviewText,
         verifiedPurchase: Boolean(data.verifiedPurchase),
-        status: 'pending', // Always defaults to pending for admin moderation
+        status: 'approved', // Automatically approved for instant visibility on the website
       },
     });
 
@@ -229,7 +251,7 @@ export async function createCustomerReview(data: {
           rating: cleanRating,
           reviewText: cleanReviewText,
           verifiedPurchase: Boolean(data.verifiedPurchase),
-          status: 'pending',
+          status: 'approved',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         }),

@@ -121,6 +121,7 @@ export default function ProductReviewsSection({
   // Submit Review Form
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return; // Prevent double-clicks / rapid duplicate submissions
     setSubmitError('');
     setSubmitSuccessMessage('');
 
@@ -175,16 +176,16 @@ export default function ProductReviewsSection({
 
       if (res.ok && data.success) {
         setSubmitSuccessMessage(
-          data.message || 'Thank you! Your review has been submitted and is awaiting approval.'
+          data.message || 'Thank you! Your review has been submitted.'
         );
         setReviewText('');
         setSelectedRating(5);
-        // Refresh reviews and statistics
+        // Refresh reviews and statistics immediately
         await loadReviews(1, false);
-        // Collapse form automatically after 4 seconds
+        // Collapse form automatically after 3.5 seconds
         setTimeout(() => {
           setIsFormOpen(false);
-        }, 4000);
+        }, 3500);
       } else {
         setSubmitError(data.error || 'Failed to submit review. Please try again.');
       }

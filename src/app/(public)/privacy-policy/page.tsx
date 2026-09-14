@@ -2,9 +2,20 @@ import { POLICY_CONFIG } from '@/config/policies';
 import styles from '../policies.module.css';
 import { Metadata } from 'next';
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.adrizo.com';
+
 export const metadata: Metadata = {
-  title: `${POLICY_CONFIG.companyName} Privacy Policy`,
-  description: `Read how ${POLICY_CONFIG.companyName} collects, uses, and protects your personal data.`,
+  title: `${POLICY_CONFIG.companyName} Privacy Policy — Customer Data Protection`,
+  description: `Official Privacy Policy for ADRIZO. Learn how we protect customer data, secure transactions, and ensure your personal information remains confidential.`,
+  alternates: {
+    canonical: `${siteUrl}/privacy-policy`,
+  },
+  openGraph: {
+    title: `${POLICY_CONFIG.companyName} Privacy Policy`,
+    description: `Learn how ADRIZO protects your personal information and secures online purchases.`,
+    url: `${siteUrl}/privacy-policy`,
+    siteName: 'ADRIZO',
+  },
 };
 
 export default function PrivacyPolicy() {

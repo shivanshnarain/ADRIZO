@@ -2,9 +2,20 @@ import { POLICY_CONFIG } from '@/config/policies';
 import styles from '../policies.module.css';
 import { Metadata } from 'next';
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.adrizo.com';
+
 export const metadata: Metadata = {
-  title: `${POLICY_CONFIG.companyName} Terms & Conditions`,
-  description: `Read the Terms & Conditions for using the ${POLICY_CONFIG.companyName} website.`,
+  title: `${POLICY_CONFIG.companyName} Terms & Conditions — Terms of Service`,
+  description: `Read the Terms & Conditions and Terms of Service for using the ADRIZO e-commerce website and purchasing menswear products online.`,
+  alternates: {
+    canonical: `${siteUrl}/terms-and-conditions`,
+  },
+  openGraph: {
+    title: `${POLICY_CONFIG.companyName} Terms & Conditions`,
+    description: `Terms and conditions for purchasing products on ADRIZO.`,
+    url: `${siteUrl}/terms-and-conditions`,
+    siteName: 'ADRIZO',
+  },
 };
 
 export default function TermsAndConditions() {

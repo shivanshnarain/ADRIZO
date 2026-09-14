@@ -1,0 +1,209 @@
+/* ==========================================================================
+   ADRIZO CUSTOMER PHOTO SHOWCASE - LUXURY TWO-ROW CONTINUOUS MARQUEE
+   ========================================================================== */
+
+.showcaseSection {
+  width: 100%;
+  max-width: 100%;
+  background-color: #ffffff;
+  padding: 3rem 0 2.5rem 0;
+  overflow: hidden;
+  position: relative;
+  contain: paint;
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 0 1rem;
+}
+
+.sectionTitle {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #000000;
+  margin: 0;
+  position: relative;
+  display: inline-block;
+}
+
+.sectionTitle::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 2px;
+  background-color: #FFBF00;
+  margin: 8px auto 0 auto;
+}
+
+.rowsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Individual Row wrapper */
+.marqueeRow {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Track containing the cards - animated via hardware-accelerated transform */
+.marqueeTrack {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  width: max-content;
+  will-change: transform;
+}
+
+/* ROW 1: Right -> Left continuous movement */
+.rowSlideLeft {
+  animation: scrollRightToLeft 42s linear infinite;
+}
+
+/* ROW 2: Left -> Right continuous movement */
+.rowSlideRight {
+  animation: scrollLeftToRight 42s linear infinite;
+}
+
+/* Keyframes: perfectly seamless 50% translation */
+@keyframes scrollRightToLeft {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes scrollLeftToRight {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Pause marquee slightly on hover (optional subtle UX touch, keeps moving smoothly) */
+@media (hover: hover) {
+  .marqueeRow:hover .marqueeTrack {
+    animation-play-state: paused;
+  }
+}
+
+/* Card item */
+.photoCard {
+  flex: 0 0 auto;
+  width: 220px;
+  height: 295px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background-color: #f4f4f5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+@media (hover: hover) {
+  .photoCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.photoImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .showcaseSection {
+    padding: 2.25rem 0 1.75rem 0;
+  }
+
+  .sectionHeader {
+    margin-bottom: 1.5rem;
+  }
+
+  .sectionTitle {
+    font-size: 1rem;
+    letter-spacing: 0.18em;
+  }
+
+  .rowsContainer {
+    gap: 12px;
+  }
+
+  .marqueeTrack {
+    gap: 12px;
+  }
+
+  /* 2-4 visible photos depending on screen width */
+  .photoCard {
+    width: 160px;
+    height: 215px;
+    border-radius: 10px;
+  }
+
+  .photoImage {
+    border-radius: 10px;
+  }
+
+  .rowSlideLeft {
+    animation-duration: 32s;
+  }
+
+  .rowSlideRight {
+    animation-duration: 32s;
+  }
+}
+
+@media (max-width: 480px) {
+  .photoCard {
+    width: 145px;
+    height: 195px;
+    border-radius: 8px;
+  }
+
+  .photoImage {
+    border-radius: 8px;
+  }
+
+  .rowSlideLeft {
+    animation-duration: 26s;
+  }
+
+  .rowSlideRight {
+    animation-duration: 26s;
+  }
+}
+
+/* Accessibility: Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .rowSlideLeft,
+  .rowSlideRight {
+    animation: none !important;
+  }
+  .marqueeRow {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .marqueeRow::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -2,9 +2,20 @@ import { POLICY_CONFIG } from '@/config/policies';
 import styles from '../policies.module.css';
 import { Metadata } from 'next';
 
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.adrizo.com';
+
 export const metadata: Metadata = {
-  title: `${POLICY_CONFIG.companyName} Refund & Return Policy`,
-  description: `Read the official Refund & Return Policy for ${POLICY_CONFIG.companyName}.`,
+  title: `${POLICY_CONFIG.companyName} Refund & Return Policy — 7 Days Easy Returns`,
+  description: `Official Refund and Return Policy for ADRIZO. Enjoy 7-day hassle-free returns and exchanges for all orders. Transparent and quick customer support.`,
+  alternates: {
+    canonical: `${siteUrl}/refund-return-policy`,
+  },
+  openGraph: {
+    title: `${POLICY_CONFIG.companyName} Refund & Return Policy`,
+    description: `Official Refund and Return Policy for ADRIZO. 7-day hassle-free returns and exchanges.`,
+    url: `${siteUrl}/refund-return-policy`,
+    siteName: 'ADRIZO',
+  },
 };
 
 export default function RefundReturnPolicy() {

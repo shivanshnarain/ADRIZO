@@ -4,15 +4,28 @@ import { ArrowRight, Truck, RefreshCw, Award } from "lucide-react";
 import styles from "./page.module.css";
 import { prisma } from '../../lib/prisma';
 import HomeProductSection from '../../components/HomeProductSection';
+import CustomerPhotoShowcase from '@/components/CustomerPhotoShowcase';
+import { getCustomerPhotos } from '@/lib/customer-photos-service';
+import type { Metadata } from 'next';
 
 export const revalidate = 60;
+
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.adrizo.com';
+
+export const metadata: Metadata = {
+  title: "ADRIZO | Premium Indian Men's Clothing & Essentials",
+  description: "Discover ADRIZO — Premium Indian menswear brand. Shop heavyweight fleece hoodies, luxury polo t-shirts, oversized tees & casual wear with free shipping in India.",
+  alternates: {
+    canonical: siteUrl,
+  },
+};
 
 // Static category data — exactly 4 items in required order:
 // ZIPPER POLO → BUTTON POLO → MEN'S HOODIE → WOMEN'S HOODIE
 const CATEGORIES = [
-  { name: 'ZIPPER POLO', slug: 'zipper-polo', href: '/shop?q=Zipper+Polo' },
-  { name: 'BUTTON POLO', slug: 'button-polo', href: '/shop?q=Button+Polo' },
-  { name: "MEN'S HOODIE", slug: 'mens-hoodie', href: '/shop?category=hoodies' },
+  { name: 'ZIPPER POLO', slug: 'zipper-polo', href: '/men/polo-t-shirts' },
+  { name: 'BUTTON POLO', slug: 'button-polo', href: '/men/polo-t-shirts' },
+  { name: "MEN'S HOODIE", slug: 'mens-hoodie', href: '/men/hoodies' },
   { name: "WOMEN'S HOODIE", slug: 'womens-hoodie', href: '/shop?category=hoodies' },
 ];
 
@@ -39,6 +52,16 @@ export default async function Home() {
   } catch (err: any) {
     console.warn("Prisma query failed on Home page:", err.message);
     allProducts = [];
+  }
+
+  let row1Photos: any[] = [];
+  let row2Photos: any[] = [];
+  try {
+    const photoData = await getCustomerPhotos();
+    row1Photos = photoData.row1;
+    row2Photos = photoData.row2;
+  } catch (photoErr) {
+    console.warn("Prisma/Firestore customer photos load notice:", photoErr);
   }
 
   // Exact category images from project assets with guaranteed fallbacks
@@ -87,6 +110,9 @@ export default async function Home() {
           DESKTOP + TABLET HERO — visible on tablet/desktop (min-width: 768px)
          ===================================================================== */}
       <section className={styles.desktopHeroSection} aria-label="ADRIZO Hero">
+        {/* Semantic H1 for Desktop Crawlers & Accessibility */}
+        <h1 className="sr-only">ADRIZO — Premium Indian Men&apos;s Clothing &amp; Essentials</h1>
+
         {/* Layer 1: Fixed Grayscale Background */}
         <div className={styles.bgGrayscale}></div>
 
@@ -156,6 +182,9 @@ export default async function Home() {
 
       {/* ===================== PRODUCTS COLLECTION ===================== */}
       <HomeProductSection products={JSON.parse(JSON.stringify(allProducts))} />
+
+      {/* ===================== CUSTOMER PHOTO SHOWCASE ===================== */}
+      <CustomerPhotoShowcase initialRow1={row1Photos} initialRow2={row2Photos} />
 
       {/* ===================== TRUST STRIP / BENEFITS ===================== */}
       {/* Moved to the bottom of the homepage, immediately above the footer/about section */}

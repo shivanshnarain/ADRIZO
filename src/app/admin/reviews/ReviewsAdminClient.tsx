@@ -164,7 +164,7 @@ export default function ReviewsAdminClient() {
         <div>
           <h1 className={styles.pageTitle} style={{ margin: 0 }}>Customer Reviews &amp; Moderation</h1>
           <p style={{ margin: '4px 0 0', color: 'var(--text-gray)', fontSize: '0.9rem' }}>
-            Review, approve, or reject customer feedback across ADRIZO products.
+            Manage customer feedback across ADRIZO products. Reviews are automatically approved upon submission.
           </p>
         </div>
 
@@ -406,77 +406,31 @@ export default function ReviewsAdminClient() {
                     )}
                   </div>
 
-                  {/* Moderation Buttons */}
+                  {/* Moderation Actions: Delete Review (manual Approve removed as reviews are auto-approved) */}
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    {review.status !== 'approved' && (
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(review.id, 'approved')}
-                        disabled={isBusy}
-                        style={{
-                          background: '#15803d',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          padding: '0.45rem 0.85rem',
-                          fontSize: '0.8rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                          opacity: isBusy ? 0.6 : 1,
-                        }}
-                      >
-                        <CheckCircle2 size={14} />
-                        <span>Approve</span>
-                      </button>
-                    )}
-
-                    {review.status !== 'rejected' && (
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(review.id, 'rejected')}
-                        disabled={isBusy}
-                        style={{
-                          background: '#fef2f2',
-                          color: '#b91c1c',
-                          border: '1px solid #fecaca',
-                          borderRadius: '6px',
-                          padding: '0.45rem 0.85rem',
-                          fontSize: '0.8rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                          opacity: isBusy ? 0.6 : 1,
-                        }}
-                      >
-                        <XCircle size={14} />
-                        <span>Reject</span>
-                      </button>
-                    )}
-
                     <button
                       type="button"
                       onClick={() => handleDeleteReview(review.id)}
                       disabled={isBusy}
-                      title="Permanently Delete Review"
+                      title="Permanently delete this review"
+                      aria-label="Delete Review"
                       style={{
-                        background: 'none',
-                        border: '1px solid #e4e4e7',
+                        background: '#fef2f2',
+                        color: '#b91c1c',
+                        border: '1px solid #fecaca',
                         borderRadius: '6px',
-                        padding: '0.45rem 0.65rem',
-                        color: '#71717a',
+                        padding: '0.45rem 0.85rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
+                        gap: '0.35rem',
                         opacity: isBusy ? 0.6 : 1,
                       }}
                     >
-                      <Trash2 size={15} />
+                      <Trash2 size={14} />
+                      <span>Delete Review</span>
                     </button>
                   </div>
                 </div>

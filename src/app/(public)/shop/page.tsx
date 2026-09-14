@@ -1,7 +1,40 @@
 import { prisma } from '../../../lib/prisma';
 import ShopClient from './ShopClient';
+import type { Metadata } from 'next';
 
 export const revalidate = 60;
+
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.adrizo.com';
+
+export const metadata: Metadata = {
+  title: "Shop All Products — Premium Men's Clothing | ADRIZO",
+  description: "Browse the complete collection of premium menswear at ADRIZO. Heavyweight fleece hoodies, luxury polo t-shirts, oversized tees & casual shirts with nationwide shipping.",
+  alternates: {
+    canonical: `${siteUrl}/shop`,
+  },
+  openGraph: {
+    title: "Shop All Products — Premium Men's Clothing | ADRIZO",
+    description: "Browse the complete collection of premium menswear at ADRIZO.",
+    url: `${siteUrl}/shop`,
+    siteName: 'ADRIZO',
+    locale: 'en_IN',
+    type: 'website',
+    images: [
+      {
+        url: `${siteUrl}/adrizo_hero.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "ADRIZO Complete Collection",
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Shop All Products — Premium Men's Clothing | ADRIZO",
+    description: "Browse the complete collection of premium menswear at ADRIZO.",
+    images: [`${siteUrl}/adrizo_hero.jpg`],
+  },
+};
 
 export default async function ShopPage() {
   let products: any[] = [];

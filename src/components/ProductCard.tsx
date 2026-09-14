@@ -195,7 +195,7 @@ export default function ProductCard({ product, badgeText, brandText, priority = 
     setTimeout(() => setIsAdded(false), 1800);
   };
 
-  const productUrl = `/product/${product.id}`;
+  const productUrl = `/product/${product.slug || product.id}`;
 
   return (
     <div
@@ -215,7 +215,7 @@ export default function ProductCard({ product, badgeText, brandText, priority = 
           <img
             key={activeImageIndex}
             src={imageList[activeImageIndex] || imageList[0]}
-            alt={activeImageIndex === 0 ? product.name : `${product.name} - View ${activeImageIndex + 1}`}
+            alt={activeImageIndex === 0 ? `ADRIZO ${product.name}` : `ADRIZO ${product.name} - View ${activeImageIndex + 1}`}
             className={styles.productImage}
             loading={priority && activeImageIndex === 0 ? "eager" : "lazy"}
             fetchPriority={priority && activeImageIndex === 0 ? "high" : "low"}
