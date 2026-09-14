@@ -1,6 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import { prisma } from '../../../../lib/prisma';
 import ShopClient from '../../shop/ShopClient';
+import { filterProductsByCategory } from '@/lib/productFiltering';
 import type { Metadata } from 'next';
 
 export const revalidate = 60;
@@ -10,6 +11,49 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.adrizo.com';
 interface PageProps {
   params: Promise<{ slug: string }> | { slug: string };
 }
+
+const VIRTUAL_CATEGORIES: Record<string, { name: string; title: string; desc: string }> = {
+  women: {
+    name: "Women's Collection",
+    title: "Women's Clothing — Premium Indian Fashion | ADRIZO",
+    desc: "Explore luxury women's fashion at ADRIZO. Modern silhouettes, heavyweight fabrics, and contemporary aesthetics.",
+  },
+  'womens': {
+    name: "Women's Collection",
+    title: "Women's Clothing — Premium Indian Fashion | ADRIZO",
+    desc: "Explore luxury women's fashion at ADRIZO. Modern silhouettes, heavyweight fabrics, and contemporary aesthetics.",
+  },
+  'zipper-polo': {
+    name: 'Zipper Polo T-Shirts',
+    title: 'Zipper Polo T-Shirts — Minimalist Luxury Polos | ADRIZO',
+    desc: 'Explore ADRIZO luxury zipper polo t-shirts crafted from high-GSM combed cotton with metallic zippers.',
+  },
+  'button-polo': {
+    name: 'Button Polo T-Shirts',
+    title: 'Button Polo T-Shirts — Classic Collar Polos | ADRIZO',
+    desc: 'Discover premium button polo t-shirts at ADRIZO. Tailored collars, refined plackets, and ultra-comfortable fits.',
+  },
+  'mens-hoodie': {
+    name: "Men's Hoodies",
+    title: "Men's Hoodies — Heavyweight Fleece Streetwear | ADRIZO",
+    desc: "Shop premium men's hoodies at ADRIZO with 380+ GSM heavyweight fleece, double-lined hoods, and modern relaxed fits.",
+  },
+  'womens-hoodie': {
+    name: "Women's Hoodies",
+    title: "Women's Hoodies — Luxury Streetwear & Layering | ADRIZO",
+    desc: "Discover women's hoodies at ADRIZO. Engineered for superior warmth, oversized comfort, and minimal elegance.",
+  },
+  't-shirts': {
+    name: 'T-Shirts',
+    title: 'T-Shirts Collection — Luxury Polos & Tees | ADRIZO',
+    desc: 'Shop luxury zipper & button polo t-shirts and premium cotton tees at ADRIZO.',
+  },
+  'hoodies': {
+    name: 'Hoodies',
+    title: 'Hoodies Collection — Heavyweight Fleece | ADRIZO',
+    desc: 'Shop premium heavyweight fleece hoodies at ADRIZO with free shipping across India.',
+  },
+};
 
 async function getCategoryData(slug: string) {
   try {
@@ -38,8 +82,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const category = await getCategoryData(slug);
+  const virtualConfig = VIRTUAL_CATEGORIES[slug];
+  if (virtualConfig) {
+    return {
+      title: virtualConfig.title,
+      description: virtualConfig.desc,
+      alternates: { canonical: `${siteUrl}/category/${slug}` },
+      openGraph: {
+        title: virtualConfig.title,
+        description: virtualConfig.desc,
+        url: `${siteUrl}/category/${slug}`,
+        siteName: 'ADRIZO',
+        locale: 'en_IN',
+        type: 'website',
+        images: [{ url: `${siteUrl}/adrizo_hero.jpg`, width: 1200, height: 630, alt: virtualConfig.name }],
+      },
+    };
+  }
 
+  const category = await getCategoryData(slug);
   if (!category) {
     return {
       title: 'Category Not Found | ADRIZO',
@@ -125,14 +186,23 @@ export default async function CategoryPage({ params }: PageProps) {
     category = null;
   }
 
+  // Handle virtual categories (women, zipper-polo, button-polo, mens-hoodie, womens-hoodie)
+  const virtualConfig = VIRTUAL_CATEGORIES[slug];
+  if (!category && virtualConfig) {
+    category = {
+      id: slug,
+      name: virtualConfig.name,
+      slug: slug,
+      description: virtualConfig.desc,
+    };
+  }
+
   if (!category) {
     notFound();
   }
 
-  // Filter products belonging to this category
-  const filteredCategoryProducts = products.filter(
-    (p) => p.categoryId === category.id || (p.category && p.category.slug === category.slug)
-  );
+  // Use centralized filtering logic
+  const filteredCategoryProducts = filterProductsByCategory(products, slug);
 
   const canonicalUrl = `${siteUrl}/category/${category.slug}`;
 
@@ -141,7 +211,7 @@ export default async function CategoryPage({ params }: PageProps) {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "name": `${category.name} Collection`,
-    "description": `Shop ${category.name} at ADRIZO.`,
+    "description": category.description || `Shop ${category.name} at ADRIZO.`,
     "url": canonicalUrl,
     "mainEntity": {
       "@type": "ItemList",
@@ -192,7 +262,7 @@ export default async function CategoryPage({ params }: PageProps) {
       <ShopClient
         initialProducts={products}
         categories={categories}
-        initialCategory={category.id}
+        initialCategory={category.slug || category.id}
         titleOverride={category.name}
       />
     </>

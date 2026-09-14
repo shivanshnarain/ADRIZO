@@ -933,6 +933,14 @@
    ========================================================================== */
 
 @media (max-width: 991px) {
+  .productLayout {
+    gap: 1rem;
+  }
+
+  .desktopThumbnailColumn {
+    display: none !important;
+  }
+
   .productInfoSection {
     height: auto;
     max-height: none;
@@ -944,7 +952,7 @@
     width: 100%;
     height: auto;
     display: block;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0;
   }
 
   .mainImageWrapper {
@@ -957,8 +965,8 @@
   .mainImageCard {
     position: relative;
     width: 100%;
-    min-height: 380px;
-    max-height: 80vh;
+    min-height: auto;
+    max-height: 75vh;
     background: #F8F9FA;
     border-radius: 12px;
     overflow: hidden;
@@ -1023,6 +1031,10 @@
 }
 
 @media (max-width: 768px) {
+  .productLayout {
+    gap: 0.75rem;
+  }
+
   .pageContainer {
     padding: 0.75rem 14px 3rem;
     width: 100%;
@@ -1039,7 +1051,7 @@
     width: 100%;
     height: auto;
     display: block;
-    margin-bottom: 0.85rem;
+    margin-bottom: 0;
   }
 
   .mainImageWrapper {
@@ -1052,8 +1064,8 @@
   .mainImageCard {
     position: relative;
     width: 100%;
-    min-height: 380px;
-    max-height: 80vh;
+    min-height: auto;
+    max-height: 75vh;
     background: #F8F9FA;
     border-radius: 12px;
     overflow: hidden;

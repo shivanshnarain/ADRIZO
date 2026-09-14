@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import ProductCard from '../../../components/ProductCard';
 import { getProductPricing } from '../../../lib/pricing';
+import { filterProductsByCategory, normalizeCategoryKey, ProductLike } from '@/lib/productFiltering';
 import styles from './shop.module.css';
 
 interface Category {
@@ -26,13 +27,17 @@ interface Category {
 interface Product {
   id: string;
   name: string;
-  slug: string;
-  description: string;
+  slug?: string;
+  description?: string;
   price: number;
   originalPrice?: number | null;
   salePrice?: number | null;
   categoryId?: string | null;
-  category?: Category | null;
+  category?: { id?: string; name: string; slug?: string } | null;
+  gender?: string | null;
+  productType?: string | null;
+  color?: string | null;
+  brand?: string;
   images?: Array<{ url: string; altText?: string | null }>;
   imagesRaw?: string | null;
   colorsRaw?: string | null;
@@ -52,6 +57,26 @@ interface ShopClientProps {
   titleOverride?: string;
 }
 
+interface CategoryOption {
+  id: string;
+  name: string;
+  slug: string;
+  indent?: boolean;
+}
+
+const CATEGORY_OPTIONS: CategoryOption[] = [
+  { id: 'ALL', name: 'All Products', slug: 'all' },
+  { id: 'VIEW_ALL', name: 'View All (Mixed)', slug: 'view-all' },
+  { id: 'MEN', name: "Men's Collection", slug: 'men' },
+  { id: 'WOMEN', name: "Women's Collection", slug: 'women' },
+  { id: 'TSHIRTS', name: 'T-Shirts (All)', slug: 't-shirts' },
+  { id: 'ZIPPER_POLO', name: 'Zipper Polo', slug: 'zipper-polo', indent: true },
+  { id: 'BUTTON_POLO', name: 'Button Polo', slug: 'button-polo', indent: true },
+  { id: 'HOODIES', name: 'Hoodies', slug: 'hoodies' },
+  { id: 'MENS_HOODIE', name: "Men's Hoodie", slug: 'mens-hoodie', indent: true },
+  { id: 'WOMENS_HOODIE', name: "Women's Hoodie", slug: 'womens-hoodie', indent: true },
+];
+
 export default function ShopClient({
   initialProducts,
   categories,
@@ -61,18 +86,18 @@ export default function ShopClient({
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Search query & sort params from URL
+  // Search query, sort, and category params from URL
   const queryParam = searchParams.get('q') || '';
   const sortParam = searchParams.get('sort') || '';
-  const categoryParam = searchParams.get('category') || initialCategory || 'ALL';
+  const viewParam = searchParams.get('view') || '';
+  const categoryParam = searchParams.get('category') || initialCategory || (viewParam === 'all' ? 'VIEW_ALL' : 'ALL');
 
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<number>(5000);
-  const [minPrice, setMinPrice] = useState<number>(0);
-  const [sortBy, setSortBy] = useState<string>(sortParam === 'new' ? 'NEWEST' : 'NEWEST');
+  const [sortBy, setSortBy] = useState<string>(sortParam === 'new' ? 'NEWEST' : (viewParam === 'all' ? 'MIXED' : 'NEWEST'));
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   // Accordion toggle states
@@ -81,18 +106,24 @@ export default function ShopClient({
   const [isSizeOpen, setIsSizeOpen] = useState(true);
   const [isColorOpen, setIsColorOpen] = useState(true);
 
-  // Update selected category if categoryParam changes
+  // Synchronize category selection with URL changes (back/forward, direct links)
   useEffect(() => {
-    if (categoryParam) {
-      // Find category by slug or id
-      const matched = categories.find((c) => c.slug === categoryParam || c.id === categoryParam);
-      if (matched) {
-        setSelectedCategory(matched.id);
-      } else if (categoryParam === 'ALL') {
-        setSelectedCategory('ALL');
-      }
+    const currentCatParam = searchParams.get('category');
+    const currentViewParam = searchParams.get('view');
+
+    if (currentViewParam === 'all') {
+      setSelectedCategory('VIEW_ALL');
+      return;
     }
-  }, [categoryParam, categories]);
+
+    if (currentCatParam) {
+      setSelectedCategory(currentCatParam);
+    } else if (initialCategory) {
+      setSelectedCategory(initialCategory);
+    } else {
+      setSelectedCategory('ALL');
+    }
+  }, [searchParams, initialCategory]);
 
   // Available Sizes & Colors for filters
   const availableSizes = ['S', 'M', 'L', 'XL', 'XXL'];
@@ -105,32 +136,32 @@ export default function ShopClient({
     { name: 'Charcoal', hex: '#4A4A4A' },
   ];
 
-  // Filtering Logic
+  // Filtering Logic using centralized Engine
   const filteredProducts = useMemo(() => {
-    return initialProducts.filter((product) => {
-      // Category filter
-      if (selectedCategory !== 'ALL') {
-        const catObj = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
-        if (catObj && product.categoryId !== catObj.id) {
-          return false;
-        }
-      }
+    // 1. Filter by category
+    let prods = filterProductsByCategory(initialProducts, selectedCategory);
 
-      // Search query filter
-      if (queryParam) {
-        const q = queryParam.toLowerCase();
-        const matchesName = product.name.toLowerCase().includes(q);
-        const matchesDesc = product.description?.toLowerCase().includes(q);
-        const matchesCategory = product.category?.name?.toLowerCase().includes(q);
-        if (!matchesName && !matchesDesc && !matchesCategory) return false;
-      }
+    // 2. Filter by search query if present
+    if (queryParam) {
+      const q = queryParam.toLowerCase();
+      prods = prods.filter((p) => {
+        const matchesName = p.name.toLowerCase().includes(q);
+        const matchesDesc = p.description?.toLowerCase().includes(q);
+        const matchesCategory = p.category?.name?.toLowerCase().includes(q);
+        const matchesType = p.productType?.toLowerCase().includes(q);
+        return matchesName || matchesDesc || matchesCategory || matchesType;
+      });
+    }
 
-      // Price filter (based on true selling price)
-      const pricing = getProductPricing(product);
-      if (pricing.sellingPrice > priceRange) return false;
+    // 3. Filter by price range
+    prods = prods.filter((p) => {
+      const pricing = getProductPricing(p);
+      return pricing.sellingPrice <= priceRange;
+    });
 
-      // Size filter
-      if (selectedSizes.length > 0) {
+    // 4. Filter by sizes
+    if (selectedSizes.length > 0) {
+      prods = prods.filter((product) => {
         let productSizes: string[] = [];
         if (product.sizesRaw) {
           try {
@@ -139,12 +170,13 @@ export default function ShopClient({
         } else if (product.variants) {
           productSizes = product.variants.map((v) => v.size || '').filter(Boolean);
         }
-        const hasSize = selectedSizes.some((s) => productSizes.includes(s));
-        if (!hasSize) return false;
-      }
+        return selectedSizes.some((s) => productSizes.includes(s));
+      });
+    }
 
-      // Color filter
-      if (selectedColors.length > 0) {
+    // 5. Filter by colors
+    if (selectedColors.length > 0) {
+      prods = prods.filter((product) => {
         let productColors: string[] = [];
         if (product.colorsRaw) {
           try {
@@ -153,31 +185,106 @@ export default function ShopClient({
         } else if (product.variants) {
           productColors = product.variants.map((v) => v.color || '').filter(Boolean);
         }
-        const hasColor = selectedColors.some((c) =>
+        if (product.color) {
+          productColors.push(product.color);
+        }
+        return selectedColors.some((c) =>
           productColors.some((pc) => pc.toLowerCase().includes(c.toLowerCase()) || pc === c)
         );
-        if (!hasColor) return false;
-      }
+      });
+    }
 
-      return true;
-    }).sort((a, b) => {
+    // 6. Sort
+    const isViewAllActive = normalizeCategoryKey(selectedCategory) === 'VIEW_ALL';
+    if (isViewAllActive && sortBy === 'MIXED') {
+      // Keep randomized round-robin order produced by getMixedViewAllProducts
+      return prods;
+    }
+
+    return [...prods].sort((a, b) => {
       const pricingA = getProductPricing(a);
       const pricingB = getProductPricing(b);
 
       if (sortBy === 'PRICE_LOW_HIGH') return pricingA.sellingPrice - pricingB.sellingPrice;
       if (sortBy === 'PRICE_HIGH_LOW') return pricingB.sellingPrice - pricingA.sellingPrice;
       if (sortBy === 'NAME_ASC') return a.name.localeCompare(b.name);
-      if (sortBy === 'DISCOUNT') {
-        return pricingB.discountPercent - pricingA.discountPercent;
-      }
-      // NEWEST
+      if (sortBy === 'DISCOUNT') return pricingB.discountPercent - pricingA.discountPercent;
+      // Default: NEWEST
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [initialProducts, selectedCategory, queryParam, priceRange, selectedSizes, selectedColors, sortBy, categories]);
+  }, [initialProducts, selectedCategory, queryParam, priceRange, selectedSizes, selectedColors, sortBy]);
 
-  // Active Category Name
-  const activeCategoryObj = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
-  const pageHeading = titleOverride || (activeCategoryObj ? activeCategoryObj.name : 'ALL PRODUCTS');
+  // Page Heading & Category Name calculation
+  const pageHeading = useMemo(() => {
+    if (titleOverride) return titleOverride;
+    const normalized = normalizeCategoryKey(selectedCategory);
+
+    switch (normalized) {
+      case 'MEN':
+        return "MEN'S COLLECTION";
+      case 'WOMEN':
+        return "WOMEN'S COLLECTION";
+      case 'TSHIRTS':
+        return "T-SHIRTS";
+      case 'ZIPPER_POLO':
+        return "ZIPPER POLO T-SHIRTS";
+      case 'BUTTON_POLO':
+        return "BUTTON POLO T-SHIRTS";
+      case 'HOODIES':
+        return "HOODIES";
+      case 'MENS_HOODIE':
+        return "MEN'S HOODIES";
+      case 'WOMENS_HOODIE':
+        return "WOMEN'S HOODIES";
+      case 'VIEW_ALL':
+        return "CURATED COLLECTION";
+      case 'ALL':
+      default: {
+        const matched = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
+        return matched ? matched.name.toUpperCase() : 'ALL PRODUCTS';
+      }
+    }
+  }, [titleOverride, selectedCategory, categories]);
+
+  // Category Selection Handler with preserved URL State
+  const handleCategorySelect = (opt: CategoryOption) => {
+    const isCurrentlySelected =
+      normalizeCategoryKey(selectedCategory) === normalizeCategoryKey(opt.id) ||
+      selectedCategory.toLowerCase() === opt.slug.toLowerCase();
+
+    const targetKey = isCurrentlySelected && opt.id !== 'ALL' ? 'ALL' : opt.id;
+    setSelectedCategory(targetKey);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (targetKey === 'ALL') {
+      params.delete('category');
+      params.delete('view');
+    } else if (targetKey === 'VIEW_ALL') {
+      params.delete('category');
+      params.set('view', 'all');
+      setSortBy('MIXED');
+    } else {
+      params.delete('view');
+      params.set('category', opt.slug);
+    }
+
+    const qs = params.toString();
+    const newUrl = qs ? `/shop?${qs}` : '/shop';
+    router.replace(newUrl, { scroll: false });
+  };
+
+  const isOptionActive = (opt: CategoryOption): boolean => {
+    const normalizedSelected = normalizeCategoryKey(selectedCategory);
+    const normalizedOpt = normalizeCategoryKey(opt.id);
+
+    if (normalizedSelected === normalizedOpt) return true;
+    if (selectedCategory.toLowerCase() === opt.slug.toLowerCase()) return true;
+    return false;
+  };
+
+  const isWomenSelected =
+    normalizeCategoryKey(selectedCategory) === 'WOMEN' ||
+    normalizeCategoryKey(selectedCategory) === 'WOMENS_HOODIE';
 
   const toggleSizeFilter = (size: string) => {
     setSelectedSizes((prev) =>
@@ -211,10 +318,10 @@ export default function ShopClient({
             <Link href="/" className={styles.breadcrumbLink}>Home</Link>
             <span className={styles.breadcrumbSeparator}>&rsaquo;</span>
             <Link href="/shop" className={styles.breadcrumbLink}>Shop</Link>
-            {activeCategoryObj && (
+            {selectedCategory !== 'ALL' && (
               <>
                 <span className={styles.breadcrumbSeparator}>&rsaquo;</span>
-                <span className={styles.breadcrumbCurrent}>{activeCategoryObj.name}</span>
+                <span className={styles.breadcrumbCurrent}>{pageHeading}</span>
               </>
             )}
           </nav>
@@ -223,7 +330,7 @@ export default function ShopClient({
             <div>
               <h1 className={styles.pageTitle}>{pageHeading}</h1>
               <p className={styles.productCountText}>
-                Showing 1–{filteredProducts.length} of {initialProducts.length} products
+                Showing {filteredProducts.length > 0 ? 1 : 0}–{filteredProducts.length} of {initialProducts.length} products
                 {queryParam && <span> for &ldquo;{queryParam}&rdquo;</span>}
               </p>
             </div>
@@ -294,34 +401,29 @@ export default function ShopClient({
 
               {isCategoryOpen && (
                 <div className={styles.filterGroupBody}>
-                  {/* All option */}
-                  <label className={styles.checkboxLabel}>
-                    <input
-                      type="checkbox"
-                      checked={selectedCategory === 'ALL'}
-                      onChange={() => setSelectedCategory('ALL')}
-                      className={styles.customCheckbox}
-                    />
-                    <span className={styles.checkboxText}>All</span>
-                  </label>
-
-                  {categories.map((category) => (
-                    <label key={category.id} className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={selectedCategory === category.id || selectedCategory === category.slug}
-                        onChange={() => {
-                          if (selectedCategory === category.id || selectedCategory === category.slug) {
-                            setSelectedCategory('ALL');
-                          } else {
-                            setSelectedCategory(category.id);
-                          }
-                        }}
-                        className={styles.customCheckbox}
-                      />
-                      <span className={styles.checkboxText}>{category.name}</span>
-                    </label>
-                  ))}
+                  {CATEGORY_OPTIONS.map((opt) => {
+                    const active = isOptionActive(opt);
+                    return (
+                      <label
+                        key={opt.id}
+                        className={styles.checkboxLabel}
+                        style={opt.indent ? { paddingLeft: '1.25rem' } : undefined}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={active}
+                          onChange={() => handleCategorySelect(opt)}
+                          className={styles.customCheckbox}
+                        />
+                        <span
+                          className={styles.checkboxText}
+                          style={opt.indent ? { fontSize: '0.85rem', color: active ? '#111' : '#666' } : undefined}
+                        >
+                          {opt.name}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -451,16 +553,20 @@ export default function ShopClient({
           <main className={styles.productGridContainer}>
             {filteredProducts.length === 0 ? (
               <div className={styles.emptyState}>
-                <h3 className={styles.emptyStateTitle}>No products found</h3>
+                <h3 className={styles.emptyStateTitle}>
+                  {isWomenSelected ? "Women's Collection Coming Soon" : "No products found"}
+                </h3>
                 <p className={styles.emptyStateText}>
-                  Try clearing your filters or searching for something else.
+                  {isWomenSelected
+                    ? "We are currently designing exclusive new pieces for our Women's line. Stay tuned for upcoming drops."
+                    : "Try clearing your filters or searching for something else."}
                 </p>
                 <button
                   type="button"
                   onClick={handleClearFilters}
                   className={styles.emptyStateClearBtn}
                 >
-                  CLEAR ALL FILTERS
+                  {isWomenSelected ? "EXPLORE ALL PRODUCTS" : "CLEAR ALL FILTERS"}
                 </button>
               </div>
             ) : (

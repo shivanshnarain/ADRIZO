@@ -77,8 +77,9 @@ export default function Header() {
     { name: 'All Products', href: '/shop' },
     { name: "Men's Collection", href: '/category/men' },
     { name: "Women's Collection", href: '/category/women' },
+    { name: 'T-Shirts (Polo & Classic)', href: '/category/t-shirts' },
+    { name: 'Hoodies', href: '/category/hoodies' },
     { name: 'New Arrivals', href: '/shop?sort=new' },
-    { name: 'Sale & Offers', href: '/shop' },
   ];
 
   useEffect(() => {

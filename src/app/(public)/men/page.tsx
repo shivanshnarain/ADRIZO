@@ -38,17 +38,19 @@ export const metadata: Metadata = {
   },
 };
 
+import { isMenProduct } from '@/lib/productFiltering';
+
 const SUB_CATEGORIES = [
   { name: "Men's Hoodies", slug: 'hoodies', href: '/men/hoodies', desc: 'Heavyweight fleece & zipper hoodies' },
-  { name: "Men's Polo T-Shirts", slug: 'polo-t-shirts', href: '/men/polo-t-shirts', desc: 'Luxury zipper & button collar polos' },
-  { name: "Men's T-Shirts", slug: 't-shirts', href: '/men/t-shirts', desc: 'Oversized & everyday classic cotton tees' },
-  { name: "Men's Shirts", slug: 'shirts', href: '/men/shirts', desc: 'Casual, oxford & linen shirts' },
+  { name: "Zipper Polo T-Shirts", slug: 'zipper-polo', href: '/men/zipper-polo', desc: 'Minimalist metallic zipper polos' },
+  { name: "Button Polo T-Shirts", slug: 'button-polo', href: '/men/button-polo', desc: 'Classic collar pique polos' },
+  { name: "All Polo T-Shirts", slug: 'polo-t-shirts', href: '/men/polo-t-shirts', desc: 'Luxury zipper & button collar polos' },
 ];
 
 export default async function MenHubPage() {
   let products: any[] = [];
   try {
-    products = await prisma.product.findMany({
+    const allActive = await prisma.product.findMany({
       where: { status: 'ACTIVE' },
       include: {
         category: true,
@@ -56,8 +58,8 @@ export default async function MenHubPage() {
         variants: true,
       },
       orderBy: { createdAt: 'desc' },
-      take: 24,
     });
+    products = allActive.filter(isMenProduct).slice(0, 24);
   } catch (err: any) {
     console.warn("Prisma error loading men's products:", err.message);
     products = [];

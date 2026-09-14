@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import ProductCard from '@/components/ProductCard';
+import { filterProductsByCategory } from '@/lib/productFiltering';
 import type { Metadata } from 'next';
 
 export const revalidate = 60;
@@ -18,6 +19,7 @@ interface CategoryConfig {
   title: string;
   description: string;
   editorial: string;
+  filterKey?: string;
   categoryFilterKeywords: string[];
 }
 
@@ -28,6 +30,7 @@ const CATEGORY_MAP: Record<string, CategoryConfig> = {
     title: "Men's Hoodies — Heavyweight Fleece & Zipper Hoodies | ADRIZO",
     description: "Shop premium men's hoodies at ADRIZO. Built with 380+ GSM heavyweight fleece, double-lined hoods, and modern relaxed fits. Free shipping above ₹999 across India.",
     editorial: "ADRIZO hoodies represent the pinnacle of Indian streetwear and winter layering. Engineered with ultra-soft fleece, durable ribbed cuffs, and structured hoods that retain shape through countless washes.",
+    filterKey: 'MENS_HOODIE',
     categoryFilterKeywords: ['hoodie', 'hoodies', 'fleece'],
   },
   'polo-t-shirts': {
@@ -36,7 +39,26 @@ const CATEGORY_MAP: Record<string, CategoryConfig> = {
     title: "Men's Polo T-Shirts — Luxury Zipper & Button Polos | ADRIZO",
     description: "Shop luxury men's polo t-shirts at ADRIZO. Featuring minimalist metallic zippers, classic button plackets, and pique combed cotton. Free shipping in India.",
     editorial: "Elevate your smart-casual wardrobe with ADRIZO polo t-shirts. Designed with precision rib knit collars, structured shoulders, and pre-shrunk combed cotton for all-day breathability and sharp aesthetics.",
+    filterKey: 'TSHIRTS',
     categoryFilterKeywords: ['polo', 'zipper polo', 'button polo'],
+  },
+  'zipper-polo': {
+    name: "Men's Zipper Polo T-Shirts",
+    h1: "Men's Zipper Polo T-Shirts",
+    title: "Men's Zipper Polo T-Shirts — Minimalist Metallic Polos | ADRIZO",
+    description: "Shop luxury men's zipper polo t-shirts at ADRIZO. Featuring minimalist metallic zippers and premium pique combed cotton.",
+    editorial: "Elevate your smart-casual wardrobe with ADRIZO zipper polo t-shirts. Designed with precision metallic zippers, structured shoulders, and pre-shrunk combed cotton.",
+    filterKey: 'ZIPPER_POLO',
+    categoryFilterKeywords: ['zipper polo'],
+  },
+  'button-polo': {
+    name: "Men's Button Polo T-Shirts",
+    h1: "Men's Button Polo T-Shirts",
+    title: "Men's Button Polo T-Shirts — Classic Collar Polos | ADRIZO",
+    description: "Shop luxury men's button polo t-shirts at ADRIZO. Classic tailored button plackets and pique combed cotton.",
+    editorial: "Classic sophistication meets modern comfort in ADRIZO button polo t-shirts. Refined collar structure and breathable weaves.",
+    filterKey: 'BUTTON_POLO',
+    categoryFilterKeywords: ['button polo'],
   },
   't-shirts': {
     name: "Men's T-Shirts",
@@ -44,6 +66,7 @@ const CATEGORY_MAP: Record<string, CategoryConfig> = {
     title: "Men's T-Shirts — Premium Cotton & Oversized Tees | ADRIZO",
     description: "Discover premium men's t-shirts at ADRIZO. High-GSM breathable cotton, oversized drop-shoulder fits, and timeless crew necks made in India with free shipping above ₹999.",
     editorial: "Our men's t-shirts are crafted from premium long-staple cotton with reinforced necklines that never sag. Perfect for minimal everyday streetwear or effortless layering.",
+    filterKey: 'TSHIRTS',
     categoryFilterKeywords: ['t-shirt', 't-shirts', 'tshirt', 'tee'],
   },
   shirts: {
@@ -124,24 +147,23 @@ export default async function MenCategoryPage({ params }: PageProps) {
       orderBy: { createdAt: 'desc' },
     });
 
-    products = allActive.filter((p) => {
-      const catSlug = (p.category?.slug || '').toLowerCase();
-      const catName = (p.category?.name || '').toLowerCase();
-      const prodType = (p.productType || '').toLowerCase();
-      const prodName = (p.name || '').toLowerCase();
+    if (config.filterKey) {
+      products = filterProductsByCategory(allActive, config.filterKey);
+    } else {
+      products = allActive.filter((p) => {
+        const catSlug = (p.category?.slug || '').toLowerCase();
+        const catName = (p.category?.name || '').toLowerCase();
+        const prodType = (p.productType || '').toLowerCase();
+        const prodName = (p.name || '').toLowerCase();
 
-      return config.categoryFilterKeywords.some(
-        (kw) =>
-          catSlug.includes(kw) ||
-          catName.includes(kw) ||
-          prodType.includes(kw) ||
-          prodName.includes(kw)
-      );
-    });
-
-    // Fallback if specific filter yields few products: show general active products
-    if (products.length === 0) {
-      products = allActive.slice(0, 12);
+        return config.categoryFilterKeywords.some(
+          (kw) =>
+            catSlug.includes(kw) ||
+            catName.includes(kw) ||
+            prodType.includes(kw) ||
+            prodName.includes(kw)
+        );
+      });
     }
   } catch (err: any) {
     console.warn("Prisma error in MenCategoryPage:", err.message);
@@ -318,21 +340,66 @@ export default async function MenCategoryPage({ params }: PageProps) {
             </Link>
           </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-              gap: '1.5rem',
-            }}
-          >
-            {products.map((p, idx) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                priority={idx < 4}
-              />
-            ))}
-          </div>
+          {products.length === 0 ? (
+            <div style={{
+              textAlign: 'center',
+              padding: '4rem 1.5rem',
+              maxWidth: '480px',
+              margin: '0 auto',
+            }}>
+              <h3 style={{
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                color: '#09090b',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: '0.5rem',
+              }}>
+                Coming Soon
+              </h3>
+              <p style={{
+                fontSize: '0.9rem',
+                color: '#71717a',
+                lineHeight: 1.6,
+                marginBottom: '1.5rem',
+              }}>
+                New styles are currently in production and will be available soon.
+              </p>
+              <Link
+                href="/men"
+                style={{
+                  display: 'inline-block',
+                  backgroundColor: '#09090b',
+                  color: '#ffffff',
+                  padding: '0.75rem 1.75rem',
+                  fontSize: '0.825rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  borderRadius: '4px',
+                  textDecoration: 'none',
+                }}
+              >
+                View All Men&apos;s Products
+              </Link>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                gap: '1.5rem',
+              }}
+            >
+              {products.map((p, idx) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  priority={idx < 4}
+                />
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </>

@@ -23,10 +23,10 @@ export const metadata: Metadata = {
 // Static category data — exactly 4 items in required order:
 // ZIPPER POLO → BUTTON POLO → MEN'S HOODIE → WOMEN'S HOODIE
 const CATEGORIES = [
-  { name: 'ZIPPER POLO', slug: 'zipper-polo', href: '/men/polo-t-shirts' },
-  { name: 'BUTTON POLO', slug: 'button-polo', href: '/men/polo-t-shirts' },
-  { name: "MEN'S HOODIE", slug: 'mens-hoodie', href: '/men/hoodies' },
-  { name: "WOMEN'S HOODIE", slug: 'womens-hoodie', href: '/shop?category=hoodies' },
+  { name: 'ZIPPER POLO', slug: 'zipper-polo', href: '/category/zipper-polo' },
+  { name: 'BUTTON POLO', slug: 'button-polo', href: '/category/button-polo' },
+  { name: "MEN'S HOODIE", slug: 'mens-hoodie', href: '/category/mens-hoodie' },
+  { name: "WOMEN'S HOODIE", slug: 'womens-hoodie', href: '/category/womens-hoodie' },
 ];
 
 const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
@@ -149,7 +149,7 @@ export default async function Home() {
             SHOP BY CATEGORY
             <span className={styles.categorySectionTitleLine} aria-hidden="true" />
           </span>
-          <Link href="/shop" className={styles.categoryViewAll}>
+          <Link href="/shop?view=all" className={styles.categoryViewAll}>
             View All <ArrowRight size={12} strokeWidth={2.5} />
           </Link>
         </div>
