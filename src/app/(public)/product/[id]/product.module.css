@@ -651,8 +651,8 @@
 /* Product Showcase Main Image Overlay Share Button */
 .imageShowcaseShareBtn {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 16px;
+  right: 16px;
   width: 38px;
   height: 38px;
   background-color: #FFFFFF;
@@ -667,15 +667,33 @@
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   color: #000000;
   padding: 0;
+  margin: 0;
+  box-sizing: border-box;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+.shareIconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  line-height: 0;
+}
+
+.shareSvgIcon {
+  display: block;
+  flex-shrink: 0;
+  margin: auto;
 }
 
 .imageShowcaseShareBtn:hover,
 .imageShowcaseShareBtn:active {
   border-color: #E11D48;
   color: #E11D48;
-  transform: scale(1.05);
+  transform: scale(1.04);
   box-shadow: 0 4px 14px rgba(225, 29, 72, 0.22);
 }
 
@@ -1047,7 +1065,7 @@
   }
 
   .pageContainer {
-    padding: 0.75rem 14px 3rem;
+    padding: 12px 14px 3rem;
     width: 100%;
     box-sizing: border-box;
   }
@@ -1445,11 +1463,11 @@
   }
 
   .imageShowcaseShareBtn {
-    top: 12px;
-    right: 12px;
+    top: 14px;
+    right: 14px;
     width: 36px;
     height: 36px;
-    border-radius: 7px;
+    border-radius: 8px;
   }
 
   /* 5. Spacing before "You May Also Like" and Mobile 2-Card Layout */
@@ -1516,7 +1534,15 @@
 
 @media (max-width: 440px) {
   .pageContainer {
-    padding: 0.5rem 12px 2.5rem;
+    padding: 10px 12px 2.5rem;
+  }
+
+  .imageShowcaseShareBtn {
+    top: 14px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
   }
 }
 

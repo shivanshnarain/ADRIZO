@@ -645,11 +645,13 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                 title={copiedShare ? "Product link copied!" : "Share product"}
                 id="product-showcase-share-btn"
               >
-                {copiedShare ? (
-                  <Check size={17} strokeWidth={2.4} color="#16a34a" />
-                ) : (
-                  <Share2 size={17} strokeWidth={2.1} />
-                )}
+                <span className={styles.shareIconWrapper}>
+                  {copiedShare ? (
+                    <Check size={16} strokeWidth={2.4} color="#16a34a" className={styles.shareSvgIcon} />
+                  ) : (
+                    <Share2 size={16} strokeWidth={2.1} className={styles.shareSvgIcon} />
+                  )}
+                </span>
               </button>
 
               {imagesList.map((img: string, idx: number) => {
