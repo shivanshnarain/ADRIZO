@@ -19,11 +19,13 @@ export function getOptimizedImageUrl(
   url: string,
   options?: ImageOptimizationOptions
 ): string {
-  if (!url) return '';
+  if (!url || typeof url !== 'string') return '';
+
+  const trimmed = url.trim();
 
   // If not a Cloudinary URL, return original
-  if (!url.includes('res.cloudinary.com')) {
-    return url;
+  if (!trimmed.includes('res.cloudinary.com')) {
+    return trimmed;
   }
 
   const { width, height, crop = 'limit', quality = 'auto', format = 'auto' } = options || {};
@@ -35,11 +37,23 @@ export function getOptimizedImageUrl(
 
   const transformString = transformations.join(',');
 
-  // Insert transformations into Cloudinary URL: .../upload/v123/... -> .../upload/f_auto,q_auto,w_800/...
-  if (url.includes('/upload/')) {
-    // If transformations already exist, replace or insert
-    return url.replace('/upload/', `/upload/${transformString}/`);
+  // Cleanly replace any existing transformation segment or insert after /upload/
+  if (trimmed.includes('/upload/')) {
+    return trimmed.replace(/\/upload\/(?:[a-zA-Z0-9_,:]+\/)?(v\d+\/)?/, `/upload/${transformString}/$1`);
   }
 
-  return url;
+  return trimmed;
+}
+
+/**
+ * Generate responsive srcSet for an image across standard device widths
+ */
+export function getResponsiveImageSrcSet(
+  url: string,
+  widths: number[] = [400, 700, 1000]
+): string {
+  if (!url) return '';
+  return widths
+    .map((w) => `${getOptimizedImageUrl(url, { width: w, quality: 'auto', format: 'auto' })} ${w}w`)
+    .join(', ');
 }

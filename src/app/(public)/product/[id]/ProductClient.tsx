@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import styles from './product.module.css';
 import { useCart } from '../../../../context/CartContext';
-import { getOptimizedImageUrl } from '@/lib/image-utils';
+import { getOptimizedImageUrl, getResponsiveImageSrcSet } from '@/lib/image-utils';
 import SizeChartModal from '@/components/SizeChartModal';
 import ProductCard from '@/components/ProductCard';
 import ProductReviewsSection from '@/components/ProductReviewsSection';
@@ -78,7 +78,7 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
   const router = useRouter();
 
   // 1. Resolve Images List & Device-Optimized CDN URLs
-  const { heroImages, thumbnailImages, imagesList } = useMemo(() => {
+  const { heroImages, thumbnailImages, imagesList, responsiveSrcSets } = useMemo(() => {
     let list: string[] = [];
     if (product.images && product.images.length > 0) {
       list = product.images.map((img: any) => typeof img === 'string' ? img : (img?.url || img?.secure_url || ''));
@@ -98,9 +98,11 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
       list = ['https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&q=80&w=1200'];
     }
 
-    const hero = list.map((url) => getOptimizedImageUrl(url, { width: 1000, crop: 'limit', quality: 'auto', format: 'auto' }));
-    const thumbs = list.map((url) => getOptimizedImageUrl(url, { width: 160, crop: 'limit', quality: 'auto', format: 'auto' }));
-    return { heroImages: hero, thumbnailImages: thumbs, imagesList: hero };
+    const hero = list.map((url) => getOptimizedImageUrl(url, { width: 950, crop: 'limit', quality: 'auto', format: 'auto' }));
+    const thumbs = list.map((url) => getOptimizedImageUrl(url, { width: 150, crop: 'limit', quality: 'auto', format: 'auto' }));
+    const srcSets = list.map((url) => getResponsiveImageSrcSet(url, [450, 750, 1050]));
+
+    return { heroImages: hero, thumbnailImages: thumbs, imagesList: hero, responsiveSrcSets: srcSets };
   }, [product.images, product.imagesRaw]);
 
   // 2. Resolve Sizes (e.g. S, M, L, XL, XXL or 28, 30, 32, 34, 36, 38)
@@ -147,6 +149,26 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
     totalReviews: 0,
     ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
   });
+
+  // Track rendered images so only the active hero image is loaded initially
+  const [loadedIndices, setLoadedIndices] = useState<number[]>([0]);
+
+  useEffect(() => {
+    setLoadedIndices((prev) => (prev.includes(activeImageIndex) ? prev : [...prev, activeImageIndex]));
+  }, [activeImageIndex]);
+
+  // Guarantee product detail page always loads at the exact top (0, 0) below the navbar
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+      const frameId = requestAnimationFrame(() => {
+        if (!window.location.hash && (window.scrollY > 0 || window.pageYOffset > 0)) {
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+        }
+      });
+      return () => cancelAnimationFrame(frameId);
+    }
+  }, [product?.id, product?.slug]);
 
   // Dynamic aspect ratio preservation to never crop product photography
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, string>>({ 0: '4 / 5' });
@@ -647,20 +669,23 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
               >
                 <span className={styles.shareIconWrapper}>
                   {copiedShare ? (
-                    <Check size={16} strokeWidth={2.4} color="#16a34a" className={styles.shareSvgIcon} />
+                    <Check size={18} strokeWidth={2.6} color="#16a34a" className={styles.shareSvgIcon} />
                   ) : (
-                    <Share2 size={16} strokeWidth={2.1} className={styles.shareSvgIcon} />
+                    <Share2 size={18} strokeWidth={2.6} className={styles.shareSvgIcon} />
                   )}
                 </span>
               </button>
 
               {imagesList.map((img: string, idx: number) => {
+                if (!loadedIndices.includes(idx)) return null;
                 const isCurrent = activeImageIndex === idx;
                 return (
                   <img 
                     key={idx}
                     ref={isCurrent ? activeImgRef : undefined}
                     src={img} 
+                    srcSet={responsiveSrcSets[idx]}
+                    sizes="(max-width: 768px) 100vw, 55vw"
                     alt={`ADRIZO ${product.name}${product.color ? ` in ${product.color}` : ''} - View ${idx + 1}`}
                     className={`${styles.mainHeroImg} ${isCurrent ? styles.mainHeroImgActive : styles.mainHeroImgHidden}`}
                     loading={idx === 0 ? "eager" : "lazy"}

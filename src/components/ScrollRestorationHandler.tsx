@@ -32,16 +32,25 @@ export default function ScrollRestorationHandler() {
     }
 
     // Immediately reset scroll position to top
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
 
     // Double-check with requestAnimationFrame to counteract layout shifts or async hydration
     const rafId = requestAnimationFrame(() => {
       if (!window.location.hash && (window.scrollY > 0 || window.pageYOffset > 0)) {
-        window.scrollTo(0, 0);
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
       }
     });
 
-    return () => cancelAnimationFrame(rafId);
+    const timer = setTimeout(() => {
+      if (!window.location.hash && (window.scrollY > 0 || window.pageYOffset > 0)) {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+      }
+    }, 50);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timer);
+    };
   }, [pathname]);
 
   return null;

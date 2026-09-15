@@ -211,7 +211,7 @@ export default function ProductCard({ product, badgeText, brandText, priority = 
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <Link href={productUrl} className={styles.imageLink} tabIndex={-1}>
+        <Link href={productUrl} className={styles.imageLink} tabIndex={-1} scroll={true} prefetch={true}>
           <img
             key={activeImageIndex}
             src={imageList[activeImageIndex] || imageList[0]}
@@ -283,7 +283,7 @@ export default function ProductCard({ product, badgeText, brandText, priority = 
         )}
 
         {/* Product Name */}
-        <Link href={productUrl} className={styles.productTitleLink}>
+        <Link href={productUrl} className={styles.productTitleLink} scroll={true} prefetch={true}>
           <h3 className={styles.productTitle} title={product.name}>
             {product.name}
           </h3>

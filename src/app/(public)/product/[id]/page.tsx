@@ -116,38 +116,43 @@ export default async function ProductDetailsPage({ params }: PageProps) {
     permanentRedirect(`/product/${product.slug}`);
   }
 
+  // Query related products and approved reviews concurrently for minimum latency
   let relatedProducts: any[] = [];
-  try {
-    relatedProducts = await prisma.product.findMany({
-      where: {
-        status: 'ACTIVE',
-        id: { not: product.id },
-      },
-      include: {
-        category: true,
-        images: { orderBy: { sortOrder: 'asc' } },
-        variants: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 12,
-    });
-  } catch (relErr) {
-    console.warn("Could not load related products from DB:", relErr);
-  }
-
-  // Query real approved reviews from DB for Schema.org validation
   let approvedReviews: any[] = [];
+
   try {
-    approvedReviews = await prisma.review.findMany({
-      where: {
-        productId: product.id,
-        status: 'approved',
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-    });
-  } catch (revErr) {
-    console.warn("Could not load reviews for structured data:", revErr);
+    const [relatedRes, reviewsRes] = await Promise.allSettled([
+      prisma.product.findMany({
+        where: {
+          status: 'ACTIVE',
+          id: { not: product.id },
+        },
+        include: {
+          category: true,
+          images: { orderBy: { sortOrder: 'asc' } },
+          variants: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 8,
+      }),
+      prisma.review.findMany({
+        where: {
+          productId: product.id,
+          status: 'approved',
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+    ]);
+
+    if (relatedRes.status === 'fulfilled') {
+      relatedProducts = relatedRes.value || [];
+    }
+    if (reviewsRes.status === 'fulfilled') {
+      approvedReviews = reviewsRes.value || [];
+    }
+  } catch (secondaryErr) {
+    console.warn("Secondary data fetching error in ProductDetailsPage:", secondaryErr);
   }
 
   // Preload primary hero image in HTML head
