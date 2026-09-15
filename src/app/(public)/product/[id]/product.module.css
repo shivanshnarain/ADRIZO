@@ -120,6 +120,7 @@
   height: 100%;
   max-width: 100%;
   max-height: 100%;
+  aspect-ratio: 4 / 5;
   background: #F8F9FA;
   border-radius: 8px;
   display: flex;
@@ -647,77 +648,45 @@
   border-color: #222222;
 }
 
-.buyNowRow {
-  flex: 1.15;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  min-width: 0;
-}
-
-.squareShareBtn {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  min-height: 48px;
-  border-radius: 6px;
+/* Product Showcase Main Image Overlay Share Button */
+.imageShowcaseShareBtn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
   background-color: #FFFFFF;
-  color: #000000;
   border: 1.5px solid #000000;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  box-sizing: border-box;
+  z-index: 15;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #000000;
   padding: 0;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.squareShareBtn:hover {
-  background-color: #F4F4F5;
-  border-color: #000000;
+.imageShowcaseShareBtn:hover,
+.imageShowcaseShareBtn:active {
+  border-color: #E11D48;
+  color: #E11D48;
+  transform: scale(1.05);
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.22);
 }
 
-.squareShareBtnSuccess {
+.imageShowcaseShareBtn:active {
+  transform: scale(0.96);
+}
+
+.imageShowcaseShareBtnSuccess {
   border-color: #16a34a !important;
+  color: #16a34a !important;
   background-color: #F0FDF4 !important;
-}
-
-.topInfoTitleHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-}
-
-.breadcrumbAndTitleWrap {
-  flex: 1;
-  min-width: 0;
-}
-
-.topRightProductShareBtn {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
-  border-radius: 50%;
-  background-color: #FFFFFF;
-  border: 1px solid #E4E4E7;
-  color: #09090b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-
-.topRightProductShareBtn:hover {
-  background-color: #F4F4F5;
-  border-color: #09090b;
 }
 
 .addToCartBtn:disabled,
@@ -1006,7 +975,8 @@
   .mainImageCard {
     position: relative;
     width: 100%;
-    min-height: auto;
+    aspect-ratio: 4 / 5;
+    min-height: 380px;
     max-height: 75vh;
     background: #F8F9FA;
     border-radius: 12px;
@@ -1105,7 +1075,8 @@
   .mainImageCard {
     position: relative;
     width: 100%;
-    min-height: auto;
+    aspect-ratio: 4 / 5;
+    min-height: 380px;
     max-height: 75vh;
     background: #F8F9FA;
     border-radius: 12px;
@@ -1433,7 +1404,8 @@
     width: 100%;
   }
 
-  .addToCartBtn {
+  .addToCartBtn,
+  .buyNowBtn {
     width: 100%;
     height: 48px;
     min-height: 48px;
@@ -1447,10 +1419,13 @@
     justify-content: center;
     gap: 8px;
     box-sizing: border-box;
+    transition: all 0.2s ease;
+  }
+
+  .addToCartBtn {
     background-color: #FFFFFF;
     color: #000000;
     border: 2px solid #000000;
-    transition: all 0.2s ease;
   }
 
   .addToCartBtn:hover:not(:disabled) {
@@ -1458,33 +1433,10 @@
     border-color: #000000;
   }
 
-  .buyNowRow {
-    width: 100%;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    box-sizing: border-box;
-  }
-
   .buyNowBtn {
-    flex: 1;
-    min-width: 0;
-    height: 48px;
-    min-height: 48px;
-    border-radius: 9px;
-    font-size: 13.5px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    box-sizing: border-box;
     background-color: #000000;
     color: #FFFFFF;
     border: 2px solid #000000;
-    transition: all 0.2s ease;
   }
 
   .buyNowBtn:hover:not(:disabled) {
@@ -1492,38 +1444,12 @@
     border-color: #1F2937;
   }
 
-  .squareShareBtn {
-    width: 48px;
-    height: 48px;
-    min-width: 48px;
-    min-height: 48px;
-    border-radius: 9px;
-    background-color: #FFFFFF;
-    color: #000000;
-    border: 1.5px solid #000000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    box-sizing: border-box;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .squareShareBtn:hover {
-    background-color: #F9FAFB;
-  }
-
-  .squareShareBtnSuccess {
-    border-color: #16a34a !important;
-    background-color: #F0FDF4 !important;
-  }
-
-  .topRightProductShareBtn {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    min-height: 34px;
+  .imageShowcaseShareBtn {
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 7px;
   }
 
   /* 5. Spacing before "You May Also Like" and Mobile 2-Card Layout */

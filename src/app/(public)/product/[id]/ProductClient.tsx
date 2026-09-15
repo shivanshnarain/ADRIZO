@@ -149,7 +149,8 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
   });
 
   // Dynamic aspect ratio preservation to never crop product photography
-  const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, string>>({});
+  const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, string>>({ 0: '4 / 5' });
+  const activeImgRef = useRef<HTMLImageElement | null>(null);
 
   const handleImageLoaded = (idx: number, e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
@@ -158,6 +159,15 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
       setImageAspectRatios((prev) => (prev[idx] === ratio ? prev : { ...prev, [idx]: ratio }));
     }
   };
+
+  // Immediate detection for cached / fast-loaded images to prevent any layout delay or collapsed frame
+  useEffect(() => {
+    const img = activeImgRef.current;
+    if (img && img.complete && img.naturalWidth && img.naturalHeight) {
+      const ratio = `${img.naturalWidth} / ${img.naturalHeight}`;
+      setImageAspectRatios((prev) => (prev[activeImageIndex] === ratio ? prev : { ...prev, [activeImageIndex]: ratio }));
+    }
+  }, [activeImageIndex, imagesList]);
 
   // Exclusive accordion state: only ONE accordion can ever be open at a time
   const [activeAccordion, setActiveAccordion] = useState<string | null>(null);
@@ -612,7 +622,7 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
           >
             <div 
               className={styles.mainImageCard}
-              style={imageAspectRatios[activeImageIndex] ? { aspectRatio: imageAspectRatios[activeImageIndex] } : undefined}
+              style={{ aspectRatio: imageAspectRatios[activeImageIndex] || '4 / 5' }}
               onClick={handleMainImageClick}
               onTouchStart={handleMainImageTouchStart}
               onTouchMove={handleMainImageTouchMove}
@@ -621,11 +631,33 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
               tabIndex={0}
               aria-label="Click to enlarge or view image"
             >
+              {/* Product Showcase Main Image Overlay Share Button (Top-Right Corner) */}
+              <button
+                type="button"
+                className={`${styles.imageShowcaseShareBtn} ${copiedShare ? styles.imageShowcaseShareBtnSuccess : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleShare();
+                }}
+                onTouchStart={(e) => e.stopPropagation()}
+                onTouchEnd={(e) => e.stopPropagation()}
+                aria-label="Share product"
+                title={copiedShare ? "Product link copied!" : "Share product"}
+                id="product-showcase-share-btn"
+              >
+                {copiedShare ? (
+                  <Check size={17} strokeWidth={2.4} color="#16a34a" />
+                ) : (
+                  <Share2 size={17} strokeWidth={2.1} />
+                )}
+              </button>
+
               {imagesList.map((img: string, idx: number) => {
                 const isCurrent = activeImageIndex === idx;
                 return (
                   <img 
                     key={idx}
+                    ref={isCurrent ? activeImgRef : undefined}
                     src={img} 
                     alt={`ADRIZO ${product.name}${product.color ? ` in ${product.color}` : ''} - View ${idx + 1}`}
                     className={`${styles.mainHeroImg} ${isCurrent ? styles.mainHeroImgActive : styles.mainHeroImgHidden}`}
@@ -686,59 +718,39 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
         <div className={styles.productInfoSection}>
           {/* Top Fixed Information Zone */}
           <div className={styles.topInfoSection}>
-            <div className={styles.topInfoTitleHeader}>
-              <div className={styles.breadcrumbAndTitleWrap}>
-                {/* Breadcrumb Navigation */}
-                <nav
-                  aria-label="Breadcrumb"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '0.4rem',
-                    fontSize: '0.785rem',
-                    color: '#71717a',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  <a href="/" style={{ color: '#71717a', textDecoration: 'none' }}>Home</a>
+            {/* Breadcrumb Navigation */}
+            <nav
+              aria-label="Breadcrumb"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.4rem',
+                fontSize: '0.785rem',
+                color: '#71717a',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <a href="/" style={{ color: '#71717a', textDecoration: 'none' }}>Home</a>
+              <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
+              <a href="/shop" style={{ color: '#71717a', textDecoration: 'none' }}>Shop</a>
+              {product.category && (
+                <>
                   <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
-                  <a href="/shop" style={{ color: '#71717a', textDecoration: 'none' }}>Shop</a>
-                  {product.category && (
-                    <>
-                      <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
-                      <a
-                        href={`/category/${product.category.slug || 'men'}`}
-                        style={{ color: '#71717a', textDecoration: 'none' }}
-                      >
-                        {product.category.name}
-                      </a>
-                    </>
-                  )}
-                  <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
-                  <span style={{ color: '#09090b', fontWeight: 600 }}>{product.name}</span>
-                </nav>
+                  <a
+                    href={`/category/${product.category.slug || 'men'}`}
+                    style={{ color: '#71717a', textDecoration: 'none' }}
+                  >
+                    {product.category.name}
+                  </a>
+                </>
+              )}
+              <span style={{ color: '#d4d4d8' }}>&rsaquo;</span>
+              <span style={{ color: '#09090b', fontWeight: 600 }}>{product.name}</span>
+            </nav>
 
-                {/* 1. Product Title */}
-                <h1 className={styles.productTitle}>{product.name.toUpperCase()}</h1>
-              </div>
-
-              {/* Top-Right Share Button */}
-              <button
-                type="button"
-                className={styles.topRightProductShareBtn}
-                onClick={handleShare}
-                aria-label="Share product"
-                title={copiedShare ? "Product link copied!" : "Share product"}
-                id="product-top-right-share-btn"
-              >
-                {copiedShare ? (
-                  <Check size={18} strokeWidth={2.4} color="#16a34a" />
-                ) : (
-                  <Share2 size={18} strokeWidth={1.9} color="#09090b" />
-                )}
-              </button>
-            </div>
+            {/* 1. Product Title */}
+            <h1 className={styles.productTitle}>{product.name.toUpperCase()}</h1>
 
             {/* Star Rating snippet linking to Customer Reviews */}
             <a
@@ -1012,33 +1024,16 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                 <span>{addedSuccess ? 'ADDED TO CART ✓' : 'ADD TO CART'}</span>
               </button>
 
-              <div className={styles.buyNowRow}>
-                <button 
-                  type="button" 
-                  className={styles.buyNowBtn}
-                  onClick={handleBuyNow}
-                  disabled={maxStock <= 0}
-                  id="product-buy-now-btn"
-                >
-                  <Zap size={16} strokeWidth={2.4} fill="currentColor" />
-                  <span>BUY NOW</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.squareShareBtn} ${copiedShare ? styles.squareShareBtnSuccess : ''}`}
-                  onClick={handleShare}
-                  aria-label="Share product"
-                  title={copiedShare ? "Product link copied!" : "Share product"}
-                  id="product-square-share-btn"
-                >
-                  {copiedShare ? (
-                    <Check size={18} strokeWidth={2.5} color="#16a34a" />
-                  ) : (
-                    <Share2 size={18} strokeWidth={2} color="#000000" />
-                  )}
-                </button>
-              </div>
+              <button 
+                type="button" 
+                className={styles.buyNowBtn}
+                onClick={handleBuyNow}
+                disabled={maxStock <= 0}
+                id="product-buy-now-btn"
+              >
+                <Zap size={16} strokeWidth={2.4} fill="currentColor" />
+                <span>BUY NOW</span>
+              </button>
             </div>
           </div>
         </div>
