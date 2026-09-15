@@ -858,6 +858,7 @@
     background-color: #0a0a0a;
     box-shadow: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   .mobileNavbar {

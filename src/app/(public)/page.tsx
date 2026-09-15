@@ -33,7 +33,7 @@ const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
   'zipper-polo': 'https://res.cloudinary.com/zytsxasx/image/upload/v1788418791/adrizo/products/ngydvzqdl0nrk54ib5cf.png', // Jet Black Zipper Polo
   'button-polo': 'https://res.cloudinary.com/zytsxasx/image/upload/v1788855707/adrizo/products/i9vscqrg4puufvbgdytj.png', // Olive Green Button Polo
   'mens-hoodie': 'https://res.cloudinary.com/zytsxasx/image/upload/v1789076190/adrizo/products/m3cabwopcf8hwa74nx8c.png', // Chocolate Brown Unisex Hoodie (Men's representation)
-  'womens-hoodie': 'https://res.cloudinary.com/zytsxasx/image/upload/v1789075295/adrizo/products/aymd0p7wdwpb5fc0vquz.png', // White Unisex Hoodie (Women's representation)
+  'womens-hoodie': 'https://res.cloudinary.com/zytsxasx/image/upload/v1789463967/adrizo/products/pvfr1iyiibkvau4xkwu1.png', // Dark Skin Women's Hoodie (Women's representation)
 };
 
 export default async function Home() {

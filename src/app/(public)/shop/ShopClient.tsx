@@ -329,10 +329,11 @@ export default function ShopClient({
           <div className={styles.titleAndControlsRow}>
             <div>
               <h1 className={styles.pageTitle}>{pageHeading}</h1>
-              <p className={styles.productCountText}>
-                Showing {filteredProducts.length > 0 ? 1 : 0}–{filteredProducts.length} of {initialProducts.length} products
-                {queryParam && <span> for &ldquo;{queryParam}&rdquo;</span>}
-              </p>
+              {queryParam && (
+                <p className={styles.productCountText}>
+                  Results for &ldquo;{queryParam}&rdquo;
+                </p>
+              )}
             </div>
 
             <div className={styles.sortAndMobileRow}>

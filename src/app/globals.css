@@ -54,7 +54,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-img,
+img {
+  max-width: 100%;
+  height: auto;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
 video {
   max-width: 100%;
   height: auto;

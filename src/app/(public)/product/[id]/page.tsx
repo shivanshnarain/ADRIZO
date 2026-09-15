@@ -1,7 +1,7 @@
 import { prisma } from '../../../../lib/prisma';
 import ProductClient from './ProductClient';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { getOptimizedImageUrl } from '@/lib/image-utils';
+import { getOptimizedImageUrl, getResponsiveImageSrcSet } from '@/lib/image-utils';
 import type { Metadata } from 'next';
 
 export const revalidate = 60;
@@ -157,6 +157,7 @@ export default async function ProductDetailsPage({ params }: PageProps) {
 
   // Preload primary hero image in HTML head
   let primaryHeroUrl: string | null = null;
+  let primaryHeroSrcSet: string | null = null;
   const allImageUrls: string[] = [];
   if (product.images && product.images.length > 0) {
     product.images.forEach((img: any) => {
@@ -164,7 +165,8 @@ export default async function ProductDetailsPage({ params }: PageProps) {
       if (raw) allImageUrls.push(raw);
     });
     if (allImageUrls[0]) {
-      primaryHeroUrl = getOptimizedImageUrl(allImageUrls[0], { width: 1000, quality: 'auto', format: 'auto' });
+      primaryHeroUrl = getOptimizedImageUrl(allImageUrls[0], { width: 950, crop: 'limit', quality: 'auto', format: 'auto' });
+      primaryHeroSrcSet = getResponsiveImageSrcSet(allImageUrls[0], [450, 750, 1050]);
     }
   }
 
@@ -281,6 +283,8 @@ export default async function ProductDetailsPage({ params }: PageProps) {
           rel="preload"
           as="image"
           href={primaryHeroUrl}
+          imageSrcSet={primaryHeroSrcSet || undefined}
+          imageSizes="(max-width: 768px) 100vw, 55vw"
           fetchPriority="high"
         />
       )}

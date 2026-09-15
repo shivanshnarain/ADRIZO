@@ -662,8 +662,8 @@
   place-items: center;
   cursor: pointer;
   z-index: 15;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   color: #000000;
   padding: 0;
   margin: 0;
@@ -687,16 +687,12 @@
   margin: auto;
 }
 
-.imageShowcaseShareBtn:hover,
-.imageShowcaseShareBtn:active {
-  border-color: #E11D48;
-  color: #E11D48;
-  transform: scale(1.04);
-  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.22);
-}
-
-.imageShowcaseShareBtn:active {
-  transform: scale(0.96);
+@media (hover: hover) and (pointer: fine) {
+  .imageShowcaseShareBtn:hover {
+    border-color: #E11D48;
+    color: #E11D48;
+    box-shadow: 0 2px 12px rgba(225, 29, 72, 0.18);
+  }
 }
 
 .imageShowcaseShareBtnSuccess {

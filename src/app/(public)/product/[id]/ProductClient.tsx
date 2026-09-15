@@ -170,26 +170,17 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
     }
   }, [product?.id, product?.slug]);
 
-  // Dynamic aspect ratio preservation to never crop product photography
-  const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, string>>({ 0: '4 / 5' });
-  const activeImgRef = useRef<HTMLImageElement | null>(null);
-
-  const handleImageLoaded = (idx: number, e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    if (img.naturalWidth && img.naturalHeight) {
-      const ratio = `${img.naturalWidth} / ${img.naturalHeight}`;
-      setImageAspectRatios((prev) => (prev[idx] === ratio ? prev : { ...prev, [idx]: ratio }));
-    }
-  };
-
-  // Immediate detection for cached / fast-loaded images to prevent any layout delay or collapsed frame
+  // Preload next slide in background to eliminate lag and blank flashes between slides
   useEffect(() => {
-    const img = activeImgRef.current;
-    if (img && img.complete && img.naturalWidth && img.naturalHeight) {
-      const ratio = `${img.naturalWidth} / ${img.naturalHeight}`;
-      setImageAspectRatios((prev) => (prev[activeImageIndex] === ratio ? prev : { ...prev, [activeImageIndex]: ratio }));
+    if (typeof window !== 'undefined' && imagesList.length > 1) {
+      const nextIdx = (activeImageIndex + 1) % imagesList.length;
+      if (!loadedIndices.includes(nextIdx)) {
+        setLoadedIndices((prev) => [...prev, nextIdx]);
+      }
+      const preloadImg = new window.Image();
+      preloadImg.src = imagesList[nextIdx];
     }
-  }, [activeImageIndex, imagesList]);
+  }, [activeImageIndex, imagesList, loadedIndices]);
 
   // Exclusive accordion state: only ONE accordion can ever be open at a time
   const [activeAccordion, setActiveAccordion] = useState<string | null>(null);
@@ -644,7 +635,6 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
           >
             <div 
               className={styles.mainImageCard}
-              style={{ aspectRatio: imageAspectRatios[activeImageIndex] || '4 / 5' }}
               onClick={handleMainImageClick}
               onTouchStart={handleMainImageTouchStart}
               onTouchMove={handleMainImageTouchMove}
@@ -682,7 +672,6 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                 return (
                   <img 
                     key={idx}
-                    ref={isCurrent ? activeImgRef : undefined}
                     src={img} 
                     srcSet={responsiveSrcSets[idx]}
                     sizes="(max-width: 768px) 100vw, 55vw"
@@ -691,7 +680,6 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                     loading={idx === 0 ? "eager" : "lazy"}
                     fetchPriority={idx === 0 ? "high" : "low"}
                     decoding={idx === 0 ? "sync" : "async"}
-                    onLoad={(e) => handleImageLoaded(idx, e)}
                     draggable={false}
                     onContextMenu={(e) => e.preventDefault()}
                     onDragStart={(e) => e.preventDefault()}

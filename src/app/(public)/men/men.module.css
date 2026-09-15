@@ -1,0 +1,166 @@
+.pageContainer {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 4rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .pageContainer {
+    padding: 12px 14px 3rem;
+  }
+}
+
+/* 1. Breadcrumb */
+.breadcrumbNav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.825rem;
+  color: #71717a;
+  margin-bottom: 0.85rem;
+}
+
+.breadcrumbLink {
+  color: #71717a;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.breadcrumbLink:hover {
+  color: #09090b;
+}
+
+.breadcrumbSeparator {
+  color: #d4d4d8;
+}
+
+.breadcrumbCurrent {
+  color: #09090b;
+  font-weight: 600;
+}
+
+/* 2. Men's Title */
+.headerSection {
+  margin-bottom: 1.25rem;
+}
+
+.pageTitle {
+  font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #09090b;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+/* 3. Simple Horizontal Category Filter Row */
+.categoryFilterRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.75rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.categoryFilterRow::-webkit-scrollbar {
+  display: none;
+}
+
+.categoryPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid #e4e4e7;
+  background-color: #f4f4f5;
+  color: #18181b;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.categoryPill:hover {
+  background-color: #e4e4e7;
+  border-color: #d4d4d8;
+}
+
+.categoryPillActive {
+  background-color: #09090b !important;
+  color: #ffffff !important;
+  border-color: #09090b !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* 4. Product Grid */
+.productGridSection {
+  width: 100%;
+}
+
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+  .productGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .productGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (max-width: 380px) {
+  .productGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+.emptyState {
+  padding: 4rem 1rem;
+  text-align: center;
+  color: #71717a;
+}
+
+.emptyStateTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #09090b;
+  margin-bottom: 0.5rem;
+}
+
+/* 5. Clean Brand Note at End of Page */
+.pageFooterBrandNote {
+  margin-top: 3.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e4e4e7;
+  text-align: center;
+}
+
+.brandNoteText {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #71717a;
+}

@@ -42,6 +42,9 @@ export default function ImageProtection() {
         target.closest('[class*="mainImageCard"]') ||
         target.closest('[class*="imageContainer"]') ||
         target.closest('[class*="categoryCardImageWrap"]') ||
+        target.closest('[class*="heroBg"]') ||
+        target.closest('[class*="mobileHeroSection"]') ||
+        target.closest('[class*="desktopHeroSection"]') ||
         target.closest('[class*="photoCard"]') ||
         target.closest('[class*="lightboxContent"]')
       ) {
