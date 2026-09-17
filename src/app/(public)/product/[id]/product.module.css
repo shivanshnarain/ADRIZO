@@ -39,9 +39,8 @@
   .gallerySection {
     position: sticky;
     top: 90px;
-    height: 680px;
     align-self: start;
-    align-items: stretch;
+    align-items: flex-start;
   }
 }
 
@@ -103,33 +102,32 @@
   display: block;
 }
 
-/* Large Hero Main Image Container (Fixed Frame, Smooth Internal Zoom) */
+/* Large Hero Main Image Container (Frameless 2:3, Aspect-Ratio Preserving) */
 .mainImageWrapper {
   flex: 1;
   min-width: 0;
-  height: 100%;
+  width: 100%;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  overflow: hidden;
+  position: relative;
 }
 
 .mainImageCard {
   position: relative;
   width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  aspect-ratio: 4 / 5;
-  background: #F8F9FA;
+  aspect-ratio: 2 / 3;
+  background: transparent;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: zoom-in;
-  overflow: hidden !important; /* Strictly clips zoomed image inside fixed frame */
-  transform: translateZ(0); /* Hardware accelerated clipping boundary */
-  backface-visibility: hidden;
+  overflow: hidden;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
 }
 
 .mainHeroImg {
@@ -141,12 +139,14 @@
   object-fit: contain;
   object-position: center;
   padding: 0;
+  margin: 0;
   display: block;
-  transform: scale(1);
-  transform-origin: center center;
-  transition: transform 0.35s ease, opacity 0.35s ease;
-  will-change: transform;
+  border-radius: 8px;
+  transition: opacity 0.2s ease;
   pointer-events: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .mainHeroImgActive {
@@ -159,11 +159,6 @@
   opacity: 0;
   z-index: 1;
   pointer-events: none;
-}
-
-/* Subtle internal image zoom strictly inside the fixed frame (no frame enlargement, no aspect ratio change) */
-.mainImageCard:hover .mainHeroImgActive {
-  transform: scale(1.06);
 }
 
 /* ==========================================================================
@@ -179,8 +174,6 @@
 
 @media (min-width: 992px) {
   .productInfoSection {
-    height: 680px;
-    max-height: 680px;
     position: sticky;
     top: 90px;
   }
@@ -987,11 +980,9 @@
   .mainImageCard {
     position: relative;
     width: 100%;
-    aspect-ratio: 4 / 5;
-    min-height: 380px;
-    max-height: 75vh;
-    background: #F8F9FA;
-    border-radius: 12px;
+    aspect-ratio: 2 / 3;
+    background: transparent;
+    border-radius: 8px;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -1014,9 +1005,12 @@
     padding: 0;
     margin: 0;
     display: block;
-    border-radius: 12px;
+    border-radius: 8px;
     box-sizing: border-box;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.2s ease;
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+    user-select: none;
   }
 
   .mainHeroImgHidden {
@@ -1087,11 +1081,9 @@
   .mainImageCard {
     position: relative;
     width: 100%;
-    aspect-ratio: 4 / 5;
-    min-height: 380px;
-    max-height: 75vh;
-    background: #F8F9FA;
-    border-radius: 12px;
+    aspect-ratio: 2 / 3;
+    background: transparent;
+    border-radius: 8px;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -1114,9 +1106,12 @@
     padding: 0;
     margin: 0;
     display: block;
-    border-radius: 12px;
+    border-radius: 8px;
     box-sizing: border-box;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.2s ease;
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+    user-select: none;
   }
 
   .mainHeroImgHidden {

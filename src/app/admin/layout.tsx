@@ -40,8 +40,11 @@ export default function AdminLayout({
 
     fetch('/api/admin/me')
       .then((res) => {
-        if (!res.ok) {
+        if (res.status === 401) {
           window.location.href = `/admin/login?from=${encodeURIComponent(pathname)}`;
+          return null;
+        }
+        if (!res.ok) {
           return null;
         }
         return res.json();
@@ -49,7 +52,7 @@ export default function AdminLayout({
       .then((data) => {
         if (data && data.authenticated) {
           setAdminUser(data.admin);
-        } else if (data && !data.authenticated) {
+        } else if (data && data.authenticated === false) {
           window.location.href = `/admin/login?from=${encodeURIComponent(pathname)}`;
         }
       })

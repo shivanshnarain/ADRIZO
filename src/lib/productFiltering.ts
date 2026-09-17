@@ -49,6 +49,14 @@ export function isWomenProduct(product: ProductLike): boolean {
     return true;
   }
 
+  // Dark Skin Women's Hoodie asset representation
+  if (
+    (name.includes('dark skin') && (name.includes('hoodie') || prodType.includes('hoodie'))) ||
+    product.images?.some((img: any) => typeof img?.url === 'string' && img.url.includes('pvfr1iyiibkvau4xkwu1'))
+  ) {
+    return true;
+  }
+
   return false;
 }
 

@@ -18,10 +18,10 @@ interface MenClientProps {
 type CategoryFilter = 'ALL' | 'hoodies' | 'zipper-polo' | 'button-polo';
 
 const CATEGORIES: Array<{ id: CategoryFilter; label: string }> = [
-  { id: 'ALL', label: 'All' },
-  { id: 'hoodies', label: 'Hoodies' },
-  { id: 'zipper-polo', label: 'Zipper Polo T-Shirts' },
-  { id: 'button-polo', label: 'Button Polo T-Shirts' },
+  { id: 'ALL', label: 'ALL PRODUCTS' },
+  { id: 'hoodies', label: 'HOODIES' },
+  { id: 'zipper-polo', label: 'ZIPPER POLO T-SHIRTS' },
+  { id: 'button-polo', label: 'BUTTON POLO T-SHIRTS' },
 ];
 
 export default function MenClient({ initialProducts }: MenClientProps) {
@@ -41,7 +41,7 @@ export default function MenClient({ initialProducts }: MenClientProps) {
   }, [activeCategory, initialProducts]);
 
   const handleCategoryClick = (catId: CategoryFilter) => {
-    setActiveCategory((prev) => (prev === catId && catId !== 'ALL' ? 'ALL' : catId));
+    setActiveCategory(catId);
   };
 
   return (
@@ -55,7 +55,7 @@ export default function MenClient({ initialProducts }: MenClientProps) {
 
       {/* 2. Men's Title */}
       <header className={styles.headerSection}>
-        <h1 className={styles.pageTitle}>Men&apos;s Clothing</h1>
+        <h1 className={styles.pageTitle}>MEN&apos;S CLOTHING</h1>
       </header>
 
       {/* 3. Simple Horizontal Category Filter Row */}
@@ -82,11 +82,16 @@ export default function MenClient({ initialProducts }: MenClientProps) {
         })}
       </div>
 
-      {/* 4. Product Grid */}
+      {/* 4. Section Heading */}
+      <div className={styles.sectionHeader}>
+        <h2 className={styles.sectionTitle}>MEN&apos;S PRODUCTS</h2>
+      </div>
+
+      {/* 5. Product Grid */}
       <section className={styles.productGridSection} aria-label="Men's Clothing Products">
         {filteredProducts.length === 0 ? (
           <div className={styles.emptyState}>
-            <h2 className={styles.emptyStateTitle}>No products found in this category</h2>
+            <h3 className={styles.emptyStateTitle}>No products found in this category</h3>
             <button
               type="button"
               className={styles.categoryPill}
@@ -107,11 +112,6 @@ export default function MenClient({ initialProducts }: MenClientProps) {
           </div>
         )}
       </section>
-
-      {/* 5. Minimal Brand Note at End of Page (Section 15) */}
-      <footer className={styles.pageFooterBrandNote}>
-        <p className={styles.brandNoteText}>ADRIZO Men&apos;s</p>
-      </footer>
     </div>
   );
 }

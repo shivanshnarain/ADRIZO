@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import styles from './product.module.css';
 import { useCart } from '../../../../context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { getOptimizedImageUrl, getResponsiveImageSrcSet } from '@/lib/image-utils';
 import SizeChartModal from '@/components/SizeChartModal';
 import ProductCard from '@/components/ProductCard';
@@ -75,7 +76,9 @@ interface ProductClientProps {
 
 export default function ProductClient({ product, initialRelatedProducts = [] }: ProductClientProps) {
   const { addToCart, openBogoSelectorFor, openBuyNowPromoModal, bogoPromoConfig, activeOffers } = useCart();
+  const { user, openAuthModal } = useAuth();
   const router = useRouter();
+  const pendingCartItemRef = useRef<any>(null);
 
   // 1. Resolve Images List & Device-Optimized CDN URLs
   const { heroImages, thumbnailImages, imagesList, responsiveSrcSets } = useMemo(() => {
@@ -445,6 +448,39 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
     }
   }, [isLightboxOpen]);
 
+  // Helper to execute add-to-cart action
+  const executeAddToCart = useCallback((itemData: any) => {
+    addToCart(itemData);
+    setAddedSuccess(true);
+    setTimeout(() => setAddedSuccess(false), 2500);
+
+    // Open promotion selector modal only if product qualifies for active promotion
+    if (itemData.isPromoEligible) {
+      setTimeout(() => {
+        openBogoSelectorFor(itemData.id);
+      }, 400);
+    }
+  }, [addToCart, openBogoSelectorFor]);
+
+  // Resume pending add to cart action after login
+  useEffect(() => {
+    if (user && typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('adrizo_pending_add_to_cart');
+      if (stored) {
+        try {
+          const itemData = JSON.parse(stored);
+          sessionStorage.removeItem('adrizo_pending_add_to_cart');
+          pendingCartItemRef.current = null;
+          executeAddToCart(itemData);
+        } catch {}
+      } else if (pendingCartItemRef.current) {
+        const itemData = pendingCartItemRef.current;
+        pendingCartItemRef.current = null;
+        executeAddToCart(itemData);
+      }
+    }
+  }, [user, executeAddToCart]);
+
   // Cart & Buy Now Handlers
   const handleAddToCart = () => {
     if (maxStock <= 0) {
@@ -457,7 +493,7 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
     }
     
     const cartItemId = `${product.id}-${selectedSize || 'standard'}`;
-    addToCart({
+    const cartPayload = {
       id: cartItemId,
       productId: product.id,
       name: product.name,
@@ -474,17 +510,22 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
       buyQuantity: currentProductOffer?.buyQuantity,
       freeQuantity: currentProductOffer?.freeQuantity,
       promotionRule: currentProductOffer?.name,
-    });
+      isPromoEligible: isProductPromoEligible,
+    };
 
-    setAddedSuccess(true);
-    setTimeout(() => setAddedSuccess(false), 2500);
-
-    // Open promotion selector modal only if product qualifies for active promotion
-    if (isProductPromoEligible) {
-      setTimeout(() => {
-        openBogoSelectorFor(cartItemId);
-      }, 400);
+    // Requirement 10: ADD TO CART - LOGIN REQUIRED
+    if (!user) {
+      pendingCartItemRef.current = cartPayload;
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('adrizo_pending_add_to_cart', JSON.stringify(cartPayload));
+      }
+      openAuthModal('SIGN_IN', undefined, () => {
+        executeAddToCart(cartPayload);
+      });
+      return;
     }
+
+    executeAddToCart(cartPayload);
   };
 
   const handleBuyNow = () => {
@@ -677,6 +718,8 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
                     sizes="(max-width: 768px) 100vw, 55vw"
                     alt={`ADRIZO ${product.name}${product.color ? ` in ${product.color}` : ''} - View ${idx + 1}`}
                     className={`${styles.mainHeroImg} ${isCurrent ? styles.mainHeroImgActive : styles.mainHeroImgHidden}`}
+                    width={1024}
+                    height={1536}
                     loading={idx === 0 ? "eager" : "lazy"}
                     fetchPriority={idx === 0 ? "high" : "low"}
                     decoding={idx === 0 ? "sync" : "async"}

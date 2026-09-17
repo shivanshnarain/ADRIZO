@@ -24,8 +24,10 @@ type AuthContextType = {
   isAuthModalOpen: boolean;
   authModalMode: AuthMode;
   authRedirectUrl: string | null;
-  openAuthModal: (mode?: AuthMode, redirectUrl?: string) => void;
+  openAuthModal: (mode?: AuthMode, redirectUrl?: string, onSuccess?: () => void) => void;
   closeAuthModal: () => void;
+  triggerAuthSuccess: () => void;
+  broadcastAuthChange: (action: 'LOGIN' | 'LOGOUT') => void;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
@@ -40,6 +42,8 @@ const AuthContext = createContext<AuthContextType>({
   authRedirectUrl: null,
   openAuthModal: () => {},
   closeAuthModal: () => {},
+  triggerAuthSuccess: () => {},
+  broadcastAuthChange: () => {},
   setUser: () => {},
   logout: async () => {},
   fetchUser: async () => {},
@@ -52,17 +56,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<AuthMode>('SIGN_IN');
   const [authRedirectUrl, setAuthRedirectUrl] = useState<string | null>(null);
+  const authSuccessCallbackRef = React.useRef<(() => void) | null>(null);
 
-  const openAuthModal = useCallback((mode: AuthMode = 'SIGN_IN', redirectUrl?: string) => {
+  const broadcastAuthChange = useCallback((action: 'LOGIN' | 'LOGOUT') => {
+    if (typeof window === 'undefined') return;
+    try {
+      if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('adrizo_auth_channel');
+        bc.postMessage({ type: 'AUTH_CHANGED', action, timestamp: Date.now() });
+        bc.close();
+      }
+      localStorage.setItem('adrizo_auth_sync', JSON.stringify({ action, timestamp: Date.now() }));
+    } catch {}
+  }, []);
+
+  const openAuthModal = useCallback((mode: AuthMode = 'SIGN_IN', redirectUrl?: string, onSuccess?: () => void) => {
     setAuthModalMode(mode);
     if (redirectUrl !== undefined) {
       setAuthRedirectUrl(redirectUrl);
+    }
+    if (onSuccess) {
+      authSuccessCallbackRef.current = onSuccess;
+    } else {
+      authSuccessCallbackRef.current = null;
     }
     setIsAuthModalOpen(true);
   }, []);
 
   const closeAuthModal = useCallback(() => {
     setIsAuthModalOpen(false);
+    authSuccessCallbackRef.current = null;
+  }, []);
+
+  const triggerAuthSuccess = useCallback(() => {
+    if (authSuccessCallbackRef.current) {
+      const cb = authSuccessCallbackRef.current;
+      authSuccessCallbackRef.current = null;
+      cb();
+    }
   }, []);
 
   const fetchUser = useCallback(async () => {
@@ -88,6 +119,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     fetchUser();
 
+    // Cross-tab synchronization via BroadcastChannel
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        bc = new BroadcastChannel('adrizo_auth_channel');
+        bc.onmessage = (e) => {
+          if (e.data?.type === 'AUTH_CHANGED') {
+            if (e.data.action === 'LOGIN') {
+              fetchUser();
+            } else if (e.data.action === 'LOGOUT') {
+              setUser(null);
+            }
+          }
+        };
+      } catch {}
+    }
+
+    // Cross-tab synchronization via storage event fallback
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'adrizo_auth_sync' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed.action === 'LOGIN') {
+            fetchUser();
+          } else if (parsed.action === 'LOGOUT') {
+            setUser(null);
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
     // Listen to Supabase Auth state changes for real-time reactivity
     let unsubscribeSupabase: (() => void) | undefined;
     try {
@@ -96,7 +159,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
           fetchUser();
         } else if (event === 'SIGNED_OUT') {
-          setUser(null);
+          // Re-verify against server rather than unconditionally wiping state
+          fetchUser();
         }
       });
       unsubscribeSupabase = () => subscription?.unsubscribe();
@@ -115,6 +179,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     document.addEventListener('visibilitychange', handleSync);
 
     return () => {
+      bc?.close();
+      window.removeEventListener('storage', handleStorage);
       unsubscribeSupabase?.();
       window.removeEventListener('focus', handleSync);
       document.removeEventListener('visibilitychange', handleSync);
@@ -123,6 +189,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     try {
+      broadcastAuthChange('LOGOUT');
       try {
         const supabase = createClient();
         await supabase.auth.signOut();
@@ -156,6 +223,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const data = await res.json();
       if (res.ok && data.success) {
         await fetchUser();
+        broadcastAuthChange('LOGIN');
         return { success: true };
       }
       return { success: false, error: data.error || 'Failed to update profile' };
@@ -173,6 +241,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       authRedirectUrl,
       openAuthModal,
       closeAuthModal,
+      triggerAuthSuccess,
+      broadcastAuthChange,
       setUser,
       logout,
       fetchUser,

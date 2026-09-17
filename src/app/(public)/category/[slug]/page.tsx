@@ -12,16 +12,18 @@ interface PageProps {
   params: Promise<{ slug: string }> | { slug: string };
 }
 
-const VIRTUAL_CATEGORIES: Record<string, { name: string; title: string; desc: string }> = {
+const VIRTUAL_CATEGORIES: Record<string, { name: string; title: string; desc: string; image?: string }> = {
   women: {
     name: "Women's Collection",
     title: "Women's Clothing — Premium Indian Fashion | ADRIZO",
     desc: "Explore luxury women's fashion at ADRIZO. Modern silhouettes, heavyweight fabrics, and contemporary aesthetics.",
+    image: 'https://res.cloudinary.com/zytsxasx/image/upload/v1789463967/adrizo/products/pvfr1iyiibkvau4xkwu1.png',
   },
   'womens': {
     name: "Women's Collection",
     title: "Women's Clothing — Premium Indian Fashion | ADRIZO",
     desc: "Explore luxury women's fashion at ADRIZO. Modern silhouettes, heavyweight fabrics, and contemporary aesthetics.",
+    image: 'https://res.cloudinary.com/zytsxasx/image/upload/v1789463967/adrizo/products/pvfr1iyiibkvau4xkwu1.png',
   },
   'zipper-polo': {
     name: 'Zipper Polo T-Shirts',
@@ -42,6 +44,7 @@ const VIRTUAL_CATEGORIES: Record<string, { name: string; title: string; desc: st
     name: "Women's Hoodies",
     title: "Women's Hoodies — Luxury Streetwear & Layering | ADRIZO",
     desc: "Discover women's hoodies at ADRIZO. Engineered for superior warmth, oversized comfort, and minimal elegance.",
+    image: 'https://res.cloudinary.com/zytsxasx/image/upload/v1789463967/adrizo/products/pvfr1iyiibkvau4xkwu1.png',
   },
   't-shirts': {
     name: 'T-Shirts',
@@ -95,7 +98,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         siteName: 'ADRIZO',
         locale: 'en_IN',
         type: 'website',
-        images: [{ url: `${siteUrl}/adrizo_hero.jpg`, width: 1200, height: 630, alt: virtualConfig.name }],
+        images: [{ url: virtualConfig.image || `${siteUrl}/adrizo_hero.jpg`, width: 1200, height: 630, alt: virtualConfig.name }],
       },
     };
   }
@@ -194,6 +197,7 @@ export default async function CategoryPage({ params }: PageProps) {
       name: virtualConfig.name,
       slug: slug,
       description: virtualConfig.desc,
+      image: virtualConfig.image,
     };
   }
 

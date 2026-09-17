@@ -8,7 +8,15 @@ import styles from './AuthModal.module.css';
 import PhoneOtpAuth from './PhoneOtpAuth';
 
 export default function AuthModal() {
-  const { isAuthModalOpen, closeAuthModal, fetchUser, authModalMode, authRedirectUrl } = useAuth();
+  const { 
+    isAuthModalOpen, 
+    closeAuthModal, 
+    fetchUser, 
+    authModalMode, 
+    authRedirectUrl,
+    triggerAuthSuccess,
+    broadcastAuthChange,
+  } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>('SIGN_IN');
   const [loading, setLoading] = useState(false);
@@ -115,6 +123,8 @@ export default function AuthModal() {
         }
 
         await fetchUser();
+        broadcastAuthChange('LOGIN');
+        triggerAuthSuccess();
         handleClose();
         if (authRedirectUrl) {
           window.location.href = authRedirectUrl;
@@ -179,6 +189,8 @@ export default function AuthModal() {
       if (res.ok && data.success) {
         // Automatically sign in or fetch profile
         await fetchUser();
+        broadcastAuthChange('LOGIN');
+        triggerAuthSuccess();
         handleClose();
         if (authRedirectUrl) {
           window.location.href = authRedirectUrl;
@@ -347,6 +359,8 @@ export default function AuthModal() {
               <PhoneOtpAuth
                 onSuccess={async () => {
                   await fetchUser();
+                  broadcastAuthChange('LOGIN');
+                  triggerAuthSuccess();
                   handleClose();
                   if (authRedirectUrl) {
                     window.location.href = authRedirectUrl;

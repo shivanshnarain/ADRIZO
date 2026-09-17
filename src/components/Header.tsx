@@ -68,14 +68,14 @@ export default function Header() {
   const navItems = [
     { name: 'HOME', href: '/' },
     { name: 'SHOP', href: '/shop', hasDropdown: true },
-    { name: 'MEN', href: '/category/men' },
+    { name: 'MEN', href: '/men' },
     { name: 'WOMEN', href: '/category/women' },
     { name: 'NEW ARRIVALS', href: '/shop?sort=new' },
   ];
 
   const shopCategories = [
     { name: 'All Products', href: '/shop' },
-    { name: "Men's Collection", href: '/category/men' },
+    { name: "Men's Collection", href: '/men' },
     { name: "Women's Collection", href: '/category/women' },
     { name: 'T-Shirts (Polo & Classic)', href: '/category/t-shirts' },
     { name: 'Hoodies', href: '/category/hoodies' },
