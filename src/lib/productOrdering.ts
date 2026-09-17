@@ -105,41 +105,62 @@ export function getOrderedProducts<T extends ProductLike>(
     return products || [];
   }
 
+  // 1. Deduplicate products by stable product ID / SKU (Requirement 21)
+  const seenKeys = new Set<string>();
+  const uniqueProducts: T[] = [];
+  for (const p of products) {
+    const key = p.id || p.sku;
+    if (key) {
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+        uniqueProducts.push(p);
+      }
+    } else {
+      uniqueProducts.push(p);
+    }
+  }
+
+  if (uniqueProducts.length <= 1) {
+    return uniqueProducts;
+  }
+
   const { seed: seedInput, sortOverride } = options;
 
-  // 1. If customer has chosen an explicit sort option, respect it
+  // 2. If customer has chosen an explicit sort option (price, discount, name), respect it
   if (sortOverride && sortOverride !== 'NEWEST' && sortOverride !== 'MIXED') {
-    return [...products];
+    return [...uniqueProducts];
   }
 
   const normKey = normalizeCategoryKey(mode);
   const cleanMode = typeof normKey === 'string' ? normKey.toUpperCase() : 'ALL';
 
-  // 2. MODE A: Dedicated Specific Subcategories -> Natural Alphabetical Sort
+  // 3. MODE A: Dedicated Specific Subcategories -> Natural Alphabetical Sort
   // Covers BUTTON POLO, ZIPPER POLO, and individual dedicated subcategory views
   if (cleanMode === 'BUTTON_POLO' || cleanMode === 'ZIPPER_POLO') {
-    return [...products].sort((a, b) =>
+    return [...uniqueProducts].sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
     );
   }
 
-  // 3. MODE B: Broad Mixed Collections -> Smart Variation & Anti-Repetition
-  // Covers ALL, VIEW_ALL, TSHIRTS, HOODIES, MEN, WOMEN
+  // 4. MODE B: Broad Mixed Collections -> Smart Variation & Grid-Aware Anti-Repetition
+  // Covers ALL, VIEW_ALL, TSHIRTS, HOODIES, MEN, WOMEN, MENS_HOODIE, WOMENS_HOODIE
   const seedNumber =
     typeof seedInput === 'number'
       ? seedInput
-      : hashString((seedInput || cleanMode) + '_adrizo_catalog_v2');
-
-  const prng = createPrng(seedNumber);
+      : hashString((seedInput || cleanMode) + '_adrizo_catalog_v3');
 
   // Pre-calculate normalized metadata for rapid scalar scoring
-  const candidates = products.map((p) => ({
-    original: p,
-    color: normalizeProductColor(p.color, p.name),
-    gender: getProductGender(p),
-    subtype: getProductSubtype(p),
-    category: (p.category?.slug || p.categoryId || '').toLowerCase() || getProductSubtype(p),
-  }));
+  const candidates = uniqueProducts.map((p) => {
+    const idKey = p.id || p.sku || p.name;
+    return {
+      original: p,
+      id: idKey,
+      color: normalizeProductColor(p.color, p.name),
+      gender: getProductGender(p),
+      subtype: getProductSubtype(p),
+      category: (p.category?.slug || p.categoryId || '').toLowerCase() || getProductSubtype(p),
+    };
+  });
 
   const remaining = [...candidates];
   const result: typeof candidates = [];
@@ -173,23 +194,23 @@ export function getOrderedProducts<T extends ProductLike>(
 
           // Critical penalty: Same color with opposite gender (e.g. Mehron Women -> Mehron Men)
           if (cand.gender !== prev1.gender) {
-            penalty += 25000;
+            penalty += 30000;
           }
 
           // Critical penalty: Same color with different subtype (e.g. Rose Pink Button -> Rose Pink Zipper)
           if (cand.subtype !== prev1.subtype) {
-            penalty += 25000;
+            penalty += 30000;
           }
         }
 
         // Subtype clustering penalty in mixed views (e.g. Polos in T-Shirts, or Hoodies in ALL)
         if (cand.subtype === prev1.subtype && hasDiffSubtype) {
-          penalty += cleanMode === 'TSHIRTS' ? 450 : 300;
+          penalty += cleanMode === 'TSHIRTS' ? 450 : 350;
         }
 
         // Gender clustering penalty in Hoodies or mixed collections
         if (cand.gender === prev1.gender && hasDiffGender) {
-          penalty += cleanMode === 'HOODIES' ? 400 : 250;
+          penalty += cleanMode === 'HOODIES' ? 400 : 300;
         }
 
         // Broad category clustering penalty in ALL / VIEW_ALL
@@ -207,22 +228,22 @@ export function getOrderedProducts<T extends ProductLike>(
       // ----------------------------------------------------
       if (prev2) {
         if (cand.color === prev2.color && hasDiffColor) {
-          penalty += 6000;
+          penalty += 8000;
 
           // Vertical same color + opposite gender
           if (cand.gender !== prev2.gender) {
-            penalty += 15000;
+            penalty += 20000;
           }
 
           // Vertical same color + different subtype
           if (cand.subtype !== prev2.subtype) {
-            penalty += 15000;
+            penalty += 20000;
           }
         }
 
         // Moderate subtype stack penalty
         if (cand.subtype === prev2.subtype && hasDiffSubtype) {
-          penalty += 150;
+          penalty += 200;
         }
       }
 
@@ -231,7 +252,10 @@ export function getOrderedProducts<T extends ProductLike>(
       // ----------------------------------------------------
       if (prev3) {
         if (cand.color === prev3.color && hasDiffColor) {
-          penalty += 1800;
+          penalty += 2500;
+          if (cand.gender !== prev3.gender || cand.subtype !== prev3.subtype) {
+            penalty += 8000;
+          }
         }
       }
 
@@ -240,9 +264,9 @@ export function getOrderedProducts<T extends ProductLike>(
       // ----------------------------------------------------
       if (prev4) {
         if (cand.color === prev4.color && hasDiffColor) {
-          penalty += 2500;
+          penalty += 5000;
           if (cand.gender !== prev4.gender || cand.subtype !== prev4.subtype) {
-            penalty += 5000;
+            penalty += 15000;
           }
         }
       }
@@ -253,15 +277,18 @@ export function getOrderedProducts<T extends ProductLike>(
       // ----------------------------------------------------
       const recentColorOccurrences = recent6.filter((r) => r.color === cand.color).length;
       if (recentColorOccurrences > 0 && hasDiffColor) {
-        penalty += recentColorOccurrences * 650;
+        penalty += recentColorOccurrences * 800;
       }
 
       // ----------------------------------------------------
-      // F. Deterministic Tie-Breaking
-      // Natural visual dispersion without arbitrary clustering
+      // F. Deterministic Product Hash Jitter
+      // Derived from candidate ID + position + seed (Requirement 19 & 20)
+      // Ensures new products do not automatically sit at position #1,
+      // and eliminates array-order bias while keeping output 100% stable.
       // ----------------------------------------------------
-      const jitter = prng() * 10;
-      const totalScore = penalty + jitter;
+      const stepHash = hashString(`${cand.id}_pos${i}_s${seedNumber}`);
+      const stepJitter = (stepHash % 1000) / 100; // Deterministic range: 0.00 to 9.99
+      const totalScore = penalty + stepJitter;
 
       if (totalScore < minPenalty) {
         minPenalty = totalScore;

@@ -13,7 +13,6 @@ export async function GET() {
         variants: true,
       },
       orderBy: { createdAt: 'desc' },
-      take: 100,
     });
 
     const products = rawProducts.map((p) => {
@@ -49,6 +48,9 @@ export async function GET() {
         image: p.images[0]?.url || '/placeholder.png',
         color: p.color || 'Standard',
         availableSizes,
+        productType: p.productType || null,
+        gender: (p as any).gender || null,
+        categoryId: p.categoryId || null,
         category: p.category ? { id: p.category.id, name: p.category.name, slug: p.category.slug } : null,
       };
     }).filter((p) => p.availableSizes.length > 0);
