@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import MenClient from './MenClient';
-import { isMenProduct } from '@/lib/productFiltering';
+import { isMenProduct, getOrderedProducts } from '@/lib/productFiltering';
 import type { Metadata } from 'next';
 
 export const revalidate = 60;
@@ -49,8 +49,8 @@ export default async function MenHubPage() {
       },
       orderBy: { createdAt: 'desc' },
     });
-    // All Men's products without artificial slicing
-    products = allActive.filter(isMenProduct);
+    // All Men's products with smart variation
+    products = getOrderedProducts(allActive.filter(isMenProduct), 'ALL');
   } catch (err: any) {
     console.warn("Prisma error loading men's products:", err.message);
     products = [];

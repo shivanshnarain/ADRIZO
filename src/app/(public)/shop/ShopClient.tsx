@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import ProductCard from '../../../components/ProductCard';
 import { getProductPricing } from '../../../lib/pricing';
-import { filterProductsByCategory, normalizeCategoryKey, ProductLike } from '@/lib/productFiltering';
+import { filterProductsByCategory, normalizeCategoryKey, ProductLike, getOrderedProducts } from '@/lib/productFiltering';
 import styles from './shop.module.css';
 
 interface Category {
@@ -195,23 +195,21 @@ export default function ShopClient({
     }
 
     // 6. Sort
-    const isViewAllActive = normalizeCategoryKey(selectedCategory) === 'VIEW_ALL';
-    if (isViewAllActive && sortBy === 'MIXED') {
-      // Keep randomized round-robin order produced by getMixedViewAllProducts
-      return prods;
+    if (sortBy && sortBy !== 'NEWEST' && sortBy !== 'MIXED') {
+      return [...prods].sort((a, b) => {
+        const pricingA = getProductPricing(a);
+        const pricingB = getProductPricing(b);
+
+        if (sortBy === 'PRICE_LOW_HIGH') return pricingA.sellingPrice - pricingB.sellingPrice;
+        if (sortBy === 'PRICE_HIGH_LOW') return pricingB.sellingPrice - pricingA.sellingPrice;
+        if (sortBy === 'NAME_ASC') return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+        if (sortBy === 'DISCOUNT') return pricingB.discountPercent - pricingA.discountPercent;
+        return 0;
+      });
     }
 
-    return [...prods].sort((a, b) => {
-      const pricingA = getProductPricing(a);
-      const pricingB = getProductPricing(b);
-
-      if (sortBy === 'PRICE_LOW_HIGH') return pricingA.sellingPrice - pricingB.sellingPrice;
-      if (sortBy === 'PRICE_HIGH_LOW') return pricingB.sellingPrice - pricingA.sellingPrice;
-      if (sortBy === 'NAME_ASC') return a.name.localeCompare(b.name);
-      if (sortBy === 'DISCOUNT') return pricingB.discountPercent - pricingA.discountPercent;
-      // Default: NEWEST
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
+    // Default: Smart catalog variation and category-aware sorting
+    return getOrderedProducts(prods, selectedCategory);
   }, [initialProducts, selectedCategory, queryParam, priceRange, selectedSizes, selectedColors, sortBy]);
 
   // Page Heading & Category Name calculation

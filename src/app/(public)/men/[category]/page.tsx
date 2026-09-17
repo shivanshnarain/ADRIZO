@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import ProductCard from '@/components/ProductCard';
-import { filterProductsByCategory } from '@/lib/productFiltering';
+import { filterProductsByCategory, getOrderedProducts } from '@/lib/productFiltering';
 import type { Metadata } from 'next';
 
 export const revalidate = 60;
@@ -165,6 +165,8 @@ export default async function MenCategoryPage({ params }: PageProps) {
         );
       });
     }
+
+    products = getOrderedProducts(products, config.filterKey || catParam);
   } catch (err: any) {
     console.warn("Prisma error in MenCategoryPage:", err.message);
     products = [];

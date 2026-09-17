@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import ProductCard from './ProductCard';
 import styles from '../app/(public)/page.module.css';
-import { filterProductsByCategory } from '@/lib/productFiltering';
+import { filterProductsByCategory, getOrderedProducts } from '@/lib/productFiltering';
 
 interface HomeProductSectionProps {
   products: any[];
@@ -23,19 +23,26 @@ export default function HomeProductSection({ products }: HomeProductSectionProps
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
 
   const filteredProducts = useMemo(() => {
+    let prods: any[] = [];
     switch (activeTab) {
       case 'MENS':
-        return filterProductsByCategory(products, 'MEN');
+        prods = filterProductsByCategory(products, 'MEN');
+        break;
       case 'WOMEN':
-        return filterProductsByCategory(products, 'WOMEN');
+        prods = filterProductsByCategory(products, 'WOMEN');
+        break;
       case 'TSHIRTS':
-        return filterProductsByCategory(products, 'TSHIRTS');
+        prods = filterProductsByCategory(products, 'TSHIRTS');
+        break;
       case 'HOODIES':
-        return filterProductsByCategory(products, 'HOODIES');
+        prods = filterProductsByCategory(products, 'HOODIES');
+        break;
       case 'ALL':
       default:
-        return filterProductsByCategory(products, 'ALL');
+        prods = filterProductsByCategory(products, 'ALL');
+        break;
     }
+    return getOrderedProducts(prods, activeTab);
   }, [products, activeTab]);
 
   return (

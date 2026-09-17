@@ -225,6 +225,9 @@ export function normalizeCategoryKey(key?: string | null): CategoryFilterKey | s
   return key;
 }
 
+export { getOrderedProducts } from './productOrdering';
+import { getOrderedProducts } from './productOrdering';
+
 /**
  * Filters a product array based on the category key.
  */
@@ -241,7 +244,7 @@ export function filterProductsByCategory<T extends ProductLike>(
       return products;
 
     case 'VIEW_ALL':
-      return getMixedViewAllProducts(products);
+      return getOrderedProducts(products, 'VIEW_ALL');
 
     case 'MEN':
       return products.filter(isMenProduct);
@@ -283,67 +286,9 @@ export function filterProductsByCategory<T extends ProductLike>(
 }
 
 /**
- * Creates a mixed/randomized selection of real products from across available categories.
- * For example: 1 Hoodie, 1 Men's Hoodie, 1 Zipper Polo, 1 Women's Hoodie (if exists), 1 Button Polo, etc.
- * Never invents products, only selects from products that actually exist.
+ * Creates a smart, varied, anti-repetition selection of real products from across available categories.
+ * Guarantees every product appears exactly once, no duplicates, no omissions, and no repetitive sequences.
  */
 export function getMixedViewAllProducts<T extends ProductLike>(products: T[]): T[] {
-  if (!Array.isArray(products) || products.length === 0) return [];
-
-  // Group products by available category types
-  const zipperPolos = products.filter(isZipperPoloProduct);
-  const buttonPolos = products.filter(isButtonPoloProduct);
-  const mensHoodies = products.filter(isMensHoodieProduct);
-  const womensHoodies = products.filter(isWomensHoodieProduct);
-  const otherProducts = products.filter(
-    (p) =>
-      !isZipperPoloProduct(p) &&
-      !isButtonPoloProduct(p) &&
-      !isMensHoodieProduct(p) &&
-      !isWomensHoodieProduct(p)
-  );
-
-  // Helper to pseudo-shuffle an array without mutating
-  const shuffle = (arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
-
-  const pools = [
-    shuffle(mensHoodies),
-    shuffle(zipperPolos),
-    shuffle(buttonPolos),
-    ...(womensHoodies.length > 0 ? [shuffle(womensHoodies)] : []),
-    ...(otherProducts.length > 0 ? [shuffle(otherProducts)] : []),
-  ];
-
-  const result: T[] = [];
-  const addedIds = new Set<string>();
-
-  // Round-robin selection across the category pools to ensure a mixed display
-  let hasMore = true;
-  let round = 0;
-  while (hasMore && result.length < products.length) {
-    hasMore = false;
-    for (const pool of pools) {
-      if (round < pool.length) {
-        const item = pool[round];
-        if (!addedIds.has(item.id)) {
-          addedIds.add(item.id);
-          result.push(item);
-        }
-        hasMore = true;
-      }
-    }
-    round++;
-  }
-
-  // If any products remain that were not captured, append them
-  if (result.length < products.length) {
-    for (const p of products) {
-      if (!addedIds.has(p.id)) {
-        addedIds.add(p.id);
-        result.push(p);
-      }
-    }
-  }
-
-  return result;
+  return getOrderedProducts(products, 'VIEW_ALL');
 }

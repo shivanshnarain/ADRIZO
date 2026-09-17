@@ -7,6 +7,7 @@ import {
   isHoodieProduct, 
   isZipperPoloProduct, 
   isButtonPoloProduct, 
+  getOrderedProducts,
   ProductLike 
 } from '@/lib/productFiltering';
 import styles from './men.module.css';
@@ -28,16 +29,20 @@ export default function MenClient({ initialProducts }: MenClientProps) {
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('ALL');
 
   const filteredProducts = useMemo(() => {
+    let prods: any[] = [];
     if (activeCategory === 'hoodies') {
-      return initialProducts.filter((p) => isHoodieProduct(p));
+      prods = initialProducts.filter((p) => isHoodieProduct(p));
+      return getOrderedProducts(prods, 'HOODIES');
     }
     if (activeCategory === 'zipper-polo') {
-      return initialProducts.filter((p) => isZipperPoloProduct(p));
+      prods = initialProducts.filter((p) => isZipperPoloProduct(p));
+      return getOrderedProducts(prods, 'ZIPPER_POLO');
     }
     if (activeCategory === 'button-polo') {
-      return initialProducts.filter((p) => isButtonPoloProduct(p));
+      prods = initialProducts.filter((p) => isButtonPoloProduct(p));
+      return getOrderedProducts(prods, 'BUTTON_POLO');
     }
-    return initialProducts;
+    return getOrderedProducts(initialProducts, 'ALL');
   }, [activeCategory, initialProducts]);
 
   const handleCategoryClick = (catId: CategoryFilter) => {
