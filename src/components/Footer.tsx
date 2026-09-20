@@ -44,8 +44,8 @@ export default function Footer() {
             <h4 className={styles.columnTitle}>SUPPORT</h4>
             <div className={styles.linkList}>
               <Link href="/faq">FAQs</Link>
-              <a href="mailto:care.addresso@gmail.com" className={styles.emailLink}>
-                care.addresso@gmail.com
+              <a href="mailto:Care.adrizo@gmail.com" className={styles.emailLink}>
+                Care.adrizo@gmail.com
               </a>
             </div>
           </div>
