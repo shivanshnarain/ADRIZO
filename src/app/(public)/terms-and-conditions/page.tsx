@@ -86,10 +86,7 @@ export default function TermsAndConditions() {
       <div className={styles.policySection}>
         <h2 className={styles.sectionTitle}>Contact Us</h2>
         <p className={styles.policyText}>
-          Questions about the Terms & Conditions should be sent to us at <a href={`mailto:${POLICY_CONFIG.supportEmail}`} className={styles.highlight}>{POLICY_CONFIG.supportEmail}</a> or by writing to:
-        </p>
-        <p className={styles.policyText} style={{ whiteSpace: 'pre-line' }}>
-          {POLICY_CONFIG.address}
+          Questions about the Terms & Conditions should be sent to us at <a href={`mailto:${POLICY_CONFIG.supportEmail}`} className={styles.highlight}>{POLICY_CONFIG.supportEmail}</a>.
         </p>
       </div>
     </div>

@@ -36,7 +36,6 @@ export default function Footer() {
               <Link href="/">Home</Link>
               <Link href="/shop">Shop</Link>
               <Link href="/about">About</Link>
-              <Link href="/contact">Contact</Link>
             </div>
           </div>
 
@@ -44,8 +43,10 @@ export default function Footer() {
           <div className={styles.column}>
             <h4 className={styles.columnTitle}>SUPPORT</h4>
             <div className={styles.linkList}>
-              <Link href="/contact">Contact Us</Link>
               <Link href="/faq">FAQs</Link>
+              <a href="mailto:care.addresso@gmail.com" className={styles.emailLink}>
+                care.addresso@gmail.com
+              </a>
             </div>
           </div>
 
@@ -53,28 +54,14 @@ export default function Footer() {
           <div className={styles.column}>
             <h4 className={styles.columnTitle}>FOLLOW US</h4>
             <div className={styles.linkList}>
-              <div className={styles.emailItem}>
-                <span className={styles.emailLabel}>Email: </span>
-                <a href="mailto:care.adrizo@gmail.com" className={styles.emailLink}>
-                  care.adrizo@gmail.com
-                </a>
-              </div>
-              <div className={styles.emailItem}>
-                <span className={styles.emailLabel}>Phone: </span>
-                <a href="tel:+919773777410" className={styles.emailLink}>
-                  +91 9773777410
-                </a>
-              </div>
-              <div>
-                <a
-                  href="https://www.instagram.com/adrizo_official?igsi=d3QwMjIwNHI4dGpm"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.instagramLink}
-                >
-                  Instagram
-                </a>
-              </div>
+              <a
+                href="https://www.instagram.com/adrizo_official?igsi=d3QwMjIwNHI4dGpm"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.instagramLink}
+              >
+                Instagram
+              </a>
             </div>
           </div>
         </div>

@@ -125,10 +125,7 @@ export default function PrivacyPolicy() {
       <div className={styles.policySection}>
         <h2 className={styles.sectionTitle}>Contact Us</h2>
         <p className={styles.policyText}>
-          For any questions, concerns, or data requests related to your privacy, please contact our Data Protection team at <a href={`mailto:${POLICY_CONFIG.supportEmail}`} className={styles.highlight}>{POLICY_CONFIG.supportEmail}</a> or write to us at:
-        </p>
-        <p className={styles.policyText} style={{ whiteSpace: 'pre-line' }}>
-          {POLICY_CONFIG.address}
+          For any questions, concerns, or data requests related to your privacy, please contact our Data Protection team at <a href={`mailto:${POLICY_CONFIG.supportEmail}`} className={styles.highlight}>{POLICY_CONFIG.supportEmail}</a>.
         </p>
       </div>
     </div>
