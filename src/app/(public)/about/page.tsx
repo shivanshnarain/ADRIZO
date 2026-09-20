@@ -97,6 +97,11 @@ export default function AboutPage() {
             care.adrizo@gmail.com
           </a>
           <br />
+          <strong>Phone:</strong>{' '}
+          <a href="tel:+919773777410" style={{ color: '#09090b', textDecoration: 'underline' }}>
+            +91 9773777410
+          </a>
+          <br />
           <strong>Support Hours:</strong> Monday – Saturday, 10:00 AM – 7:00 PM IST
         </p>
         <p className={styles.policyText} style={{ marginTop: '1.25rem' }}>

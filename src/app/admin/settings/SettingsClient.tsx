@@ -1846,7 +1846,7 @@ export default function SettingsClient({
               <div style={{ fontSize: '0.875rem', color: '#09090b' }}>
                 <div><strong>Store Brand:</strong> ADRIZO Luxury Menswear</div>
                 <div style={{ marginTop: '4px' }}><strong>Support Email:</strong> support@adrizo.com</div>
-                <div style={{ marginTop: '4px' }}><strong>Support Phone:</strong> +91 98765 43210</div>
+                <div style={{ marginTop: '4px' }}><strong>Support Phone:</strong> <a href="tel:+919773777410" style={{ color: 'inherit', textDecoration: 'none' }}>+91 9773777410</a></div>
                 <div style={{ marginTop: '4px' }}><strong>Base Currency:</strong> Indian Rupee (INR ₹)</div>
               </div>
             </div>

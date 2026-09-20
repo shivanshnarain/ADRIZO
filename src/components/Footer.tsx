@@ -59,6 +59,12 @@ export default function Footer() {
                   care.adrizo@gmail.com
                 </a>
               </div>
+              <div className={styles.emailItem}>
+                <span className={styles.emailLabel}>Phone: </span>
+                <a href="tel:+919773777410" className={styles.emailLink}>
+                  +91 9773777410
+                </a>
+              </div>
               <div>
                 <a
                   href="https://www.instagram.com/adrizo_official?igsi=d3QwMjIwNHI4dGpm"

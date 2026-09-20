@@ -104,7 +104,7 @@ export default function RefundReturnPolicy() {
       <div className={styles.policySection}>
         <h2 className={styles.sectionTitle}>Contact Us</h2>
         <p className={styles.policyText}>
-          If you have any questions regarding your return, please contact our support team at <a href={`mailto:${POLICY_CONFIG.supportEmail}`} className={styles.highlight}>{POLICY_CONFIG.supportEmail}</a> or call us at <span className={styles.highlight}>{POLICY_CONFIG.supportPhone}</span> during our business hours ({POLICY_CONFIG.businessHours}).
+          If you have any questions regarding your return, please contact our support team at <a href={`mailto:${POLICY_CONFIG.supportEmail}`} className={styles.highlight}>{POLICY_CONFIG.supportEmail}</a> or call us at <a href={`tel:${POLICY_CONFIG.supportPhone.replace(/\s+/g, '')}`} className={styles.highlight}>{POLICY_CONFIG.supportPhone}</a> during our business hours ({POLICY_CONFIG.businessHours}).
         </p>
       </div>
     </div>

@@ -1,7 +1,7 @@
 export const POLICY_CONFIG = {
   companyName: "ADRIZO",
   supportEmail: "Care.adrizo@gmail.com",
-  supportPhone: "+91 9999999999", // Configurable support phone
+  supportPhone: "+91 9773777410", // Configurable support phone
   businessHours: "Monday to Saturday, 10:00 AM to 6:00 PM IST",
   address: "ADRIZO Headquarters, [Placeholder Address, City, State, PIN]",
   

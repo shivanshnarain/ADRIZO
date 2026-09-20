@@ -94,6 +94,7 @@ const organizationSchema = {
     {
       "@type": "ContactPoint",
       contactType: "customer service",
+      telephone: "+91-9773777410",
       email: "care.adrizo@gmail.com",
       availableLanguage: ["English", "Hindi"],
     },

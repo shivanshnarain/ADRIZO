@@ -90,7 +90,7 @@ export default function ShippingPolicy() {
       <div className={styles.policySection}>
         <h2 className={styles.sectionTitle}>Contact Support</h2>
         <p className={styles.policyText}>
-          For shipping-related queries, reach out to us at <a href={`mailto:${POLICY_CONFIG.supportEmail}`} className={styles.highlight}>{POLICY_CONFIG.supportEmail}</a> or <span className={styles.highlight}>{POLICY_CONFIG.supportPhone}</span>.
+          For shipping-related queries, reach out to us at <a href={`mailto:${POLICY_CONFIG.supportEmail}`} className={styles.highlight}>{POLICY_CONFIG.supportEmail}</a> or <a href={`tel:${POLICY_CONFIG.supportPhone.replace(/\s+/g, '')}`} className={styles.highlight}>{POLICY_CONFIG.supportPhone}</a>.
         </p>
       </div>
     </div>

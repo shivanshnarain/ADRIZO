@@ -58,7 +58,11 @@ export default function ContactPage() {
               </div>
               <div>
                 <h4 className={styles.detailTitle}>Phone Number</h4>
-                <p className={styles.detailText}>+91 98765 43210</p>
+                <p className={styles.detailText}>
+                  <a href="tel:+919773777410" style={{ color: 'inherit', textDecoration: 'none' }}>
+                    +91 9773777410
+                  </a>
+                </p>
               </div>
             </div>
 
