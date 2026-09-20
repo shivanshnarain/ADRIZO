@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import ProductCard from '../../../components/ProductCard';
 import { getProductPricing } from '../../../lib/pricing';
-import { filterProductsByCategory, normalizeCategoryKey, ProductLike, getOrderedProducts } from '@/lib/productFiltering';
+import { filterProductsByCategory, normalizeCategoryKey, getOrderedProducts } from '@/lib/productFiltering';
 import styles from './shop.module.css';
 
 interface Category {
@@ -95,46 +95,22 @@ export default function ShopClient({
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<number>(5000);
   const [sortBy, setSortBy] = useState<string>(sortParam === 'new' ? 'NEWEST' : (viewParam === 'all' ? 'MIXED' : 'NEWEST'));
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   // Accordion toggle states
   const [isCategoryOpen, setIsCategoryOpen] = useState(true);
-  const [isPriceOpen, setIsPriceOpen] = useState(true);
   const [isSizeOpen, setIsSizeOpen] = useState(true);
-  const [isColorOpen, setIsColorOpen] = useState(true);
 
   // Synchronize category selection with URL changes (back/forward, direct links)
-  useEffect(() => {
-    const currentCatParam = searchParams.get('category');
-    const currentViewParam = searchParams.get('view');
+  const [prevCategoryParam, setPrevCategoryParam] = useState(categoryParam);
+  if (categoryParam !== prevCategoryParam) {
+    setPrevCategoryParam(categoryParam);
+    setSelectedCategory(categoryParam);
+  }
 
-    if (currentViewParam === 'all') {
-      setSelectedCategory('VIEW_ALL');
-      return;
-    }
-
-    if (currentCatParam) {
-      setSelectedCategory(currentCatParam);
-    } else if (initialCategory) {
-      setSelectedCategory(initialCategory);
-    } else {
-      setSelectedCategory('ALL');
-    }
-  }, [searchParams, initialCategory]);
-
-  // Available Sizes & Colors for filters
+  // Available Sizes for filters
   const availableSizes = ['S', 'M', 'L', 'XL', 'XXL'];
-  const availableColors = [
-    { name: 'Black', hex: '#111111' },
-    { name: 'White', hex: '#FFFFFF' },
-    { name: 'Navy', hex: '#1E293B' },
-    { name: 'Beige', hex: '#E5DCC5' },
-    { name: 'Olive', hex: '#4B5320' },
-    { name: 'Charcoal', hex: '#4A4A4A' },
-  ];
 
   // Filtering Logic using centralized Engine
   const filteredProducts = useMemo(() => {
@@ -153,20 +129,14 @@ export default function ShopClient({
       });
     }
 
-    // 3. Filter by price range
-    prods = prods.filter((p) => {
-      const pricing = getProductPricing(p);
-      return pricing.sellingPrice <= priceRange;
-    });
-
-    // 4. Filter by sizes
+    // 3. Filter by sizes
     if (selectedSizes.length > 0) {
       prods = prods.filter((product) => {
         let productSizes: string[] = [];
         if (product.sizesRaw) {
           try {
             productSizes = JSON.parse(product.sizesRaw);
-          } catch (e) {}
+          } catch {}
         } else if (product.variants) {
           productSizes = product.variants.map((v) => v.size || '').filter(Boolean);
         }
@@ -174,27 +144,7 @@ export default function ShopClient({
       });
     }
 
-    // 5. Filter by colors
-    if (selectedColors.length > 0) {
-      prods = prods.filter((product) => {
-        let productColors: string[] = [];
-        if (product.colorsRaw) {
-          try {
-            productColors = JSON.parse(product.colorsRaw);
-          } catch (e) {}
-        } else if (product.variants) {
-          productColors = product.variants.map((v) => v.color || '').filter(Boolean);
-        }
-        if (product.color) {
-          productColors.push(product.color);
-        }
-        return selectedColors.some((c) =>
-          productColors.some((pc) => pc.toLowerCase().includes(c.toLowerCase()) || pc === c)
-        );
-      });
-    }
-
-    // 6. Sort
+    // 4. Sort
     if (sortBy && sortBy !== 'NEWEST' && sortBy !== 'MIXED') {
       return [...prods].sort((a, b) => {
         const pricingA = getProductPricing(a);
@@ -210,7 +160,7 @@ export default function ShopClient({
 
     // Default: Smart catalog variation and category-aware sorting
     return getOrderedProducts(prods, selectedCategory);
-  }, [initialProducts, selectedCategory, queryParam, priceRange, selectedSizes, selectedColors, sortBy]);
+  }, [initialProducts, selectedCategory, queryParam, selectedSizes, sortBy]);
 
   // Page Heading & Category Name calculation
   const pageHeading = useMemo(() => {
@@ -290,17 +240,9 @@ export default function ShopClient({
     );
   };
 
-  const toggleColorFilter = (hex: string) => {
-    setSelectedColors((prev) =>
-      prev.includes(hex) ? prev.filter((c) => c !== hex) : [...prev, hex]
-    );
-  };
-
   const handleClearFilters = () => {
     setSelectedCategory('ALL');
     setSelectedSizes([]);
-    setSelectedColors([]);
-    setPriceRange(5000);
     setSortBy('NEWEST');
     router.push('/shop');
   };
@@ -427,39 +369,7 @@ export default function ShopClient({
               )}
             </div>
 
-            {/* B. PRICE RANGE ACCORDION */}
-            <div className={styles.filterGroup}>
-              <button
-                type="button"
-                className={styles.filterGroupHeader}
-                onClick={() => setIsPriceOpen(!isPriceOpen)}
-              >
-                <span>PRICE RANGE</span>
-                {isPriceOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </button>
-
-              {isPriceOpen && (
-                <div className={styles.filterGroupBody}>
-                  <div className={styles.priceSliderContainer}>
-                    <input
-                      type="range"
-                      min="399"
-                      max="5000"
-                      step="100"
-                      value={priceRange}
-                      onChange={(e) => setPriceRange(Number(e.target.value))}
-                      className={styles.priceSlider}
-                    />
-                    <div className={styles.priceRangeLabels}>
-                      <span>₹399</span>
-                      <span className={styles.priceMaxLabel}>₹{priceRange.toLocaleString('en-IN')}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* C. SIZE ACCORDION */}
+            {/* B. SIZE ACCORDION */}
             <div className={styles.filterGroup}>
               <button
                 type="button"
@@ -483,42 +393,6 @@ export default function ShopClient({
                           onClick={() => toggleSizeFilter(size)}
                         >
                           {size}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* D. COLOR ACCORDION */}
-            <div className={styles.filterGroup}>
-              <button
-                type="button"
-                className={styles.filterGroupHeader}
-                onClick={() => setIsColorOpen(!isColorOpen)}
-              >
-                <span>COLOR</span>
-                {isColorOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </button>
-
-              {isColorOpen && (
-                <div className={styles.filterGroupBody}>
-                  <div className={styles.colorSwatchRow}>
-                    {availableColors.map((color) => {
-                      const isSelected = selectedColors.includes(color.hex);
-                      return (
-                        <button
-                          key={color.name}
-                          type="button"
-                          className={`${styles.filterColorBtn} ${isSelected ? styles.filterColorBtnSelected : ''}`}
-                          onClick={() => toggleColorFilter(color.hex)}
-                          title={color.name}
-                        >
-                          <span
-                            className={styles.filterColorCircle}
-                            style={{ backgroundColor: color.hex }}
-                          />
                         </button>
                       );
                     })}
