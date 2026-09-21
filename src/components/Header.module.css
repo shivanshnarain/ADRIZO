@@ -91,8 +91,6 @@
   align-items: stretch;
   z-index: 3;
   flex-shrink: 0;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  transform-origin: left bottom;
 }
 
 .leftCapsuleWrapper {
@@ -113,8 +111,6 @@
 .brandContent {
   display: flex;
   align-items: center;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  transform-origin: left bottom;
 }
 
 /* brandLogoIcon and brandWordmark removed — now using <AdrizoLogo /> SVG component */
@@ -174,8 +170,6 @@
   width: 100%;
   background-color: #111111;
   flex-shrink: 0;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  transform-origin: center bottom;
 }
 
 .navLink {
@@ -299,8 +293,6 @@
   align-items: stretch;
   z-index: 3;
   flex-shrink: 0;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  transform-origin: right bottom;
 }
 
 .rightCapsuleWrapper {
@@ -321,41 +313,6 @@
   display: flex;
   align-items: center;
   gap: 1.15rem;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  transform-origin: right bottom;
-}
-
-/* -----------------------------------------
-   BLACK DECORATIVE NAVBAR HOVER EXPANSION
-   Subtly expands ONLY the black background
-   shapes on navbar hover while keeping all
-   navigation content completely stationary
-   ----------------------------------------- */
-@media (min-width: 768px) and (hover: hover) {
-  .navbarWrapper:hover .leftSectionWrapper,
-  .navbarContainer:hover .leftSectionWrapper {
-    transform: scale(1.025);
-  }
-
-  .navbarWrapper:hover .brandContent,
-  .navbarContainer:hover .brandContent {
-    transform: scale(0.9756);
-  }
-
-  .navbarWrapper:hover .connectingBaseLine,
-  .navbarContainer:hover .connectingBaseLine {
-    transform: scaleY(1.2);
-  }
-
-  .navbarWrapper:hover .rightSectionWrapper,
-  .navbarContainer:hover .rightSectionWrapper {
-    transform: scale(1.025);
-  }
-
-  .navbarWrapper:hover .iconGroup,
-  .navbarContainer:hover .iconGroup {
-    transform: scale(0.9756);
-  }
 }
 
 .iconButton {
