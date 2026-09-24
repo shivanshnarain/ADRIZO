@@ -1,1 +1,1 @@
-export { POST } from '@/app/api/checkout/apply-promotions/route';
+export { POST } from '@/app/api/razorpay/apply-promotion/route';

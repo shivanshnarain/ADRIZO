@@ -903,28 +903,112 @@ export default function CheckoutClient() {
   const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
+  const [availablePromotions, setAvailablePromotions] = useState<any[]>([]);
 
-  const handleApplyCoupon = async () => {
-    if (!couponInput.trim()) return;
+  // 1. Automatic eligible-coupon discovery from backend
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPromotions = async () => {
+      try {
+        const queryParams = new URLSearchParams({
+          subtotal: String(rawSubtotal),
+          ...(user?.email ? { customerEmail: user.email } : {}),
+          ...(user?.phone ? { customerPhone: user.phone } : {}),
+        });
+        const res = await fetch(`/api/razorpay/promotions?${queryParams.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && Array.isArray(data.promotions)) {
+            setAvailablePromotions(data.promotions);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch promotions:', err);
+      }
+    };
+    fetchPromotions();
+    return () => { isMounted = false; };
+  }, [rawSubtotal, user?.email, user?.phone]);
+
+  // 2. Recalculate discount whenever cart contents change
+  useEffect(() => {
+    if (!appliedCoupon?.code) return;
+    let isMounted = true;
+    const revalidateAppliedCoupon = async () => {
+      try {
+        const res = await fetch('/api/razorpay/apply-promotion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: appliedCoupon.code,
+            subtotal: rawSubtotal,
+            items: checkoutItems.map(it => ({
+              productId: it.productId,
+              sku: it.sku,
+              price: it.price,
+              quantity: it.quantity,
+            })),
+            customerEmail: user?.email,
+            customerPhone: user?.phone,
+          }),
+        });
+        const data = await res.json();
+        if (isMounted) {
+          if (data.success && data.coupon) {
+            setAppliedCoupon({
+              ...data.coupon,
+              discount: data.discount,
+              discountInPaise: data.discountInPaise,
+            });
+          } else {
+            // Cart modification rendered coupon invalid
+            setAppliedCoupon(null);
+            setCouponError(data.error?.description || data.message || 'Coupon requirement is no longer met for your updated cart.');
+          }
+        }
+      } catch {
+        // Network warning
+      }
+    };
+    revalidateAppliedCoupon();
+    return () => { isMounted = false; };
+  }, [rawSubtotal, checkoutItems, user?.email, user?.phone]);
+
+  const handleApplyCoupon = async (codeOverride?: any) => {
+    const targetCode = (typeof codeOverride === 'string' ? codeOverride : couponInput).trim();
+    if (!targetCode) return;
     setCouponError('');
     setCouponLoading(true);
 
     try {
-      const res = await fetch('/api/checkout/validate-coupon', {
+      const res = await fetch('/api/razorpay/apply-promotion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          couponCode: couponInput.trim(),
+          code: targetCode,
           subtotal: rawSubtotal,
+          items: checkoutItems.map(it => ({
+            productId: it.productId,
+            sku: it.sku,
+            price: it.price,
+            quantity: it.quantity,
+          })),
+          customerEmail: user?.email,
+          customerPhone: user?.phone,
         }),
       });
 
       const data = await res.json();
-      if (data.valid && data.coupon) {
-        setAppliedCoupon(data.coupon);
+      if (data.success && data.coupon) {
+        setAppliedCoupon({
+          ...data.coupon,
+          discount: data.discount,
+          discountInPaise: data.discountInPaise,
+        });
         setCouponInput('');
+        setCouponError('');
       } else {
-        setCouponError(data.error || 'Invalid promo code');
+        setCouponError(data.error?.description || data.message || 'Invalid promo code.');
       }
     } catch {
       setCouponError('Failed to validate promo code.');
@@ -2343,6 +2427,41 @@ export default function CheckoutClient() {
                   {couponError && (
                     <div style={{ color: '#dc2626', fontSize: '0.725rem', marginTop: '4px' }}>
                       {couponError}
+                    </div>
+                  )}
+                  {availablePromotions.length > 0 && (
+                    <div style={{ marginTop: '0.65rem' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#52525b', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                        Eligible Offers
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        {availablePromotions.slice(0, 3).map((p: any) => (
+                          <div
+                            key={p.code}
+                            onClick={() => handleApplyCoupon(p.code)}
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              padding: '0.4rem 0.6rem',
+                              background: '#f8fafc',
+                              border: '1px dashed #cbd5e1',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '0.775rem',
+                              transition: 'background 0.2s ease',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
+                              <span style={{ fontWeight: 800, color: '#16a34a', letterSpacing: '0.04em' }}>{p.code}</span>
+                              <span style={{ color: '#64748b', fontSize: '0.72rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {p.summary || p.description}
+                              </span>
+                            </div>
+                            <span style={{ color: '#0f172a', fontWeight: 700, fontSize: '0.72rem', flexShrink: 0, marginLeft: '0.5rem' }}>Apply</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

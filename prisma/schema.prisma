@@ -265,3 +265,66 @@ model CustomerPhoto {
 
   @@index([row, createdAt])
 }
+
+model Coupon {
+  id                   String        @id @default(auto()) @map("_id") @db.ObjectId
+  couponCode           String        @unique
+  discountType         String        // "percentage" | "fixed"
+  discountValue        Float
+  minimumOrderValue    Float?        @default(0)
+  maximumDiscount      Float?        // Maximum discount cap in INR
+  startDate            DateTime?
+  expiryDate           DateTime?
+  usageLimit           Int?          // Total global usage limit
+  usageCount           Int           @default(0)
+  perCustomerLimit     Int?          @default(1)
+  applicableProducts   String[]      @default([])
+  applicableCategories String[]      @default([])
+  firstOrderOnly       Boolean       @default(false)
+  active               Boolean       @default(true)
+  description          String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  usages               CouponUsage[]
+}
+
+model CouponUsage {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  couponId       String    @db.ObjectId
+  coupon         Coupon    @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  couponCode     String
+  userId         String?
+  customerEmail  String?
+  customerPhone  String?
+  orderId        String?
+  orderNumber    String?
+  discountAmount Float
+  createdAt      DateTime  @default(now())
+
+  @@index([couponCode, customerPhone])
+  @@index([couponCode, customerEmail])
+  @@index([couponId])
+}
+
+model AbandonedCheckout {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  eventId              String?   @unique
+  orderId              String?
+  razorpayOrderId      String?
+  customerEmail        String?
+  customerPhone        String?
+  customerName         String?
+  cartItems            String?   // JSON stringified items
+  totalAmount          Float?    // in INR
+  currency             String?   @default("INR")
+  status               String    @default("ABANDONED")
+  abandonedCheckoutUrl String?
+  utmParameters        String?   // JSON stringified UTM parameters
+  rawEvent             String?   // Sanitized event payload
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([razorpayOrderId])
+  @@index([customerPhone])
+  @@index([customerEmail])
+}

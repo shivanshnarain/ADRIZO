@@ -5,6 +5,7 @@ import { verifyRazorpaySignature } from '@/lib/razorpay';
 import { resolveOrderFromSupabase } from '@/lib/order-resolver';
 import { sendOrderConfirmationEmail } from '@/lib/order-email';
 import { autoSyncOrderToShiprocket } from '@/lib/shiprocket-auto-sync';
+import { recordCouponUsage } from '@/lib/coupon-engine';
 
 export async function POST(req: NextRequest) {
   try {
@@ -110,6 +111,20 @@ export async function POST(req: NextRequest) {
     await autoSyncOrderToShiprocket(supaOrder?.id || orderId).catch(err =>
       console.error('[Automatic Shiprocket Sync Error on Payment Verification]', err)
     );
+
+    // 7. Authoritatively record coupon redemption in database
+    if (supaOrder?.coupon_code && Number(supaOrder?.discount) > 0) {
+      const primaryCoupon = String(supaOrder.coupon_code).split('+')[0].trim();
+      recordCouponUsage({
+        couponCode: primaryCoupon,
+        orderId: supaOrder.id,
+        orderNumber: supaOrder.order_number,
+        customerEmail: supaOrder.customer_email,
+        customerPhone: supaOrder.customer_phone,
+        userId: supaOrder.customer_id,
+        discountAmount: Number(supaOrder.discount),
+      }).catch(err => console.error('[Verify Payment Coupon Usage Record Warning]', err));
+    }
 
     return NextResponse.json({
       success: true,

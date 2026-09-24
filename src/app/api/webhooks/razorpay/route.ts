@@ -5,6 +5,7 @@ import { verifyRazorpayWebhookSignature } from '@/lib/razorpay';
 import { resolveOrderFromSupabase } from '@/lib/order-resolver';
 import { sendOrderConfirmationEmail } from '@/lib/order-email';
 import { autoSyncOrderToShiprocket } from '@/lib/shiprocket-auto-sync';
+import { recordCouponUsage } from '@/lib/coupon-engine';
 
 export async function POST(req: NextRequest) {
   try {
@@ -78,6 +79,20 @@ export async function POST(req: NextRequest) {
         await autoSyncOrderToShiprocket(order?.id || razorpayOrderId).catch(err =>
           console.error('[Automatic Shiprocket Sync Error in Webhook]', err)
         );
+
+        // Authoritatively record coupon redemption in database
+        if (order?.coupon_code && Number(order?.discount) > 0) {
+          const primaryCoupon = String(order.coupon_code).split('+')[0].trim();
+          recordCouponUsage({
+            couponCode: primaryCoupon,
+            orderId: order.id,
+            orderNumber: order.order_number,
+            customerEmail: order.customer_email,
+            customerPhone: order.customer_phone,
+            userId: order.customer_id,
+            discountAmount: Number(order.discount),
+          }).catch(err => console.error('[Razorpay Webhook Coupon Usage Record Warning]', err));
+        }
       }
     } else if (eventType === 'payment.failed') {
       const paymentEntity = event.payload?.payment?.entity;

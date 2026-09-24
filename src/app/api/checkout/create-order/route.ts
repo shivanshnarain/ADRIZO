@@ -16,6 +16,7 @@ import { resolveOrderFromSupabase } from '@/lib/order-resolver';
 import { sendOrderConfirmationEmail } from '@/lib/order-email';
 import { autoSyncOrderToShiprocket } from '@/lib/shiprocket-auto-sync';
 import { validateAndPriceOrderItems } from '@/lib/promotions';
+import { validateAndCalculateCouponDiscount } from '@/lib/coupon-engine';
 
 /**
  * Atomically saves an order and its items to Supabase.
@@ -330,37 +331,23 @@ export async function POST(req: NextRequest) {
     let appliedCouponCode: string | null = null;
 
     if (couponCode && typeof couponCode === 'string' && couponCode.trim()) {
-      const codeUpper = couponCode.trim().toUpperCase();
-      const discountsSetting = await prisma.storeSetting.findUnique({
-        where: { key: 'store_discounts' }
+      const couponResult = await validateAndCalculateCouponDiscount({
+        couponCode: couponCode.trim(),
+        subtotal,
+        items: validatedItems.map(it => ({
+          productId: it.productId,
+          sku: it.sku,
+          price: it.price,
+          quantity: it.quantity,
+        })),
+        customerPhone: authoritativeCustomerPhone,
+        customerEmail: authoritativeCustomerEmail,
+        userId: authenticatedUserId || undefined,
       });
 
-      let availableCoupons: any[] = [
-        { code: 'WELCOME10', type: 'PERCENTAGE', value: 10, minSpend: 499, status: 'ACTIVE' },
-        { code: 'ADRIZO50', type: 'FIXED', value: 50, minSpend: 299, status: 'ACTIVE' },
-        { code: 'FLAT200', type: 'FIXED', value: 200, minSpend: 1499, status: 'ACTIVE' },
-      ];
-
-      if (discountsSetting && discountsSetting.value) {
-        try {
-          const parsed = JSON.parse(discountsSetting.value);
-          if (Array.isArray(parsed) && parsed.length > 0) availableCoupons = parsed;
-        } catch {
-          // Fall back to defaults
-        }
-      }
-
-      const foundCoupon = availableCoupons.find(
-        c => c.code.toUpperCase() === codeUpper && c.status === 'ACTIVE'
-      );
-
-      if (foundCoupon && subtotal >= (foundCoupon.minSpend || 0)) {
-        appliedCouponCode = foundCoupon.code;
-        if (foundCoupon.type === 'PERCENTAGE') {
-          couponDiscount = Math.round((subtotal * foundCoupon.value) / 100);
-        } else {
-          couponDiscount = Math.min(foundCoupon.value, subtotal);
-        }
+      if (couponResult.success) {
+        couponDiscount = couponResult.discount;
+        appliedCouponCode = couponResult.coupon?.code || couponCode.trim().toUpperCase();
       }
     }
 
