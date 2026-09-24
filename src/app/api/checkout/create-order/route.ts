@@ -97,8 +97,10 @@ export async function POST(req: NextRequest) {
       items, 
       shippingAddress, 
       paymentMethod: rawPaymentMethod = 'COD', 
-      couponCode 
+      couponCode,
+      isMagicCheckout = false,
     } = body;
+    const isMagic = Boolean(isMagicCheckout);
     const rawUpper = String(rawPaymentMethod || 'COD').trim().toUpperCase();
     const paymentMethod = (rawUpper === 'CASH_ON_DELIVERY' || rawUpper === 'CASH-ON-DELIVERY') ? 'COD' : rawUpper;
 
@@ -110,8 +112,8 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // 2. Validate Delivery Address
-    if (!shippingAddress) {
+    // 2. Validate Delivery Address (Strict for standard checkout, deferred for 1-Click Magic Checkout)
+    if (!isMagic && !shippingAddress) {
       return NextResponse.json({ 
         success: false, 
         error: 'Shipping address is required.' 
@@ -134,7 +136,7 @@ export async function POST(req: NextRequest) {
       state = '',
       pincode = '',
       country = 'India',
-    } = shippingAddress;
+    } = shippingAddress || {};
 
     // 3. Customer Auth Resolution & Profile/Address Auto-Persistence
     const adminSupabase = getAdminClient();
@@ -151,41 +153,43 @@ export async function POST(req: NextRequest) {
       console.warn('[Checkout Auth Resolution Warning]', authErr);
     }
 
-    const trimmedName = (fullName || (authCustomer?.name && authCustomer.name !== 'Customer' ? authCustomer.name : '')).trim();
+    const trimmedName = (fullName || (authCustomer?.name && authCustomer.name !== 'Customer' ? authCustomer.name : (isMagic ? 'Magic Customer' : ''))).trim();
     const trimmedPhone = (phone || authCustomer?.phone || '').trim().replace(/[^0-9]/g, '');
     const trimmedEmail = (email || authCustomer?.email || '').trim();
-    const trimmedAddress = (addressLine1 || address || flatHouseBuilding || '').trim();
+    const trimmedAddress = (addressLine1 || address || flatHouseBuilding || (isMagic ? 'Pending Magic Checkout Selection' : '')).trim();
     const trimmedDistrict = district ? district.trim() : '';
-    const trimmedCity = city.trim();
-    const trimmedState = state.trim();
-    const trimmedPincode = pincode.trim().replace(/[^0-9]/g, '');
+    const trimmedCity = city ? city.trim() : (isMagic ? 'Pending' : '');
+    const trimmedState = state ? state.trim() : (isMagic ? 'Pending' : '');
+    const trimmedPincode = pincode ? pincode.trim().replace(/[^0-9]/g, '') : (isMagic ? '000000' : '');
 
     let authoritativeCustomerEmail = trimmedEmail || authCustomer?.email || '';
     let authoritativeCustomerPhone = trimmedPhone || authCustomer?.phone || '';
-    let authoritativeCustomerName = trimmedName || authCustomer?.name || 'Customer';
+    let authoritativeCustomerName = (trimmedName && trimmedName !== 'Magic Customer') ? trimmedName : (authCustomer?.name || 'Customer');
 
-    if (!trimmedName || trimmedName.length < 2) {
-      return NextResponse.json({ success: false, error: 'Please enter a valid full name.' }, { status: 400 });
-    }
+    if (!isMagic) {
+      if (!trimmedName || trimmedName.length < 2) {
+        return NextResponse.json({ success: false, error: 'Please enter a valid full name.' }, { status: 400 });
+      }
 
-    if (!/^[6-9][0-9]{9}$/.test(trimmedPhone)) {
-      return NextResponse.json({ success: false, error: 'Enter a valid 10-digit mobile number.' }, { status: 400 });
-    }
+      if (!/^[6-9][0-9]{9}$/.test(trimmedPhone)) {
+        return NextResponse.json({ success: false, error: 'Enter a valid 10-digit mobile number.' }, { status: 400 });
+      }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      return NextResponse.json({ success: false, error: 'Please enter a valid email address.' }, { status: 400 });
-    }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+        return NextResponse.json({ success: false, error: 'Please enter a valid email address.' }, { status: 400 });
+      }
 
-    if (!trimmedAddress || trimmedAddress.length < 3) {
-      return NextResponse.json({ success: false, error: 'Please enter a valid street/house address.' }, { status: 400 });
-    }
+      if (!trimmedAddress || trimmedAddress.length < 3) {
+        return NextResponse.json({ success: false, error: 'Please enter a valid street/house address.' }, { status: 400 });
+      }
 
-    if (!trimmedCity || !trimmedState) {
-      return NextResponse.json({ success: false, error: 'Please enter your city and state.' }, { status: 400 });
-    }
+      if (!trimmedCity || !trimmedState) {
+        return NextResponse.json({ success: false, error: 'Please enter your city and state.' }, { status: 400 });
+      }
 
-    if (!/^[1-9][0-9]{5}$/.test(trimmedPincode)) {
-      return NextResponse.json({ success: false, error: 'Please enter a valid 6-digit Indian PIN code.' }, { status: 400 });
+      if (!/^[1-9][0-9]{5}$/.test(trimmedPincode)) {
+        return NextResponse.json({ success: false, error: 'Please enter a valid 6-digit Indian PIN code.' }, { status: 400 });
+      }
     }
 
     // Normalize and construct formatted single delivery string without duplicating city/state/pin/country
@@ -384,32 +388,34 @@ export async function POST(req: NextRequest) {
     } | null = null;
 
     // Check Supabase (Primary Order Store)
-    try {
-      const thirtySecondsAgoIso = new Date(Date.now() - 30000).toISOString();
-      const { data: recentSupaOrders } = await adminSupabase
-        .from('orders')
-        .select('id, order_number, total_amount, cod_charge, payment_method, razorpay_order_id, payment_status, order_status')
-        .eq('customer_phone', trimmedPhone)
-        .gte('created_at', thirtySecondsAgoIso)
-        .order('created_at', { ascending: false })
-        .limit(1);
+    if (trimmedPhone && trimmedPhone.length === 10) {
+      try {
+        const thirtySecondsAgoIso = new Date(Date.now() - 30000).toISOString();
+        const { data: recentSupaOrders } = await adminSupabase
+          .from('orders')
+          .select('id, order_number, total_amount, cod_charge, payment_method, razorpay_order_id, payment_status, order_status')
+          .eq('customer_phone', trimmedPhone)
+          .gte('created_at', thirtySecondsAgoIso)
+          .order('created_at', { ascending: false })
+          .limit(1);
 
-      if (recentSupaOrders && recentSupaOrders.length > 0) {
-        const candidate = recentSupaOrders[0];
-        if (Math.abs(Number(candidate.total_amount) - finalTotal) < 0.01) {
-          existingRecentOrder = {
-            id: candidate.id,
-            orderNumber: candidate.order_number,
-            paymentMethod: candidate.payment_method || paymentMethod,
-            total: Number(candidate.total_amount),
-            codCharge: Number(candidate.cod_charge || codCharge),
-            razorpayOrderId: candidate.razorpay_order_id,
-            paymentStatus: candidate.payment_status,
-          };
+        if (recentSupaOrders && recentSupaOrders.length > 0) {
+          const candidate = recentSupaOrders[0];
+          if (Math.abs(Number(candidate.total_amount) - finalTotal) < 0.01) {
+            existingRecentOrder = {
+              id: candidate.id,
+              orderNumber: candidate.order_number,
+              paymentMethod: candidate.payment_method || paymentMethod,
+              total: Number(candidate.total_amount),
+              codCharge: Number(candidate.cod_charge || codCharge),
+              razorpayOrderId: candidate.razorpay_order_id,
+              paymentStatus: candidate.payment_status,
+            };
+          }
         }
+      } catch (supaDedupErr) {
+        console.warn('[Supabase Duplicate Prevention Warning]', supaDedupErr);
       }
-    } catch (supaDedupErr) {
-      console.warn('[Supabase Duplicate Prevention Warning]', supaDedupErr);
     }
 
     if (existingRecentOrder && (existingRecentOrder.paymentStatus === 'PAID' || existingRecentOrder.paymentStatus === 'COD_CONFIRMATION_PAID')) {
@@ -595,6 +601,7 @@ export async function POST(req: NextRequest) {
         shipping_fee: shippingCharge > 0 ? Math.round(shippingCharge * 100) : 0,
         notes: {
           orderNumber,
+          isMagicCheckout: isMagic ? 'true' : 'false',
           customerName: trimmedName,
           customerEmail: trimmedEmail,
           customerPhone: trimmedPhone,

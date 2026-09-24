@@ -52,14 +52,45 @@ export async function POST(req: NextRequest) {
         }
 
         // Update Supabase
+        const webhookUpdate: any = {
+          payment_status: 'PAID',
+          order_status: 'CONFIRMED',
+          razorpay_payment_id: razorpayPaymentId,
+          updated_at: new Date().toISOString(),
+        };
+
+        const shipping = orderEntity?.shipping_address;
+        const customer = orderEntity?.customer_details;
+
+        if (shipping) {
+          const houseFlat = shipping.line1 || shipping.address1 || null;
+          const areaStreet = shipping.line2 || shipping.address2 || null;
+          const city = shipping.city || null;
+          const state = shipping.state || null;
+          const pincode = shipping.postal_code || shipping.zipcode || null;
+          const fullParts = [houseFlat, areaStreet, city, state ? `${state} - ${pincode || ''}` : pincode, 'India'].filter(Boolean);
+          if (fullParts.length > 0) {
+            webhookUpdate.shipping_address = fullParts.join(', ');
+            if (houseFlat) webhookUpdate.house_flat = houseFlat;
+            if (areaStreet) webhookUpdate.area_street = areaStreet;
+            if (city) webhookUpdate.city = city;
+            if (state) webhookUpdate.state = state;
+            if (pincode) webhookUpdate.pincode = pincode;
+          }
+        }
+        if (shipping?.name || customer?.name) {
+          webhookUpdate.customer_name = shipping?.name || customer?.name;
+        }
+        if (shipping?.contact || customer?.contact) {
+          webhookUpdate.customer_phone = (shipping?.contact || customer?.contact).replace(/\D/g, '').slice(-10);
+        }
+        if (customer?.email) {
+          webhookUpdate.customer_email = customer.email;
+        }
+
         await supabase
           .from('orders')
-          .update({
-            payment_status: 'PAID',
-            order_status: 'CONFIRMED',
-            razorpay_payment_id: razorpayPaymentId,
-            updated_at: new Date().toISOString(),
-          })
+          .update(webhookUpdate)
           .eq('razorpay_order_id', razorpayOrderId);
 
         console.log(`[Razorpay Webhook] Order ${order?.order_number || razorpayOrderId} successfully marked PAID`);
