@@ -959,7 +959,7 @@ export default function CheckoutClient() {
   const [orderError, setOrderError] = useState('');
   const [activePolicyModal, setActivePolicyModal] = useState<string | null>(null);
 
-  // Load Razorpay Script
+  // Load Razorpay Magic Checkout Script
   const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
       if (typeof window !== 'undefined' && (window as any).Razorpay) {
@@ -967,7 +967,7 @@ export default function CheckoutClient() {
         return;
       }
       const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.src = 'https://checkout.razorpay.com/v1/magic-checkout.js';
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
@@ -1072,10 +1072,11 @@ export default function CheckoutClient() {
           description: `COD Confirmation (₹99) - Order #${data.orderNumber}`,
           image: ADRIZO_LOGO_DATA_URI,
           order_id: data.razorpayOrderId,
+          one_click_checkout: true,
           prefill: {
-            name: data.customer?.name || addressForm.fullName,
-            email: data.customer?.email || addressForm.email,
-            contact: data.customer?.phone || addressForm.phone,
+            name: data.customer?.name || addressForm.fullName || user?.name || '',
+            email: data.customer?.email || addressForm.email || user?.email || '',
+            contact: data.customer?.phone || addressForm.phone || user?.phone || '',
           },
           notes: {
             orderNumber: data.orderNumber,
@@ -1166,10 +1167,11 @@ export default function CheckoutClient() {
         description: `Order #${data.orderNumber}`,
         image: ADRIZO_LOGO_DATA_URI,
         order_id: data.razorpayOrderId,
+        one_click_checkout: true,
         prefill: {
-          name: data.customer?.name || addressForm.fullName,
-          email: data.customer?.email || addressForm.email,
-          contact: data.customer?.phone || addressForm.phone,
+          name: data.customer?.name || addressForm.fullName || user?.name || '',
+          email: data.customer?.email || addressForm.email || user?.email || '',
+          contact: data.customer?.phone || addressForm.phone || user?.phone || '',
         },
         notes: {
           orderNumber: data.orderNumber,

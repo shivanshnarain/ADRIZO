@@ -159,25 +159,60 @@ export function getRazorpayInstance(): Razorpay {
   });
 }
 
+export interface RazorpayOrderLineItem {
+  sku: string;
+  variant_id: string;
+  price: number; // Price in paise
+  offer_price: number; // Discounted/selling price charged to customer in paise
+  quantity: number;
+  name: string;
+  description?: string;
+  image_url?: string;
+}
+
 export interface CreateRazorpayOrderOptions {
   amountInPaise: number;
   currency?: string;
   receipt: string;
   notes?: Record<string, string>;
+  line_items?: RazorpayOrderLineItem[];
+  line_items_total?: number;
+  shipping_fee?: number;
+  cod_fee?: number;
 }
 
 /**
  * Creates a server-side Razorpay Order using official SDK.
  * Amount MUST be in smallest currency units (e.g. paise for INR).
+ * Automatically passes Magic Checkout fields (line_items, line_items_total, shipping_fee)
+ * when provided.
  */
 export async function createRazorpayOrder(options: CreateRazorpayOrderOptions) {
   const rzp = getRazorpayInstance();
-  return rzp.orders.create({
+  const payload: any = {
     amount: options.amountInPaise,
     currency: options.currency || RAZORPAY_CURRENCY,
     receipt: options.receipt,
     notes: options.notes,
-  });
+  };
+
+  if (options.line_items && options.line_items.length > 0) {
+    payload.line_items = options.line_items;
+    payload.line_items_total =
+      options.line_items_total !== undefined
+        ? options.line_items_total
+        : options.line_items.reduce((acc, it) => acc + (it.offer_price * it.quantity), 0);
+  }
+
+  if (options.shipping_fee !== undefined) {
+    payload.shipping_fee = options.shipping_fee;
+  }
+
+  if (options.cod_fee !== undefined) {
+    payload.cod_fee = options.cod_fee;
+  }
+
+  return rzp.orders.create(payload);
 }
 
 /**

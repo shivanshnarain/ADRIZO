@@ -438,6 +438,38 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 4b. Prepare official Magic Checkout line_items and line_items_total
+    const magicLineItems = validatedItems.map(item => {
+      const itemMrpInPaise = Math.round((item.mrp || item.price) * 100);
+      const itemOfferPriceInPaise = Math.round(item.price * 100);
+
+      const descParts: string[] = [];
+      if (item.size) descParts.push(`Size: ${item.size}`);
+      if (item.color && item.color !== 'Standard') descParts.push(`Color: ${item.color}`);
+      const description = descParts.join(' | ') || item.productName;
+
+      let imageUrl = item.productImage || '';
+      if (imageUrl && !imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+        imageUrl = `https://adrizo.com${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+      }
+
+      return {
+        sku: item.sku || item.productId,
+        variant_id: item.selectedVariantId || `${item.productId}_${item.size || 'std'}`,
+        price: itemMrpInPaise,
+        offer_price: itemOfferPriceInPaise,
+        quantity: item.quantity,
+        name: item.productName,
+        description,
+        image_url: imageUrl,
+      };
+    });
+
+    const magicLineItemsTotal = magicLineItems.reduce(
+      (sum, it) => sum + (it.offer_price * it.quantity),
+      0
+    );
+
     // 8. Handle CASH ON DELIVERY (COD) with MANDATORY ₹99 INSTANT CONFIRMATION PAYMENT
     if (paymentMethod === 'COD') {
       const codConfigStatus = getRazorpayConfigStatus();
@@ -456,11 +488,13 @@ export async function POST(req: NextRequest) {
       const codConfirmationAmount = Math.min(99, finalTotal);
       const codRemainingAmount = Math.max(0, finalTotal - codConfirmationAmount);
 
-      // Create Razorpay Order specifically for the COD confirmation advance payment
+      // Create Razorpay Order specifically for the COD confirmation advance payment with Magic Checkout fields
       const razorpayOrder = await rzp.orders.create({
         amount: Math.round(codConfirmationAmount * 100), // in paise
         currency,
         receipt: `${orderNumber}-COD99`,
+        line_items_total: magicLineItemsTotal,
+        line_items: magicLineItems as any,
         notes: {
           orderNumber,
           type: 'COD_CONFIRMATION',
@@ -539,6 +573,7 @@ export async function POST(req: NextRequest) {
         currency,
         key: getRazorpayKeyId(),
         total: finalTotal,
+        line_items_total: magicLineItemsTotal,
         codConfirmationAmount,
         codRemainingAmount: Math.max(0, finalTotal - codConfirmationAmount),
         customer: {
@@ -563,11 +598,14 @@ export async function POST(req: NextRequest) {
       const rzp = getRazorpayInstance();
       const currency = process.env.RAZORPAY_CURRENCY || 'INR';
 
-      // Create Razorpay Order server-side (amount in paise for INR)
+      // Create Razorpay Order server-side with Magic Checkout line items (amount in paise for INR)
       const razorpayOrder = await rzp.orders.create({
         amount: Math.round(finalTotal * 100),
         currency,
         receipt: orderNumber,
+        line_items_total: magicLineItemsTotal,
+        line_items: magicLineItems as any,
+        shipping_fee: shippingCharge > 0 ? Math.round(shippingCharge * 100) : 0,
         notes: {
           orderNumber,
           customerName: trimmedName,
@@ -637,6 +675,7 @@ export async function POST(req: NextRequest) {
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency || currency,
         key: getRazorpayKeyId(),
+        line_items_total: magicLineItemsTotal,
         customer: {
           name: trimmedName,
           email: trimmedEmail,
