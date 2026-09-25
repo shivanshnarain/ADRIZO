@@ -28,6 +28,7 @@ import ProductCard from '@/components/ProductCard';
 import ProductReviewsSection from '@/components/ProductReviewsSection';
 import { ProductRatingStats } from '@/types/review';
 import { getProductPricing, calculateDiscountPercentage, formatCurrency } from '@/lib/pricing';
+import { launchRazorpayCheckout } from '@/lib/razorpay-direct';
 import { executeShare } from '@/lib/share';
 
 export const COLOR_HEX_MAP: Record<string, string> = {
@@ -538,28 +539,51 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
       return;
     }
 
-    const buyNowPayload = {
-      productId: product.id,
-      name: product.name,
-      price: currentPrice,
-      originalPrice: originalPrice || product.price,
-      discountPercentage,
-      image: imagesList[activeImageIndex] || imagesList[0] || product.image,
-      size: selectedSize || 'Standard',
-      color: product.color || 'Default',
-      quantity,
-      sku: product.sku,
-      maxStock,
-      categorySlug: product.category?.slug,
-      categoryName: product.category?.name,
-      category: product.category ? { id: product.category.id, name: product.category.name, slug: product.category.slug } : null,
-    };
-
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('adrizo_buy_now', JSON.stringify(buyNowPayload));
+    if (isProductPromoEligible) {
+      // Open the promotion modal with the chosen item pre-selected as Main Product
+      openBuyNowPromoModal({
+        id: `${product.id}-${selectedSize || 'standard'}`,
+        productId: product.id,
+        name: product.name,
+        price: currentPrice,
+        originalPrice: originalPrice || product.price,
+        image: imagesList[activeImageIndex] || imagesList[0] || product.image,
+        size: selectedSize || 'Standard',
+        color: product.color || 'Default',
+        quantity: 1,
+        maxStock,
+        sku: product.sku,
+        category: product.category ? { id: product.category.id, name: product.category.name, slug: product.category.slug } : null,
+        categorySlug: product.category?.slug,
+        categoryName: product.category?.name,
+        buyQuantity: currentProductOffer?.buyQuantity,
+        freeQuantity: currentProductOffer?.freeQuantity,
+        promotionRule: currentProductOffer?.name,
+      });
+      return;
     }
 
-    router.push(`/checkout?buyNow=1&productId=${product.id}&size=${encodeURIComponent(selectedSize || 'Standard')}&qty=${quantity}`);
+    launchRazorpayCheckout({
+      items: [{
+        productId: product.id,
+        name: product.name,
+        price: currentPrice,
+        size: selectedSize || 'Standard',
+        color: product.color || 'Default',
+        quantity,
+        sku: product.sku,
+        categorySlug: product.category?.slug,
+        categoryName: product.category?.name,
+        category: product.category ? { id: product.category.id, name: product.category.name, slug: product.category.slug } : null,
+      }],
+      paymentMethod: 'ONLINE_RAZORPAY',
+      onSuccess: ({ orderId, orderNumber }) => {
+        router.push(`/order-success?orderId=${orderId}&orderNumber=${orderNumber}`);
+      },
+      onError: (msg) => {
+        alert(msg);
+      }
+    });
   };
 
   const handleViewOfferDetails = () => {

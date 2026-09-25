@@ -197,7 +197,7 @@ export default function EditCheckoutItemModal({
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#2563eb',
+                color: '#09090b',
                 fontSize: '0.825rem',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -205,6 +205,7 @@ export default function EditCheckoutItemModal({
                 alignItems: 'center',
                 gap: '0.35rem',
                 padding: 0,
+                textDecoration: 'underline',
               }}
             >
               <RefreshCw size={13} />

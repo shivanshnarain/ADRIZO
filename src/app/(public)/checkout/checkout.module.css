@@ -153,16 +153,16 @@
   line-height: 1.35;
 }
 
-/* ---------- Action Links (Blue) ---------- */
+/* ---------- Action Links ---------- */
 .blueActionLink {
   background: none;
   border: none;
-  color: #2563eb;
+  color: #09090b;
   font-size: 0.825rem;
   font-weight: 700;
   cursor: pointer;
   padding: 0;
-  text-decoration: none;
+  text-decoration: underline;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
@@ -172,7 +172,7 @@
 }
 
 .blueActionLink:hover {
-  color: #1d4ed8;
+  color: #b45309;
   text-decoration: underline;
 }
 
@@ -234,7 +234,7 @@
 .changeButton {
   background: none;
   border: none;
-  color: #2563eb;
+  color: #09090b;
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
@@ -242,10 +242,11 @@
   border-radius: 4px;
   white-space: nowrap;
   flex-shrink: 0;
+  text-decoration: underline;
 }
 
 .changeButton:hover {
-  text-decoration: underline;
+  color: #b45309;
 }
 
 .backToCartBtn {

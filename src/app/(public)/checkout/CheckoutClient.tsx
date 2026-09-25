@@ -506,7 +506,7 @@ export default function CheckoutClient() {
                     </span>
                   )}
                   {catType === 'HOODIE' && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.675rem', fontWeight: 800, color: '#2563eb' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.675rem', fontWeight: 800, color: '#b45309' }}>
                       <Gift size={11} /> Eligible for Buy 1 Get 1 Free
                     </span>
                   )}

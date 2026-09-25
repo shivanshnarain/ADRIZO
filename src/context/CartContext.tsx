@@ -2,8 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-import { calculateCheckoutTotals, CheckoutTotals, getItemCategoryType } from '@/lib/checkout-engine';
-
 export interface CartItem {
   id: string; // product id + size + color (or free-prefix)
   productId: string;
@@ -41,11 +39,6 @@ interface CartContextType {
   cartTotal: number;
   cartCatalogTotal: number;
   cartPromotionalDiscount: number;
-  bundleDiscount: number;
-  tshirtBundleSavings: number;
-  hoodieBundleSavings: number;
-  bundleDetails: CheckoutTotals['bundleDetails'];
-  checkoutTotals: CheckoutTotals;
   itemCount: number;
   isCartOpen: boolean;
   setIsCartOpen: (isOpen: boolean) => void;
@@ -468,44 +461,33 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  // Authoritative automatic checkout totals using checkout-engine
-  const checkoutTotals = React.useMemo(() => {
-    return calculateCheckoutTotals({
-      items: cart.map(item => ({
-        id: item.id,
-        productId: item.productId,
-        name: item.name,
-        productName: item.name,
-        price: (item.price > 0 ? item.price : (item.originalPrice || item.price)),
-        originalPrice: item.originalPrice || item.price,
-        image: item.image,
-        productImage: item.image,
-        size: item.size,
-        color: item.color,
-        quantity: item.quantity,
-        sku: item.sku,
-        categorySlug: item.categorySlug || item.category?.slug,
-        categoryName: item.categoryName || item.category?.name,
-        category: item.category,
-      })),
-      paymentMode: 'ONLINE_RAZORPAY',
-    });
-  }, [cart]);
+  // Pricing calculations
+  const rawSubtotal = cart.reduce((total, item) => total + (item.isFree ? 0 : item.price) * item.quantity, 0);
+  const cartCatalogTotal = cart.reduce((total, item) => total + (item.originalPrice || item.price) * item.quantity, 0);
 
-  const bundleDiscount = checkoutTotals.bundleDiscount;
-  const tshirtBundleSavings = checkoutTotals.tshirtBundleSavings;
-  const hoodieBundleSavings = checkoutTotals.hoodieBundleSavings;
-  const bundleDetails = checkoutTotals.bundleDetails;
+  // Tiered Offer Bonus:
+  // 2 paid + 4 free (6 products total) -> ₹100 discount
+  // 3 paid + 6 free (9 products total) -> ₹200 discount
+  const qualifyingPaidCount = cart
+    .filter(i => i.promoGroupId && !i.isFree)
+    .reduce((acc, i) => acc + i.quantity, 0);
+  const qualifyingFreeCount = cart
+    .filter(i => i.promoGroupId && i.isFree)
+    .reduce((acc, i) => acc + i.quantity, 0);
 
-  const cartCatalogTotal = checkoutTotals.catalogSubtotal;
-  const cartTotal = checkoutTotals.subtotalAfterBundles;
-  const cartPromotionalDiscount = checkoutTotals.bundleDiscount;
+  let offerTierDiscount = 0;
+  if (qualifyingPaidCount >= 3 && qualifyingFreeCount >= 6) {
+    offerTierDiscount = Math.min(200, rawSubtotal);
+  } else if (qualifyingPaidCount >= 2 && qualifyingFreeCount >= 4) {
+    offerTierDiscount = Math.min(100, rawSubtotal);
+  }
+
+  const has6ProductOfferBonus = qualifyingPaidCount >= 2 && qualifyingFreeCount >= 4;
+  const has9ProductOfferBonus = qualifyingPaidCount >= 3 && qualifyingFreeCount >= 6;
+  const offer100Discount = offerTierDiscount; // Keep for backwards-compatibility
+  const cartTotal = Math.max(0, rawSubtotal - offerTierDiscount);
+  const cartPromotionalDiscount = Math.max(0, cartCatalogTotal - cartTotal);
   const itemCount = cart.reduce((count, item) => count + item.quantity, 0);
-
-  const offerTierDiscount = 0;
-  const offer100Discount = 0;
-  const has6ProductOfferBonus = false;
-  const has9ProductOfferBonus = false;
 
   return (
     <CartContext.Provider
@@ -524,11 +506,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         cartTotal,
         cartCatalogTotal,
         cartPromotionalDiscount,
-        bundleDiscount,
-        tshirtBundleSavings,
-        hoodieBundleSavings,
-        bundleDetails,
-        checkoutTotals,
         itemCount,
         isCartOpen,
         setIsCartOpen,
@@ -549,8 +526,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         hasEligibleBogoItem,
         bogoPromoConfig,
         activeOffers,
-        freeItemsCount: bundleDetails.tshirtFree + bundleDetails.hoodieFree,
-        allowedFreeItemsCount: bundleDetails.tshirtFree + bundleDetails.hoodieFree,
+        freeItemsCount,
+        allowedFreeItemsCount,
         has6ProductOfferBonus,
         has9ProductOfferBonus,
         offer100Discount,

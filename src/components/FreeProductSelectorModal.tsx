@@ -14,6 +14,7 @@ import {
 import { useCart, CartItem } from '../context/CartContext';
 import { useRouter } from 'next/navigation';
 import styles from './FreeProductSelectorModal.module.css';
+import { launchRazorpayCheckout } from '@/lib/razorpay-direct';
 
 // COLORFUL GIFT ICON SVG COMPONENT (Golden box, bright red ribbon & bow, crisp highlights)
 function ColorfulGiftIcon({ size = 18 }: { size?: number }) {
@@ -332,6 +333,7 @@ export default function FreeProductSelectorModal() {
     setEditingPromoGroupId,
     cart,
     bogoPromoConfig,
+    setIsCartOpen,
   } = useCart();
 
   const [mounted, setMounted] = useState(false);
@@ -346,6 +348,9 @@ export default function FreeProductSelectorModal() {
   const [qualifyingCategory, setQualifyingCategory] = useState<any>(null);
   const [paidQuantity, setPaidQuantity] = useState(1);
   const [limitWarning, setLimitWarning] = useState(false);
+  const [buyNowPaymentMode, setBuyNowPaymentMode] = useState<'ONLINE_RAZORPAY' | 'COD'>('ONLINE_RAZORPAY');
+  const [isLaunchingPayment, setIsLaunchingPayment] = useState(false);
+  const isBuyNow = Boolean(buyNowPromoItem);
 
   // Full Product Details Sheet state
   const [detailProduct, setDetailProduct] = useState<FreeProductOption | null>(null);
@@ -823,18 +828,34 @@ export default function FreeProductSelectorModal() {
   // Skip offer & buy only the paid item
   const handleSkipPromotion = () => {
     if (buyNowPromoItem) {
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('adrizo_buy_now', JSON.stringify(buyNowPromoItem));
-      }
-      setIsBogoSelectorOpen(false);
-      setBuyNowPromoItem(null);
-      setDirectOfferItem(null);
-      setEditingPromoGroupId(null);
-      router.push(
-        `/checkout?buyNow=1&productId=${buyNowPromoItem.productId}&size=${encodeURIComponent(
-          buyNowPromoItem.size || 'Standard'
-        )}&qty=1`
-      );
+      setIsLaunchingPayment(true);
+      launchRazorpayCheckout({
+        items: [{
+          productId: buyNowPromoItem.productId,
+          size: buyNowPromoItem.size || 'Standard',
+          color: buyNowPromoItem.color || 'Standard',
+          quantity: 1,
+          name: buyNowPromoItem.name,
+          price: buyNowPromoItem.price,
+          categorySlug: buyNowPromoItem.categorySlug,
+          categoryName: buyNowPromoItem.categoryName,
+          category: buyNowPromoItem.category,
+          isFree: false,
+        }],
+        paymentMethod: buyNowPaymentMode,
+        onSuccess: ({ orderId, orderNumber }) => {
+          setIsLaunchingPayment(false);
+          handleCloseModal();
+          router.push(`/order-success?orderId=${orderId}&orderNumber=${orderNumber}`);
+        },
+        onDismiss: () => {
+          setIsLaunchingPayment(false);
+        },
+        onError: (errMsg) => {
+          setIsLaunchingPayment(false);
+          alert(errMsg || 'Failed to initialize payment.');
+        }
+      });
     } else {
       handleCloseModal();
     }
@@ -911,8 +932,40 @@ export default function FreeProductSelectorModal() {
       });
     }
 
-    const isBuyNow = Boolean(buyNowPromoItem);
-    const isFromDirectOffer = Boolean(directOfferItem);
+    if (isBuyNow) {
+      setIsLaunchingPayment(true);
+      launchRazorpayCheckout({
+        items: bundleItemsToSubmit.map(i => ({
+          productId: i.productId,
+          size: i.size,
+          color: i.color,
+          quantity: 1,
+          name: i.name,
+          price: i.isFree ? 0 : i.price,
+          categorySlug: i.categorySlug,
+          categoryName: i.categoryName,
+          category: i.category,
+          isFree: i.isFree,
+          promotionRule: i.promotionRule,
+          parentId: i.parentId,
+          promoGroupId: i.promoGroupId,
+        })),
+        paymentMethod: buyNowPaymentMode,
+        onSuccess: ({ orderId, orderNumber }) => {
+          setIsLaunchingPayment(false);
+          handleCloseModal();
+          router.push(`/order-success?orderId=${orderId}&orderNumber=${orderNumber}`);
+        },
+        onDismiss: () => {
+          setIsLaunchingPayment(false);
+        },
+        onError: (errMsg) => {
+          setIsLaunchingPayment(false);
+          alert(errMsg || 'Failed to initialize payment.');
+        }
+      });
+      return;
+    }
 
     if (editingPromoGroupId) {
       updatePromoBundle(editingPromoGroupId, bundleItemsToSubmit);
@@ -925,10 +978,7 @@ export default function FreeProductSelectorModal() {
     setDirectOfferItem(null);
     setEditingPromoGroupId(null);
     setChosenFreeItems([]);
-
-    if (isBuyNow || isFromDirectOffer) {
-      router.push('/checkout');
-    }
+    setIsCartOpen(true);
   };
 
   const totalBundleItemsCount = buyQuantity + freeQuantity;
@@ -1446,6 +1496,70 @@ export default function FreeProductSelectorModal() {
           </div>
 
           <div className={styles.footerActions}>
+            {isBuyNow && isComplete && (
+              <div style={{ display: 'flex', gap: '0.45rem', width: '100%', marginBottom: '0.2rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setBuyNowPaymentMode('ONLINE_RAZORPAY')}
+                  style={{
+                    flex: 1,
+                    padding: '0.45rem 0.5rem',
+                    borderRadius: '6px',
+                    border: buyNowPaymentMode === 'ONLINE_RAZORPAY' ? '1.5px solid #09090b' : '1px solid #d1d5db',
+                    background: buyNowPaymentMode === 'ONLINE_RAZORPAY' ? '#09090b' : '#ffffff',
+                    color: buyNowPaymentMode === 'ONLINE_RAZORPAY' ? '#ffffff' : '#111827',
+                    fontSize: '0.725rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.35rem'
+                  }}
+                >
+                  <span>Pay Online</span>
+                  <span style={{ 
+                    background: buyNowPaymentMode === 'ONLINE_RAZORPAY' ? '#FFC800' : '#fef08a', 
+                    color: '#000000', 
+                    fontSize: '0.65rem', 
+                    fontWeight: 800, 
+                    padding: '0.1rem 0.35rem', 
+                    borderRadius: '3px' 
+                  }}>
+                    -₹50 Extra
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBuyNowPaymentMode('COD')}
+                  style={{
+                    flex: 1,
+                    padding: '0.45rem 0.5rem',
+                    borderRadius: '6px',
+                    border: buyNowPaymentMode === 'COD' ? '1.5px solid #09090b' : '1px solid #d1d5db',
+                    background: buyNowPaymentMode === 'COD' ? '#09090b' : '#ffffff',
+                    color: buyNowPaymentMode === 'COD' ? '#ffffff' : '#111827',
+                    fontSize: '0.725rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.35rem'
+                  }}
+                >
+                  <span>Cash on Delivery</span>
+                  <span style={{ 
+                    color: buyNowPaymentMode === 'COD' ? '#a1a1aa' : '#71717a', 
+                    fontSize: '0.65rem', 
+                    fontWeight: 600 
+                  }}>
+                    (₹99 Advance)
+                  </span>
+                </button>
+              </div>
+            )}
+
             <button
               type="button"
               className={styles.skipOfferLink}
@@ -1461,16 +1575,22 @@ export default function FreeProductSelectorModal() {
             <button
               type="button"
               className={`${styles.continueBtn} ${
-                isComplete ? styles.continueBtnActive : styles.continueBtnDisabled
+                isComplete && !isLaunchingPayment ? styles.continueBtnActive : styles.continueBtnDisabled
               }`}
               onClick={handleConfirmBundle}
-              disabled={!isComplete}
+              disabled={!isComplete || isLaunchingPayment}
             >
-              {isComplete
-                ? editingPromoGroupId
-                  ? `Update Offer →`
-                  : `Continue to Checkout →`
-                : `Please select ${remainingCount} more ${categorySingular} →`}
+              {isLaunchingPayment
+                ? `Connecting to Secure Razorpay...`
+                : isComplete
+                  ? isBuyNow
+                    ? buyNowPaymentMode === 'ONLINE_RAZORPAY'
+                      ? `Proceed to Pay ₹${Math.max(0, youPay - 50).toLocaleString('en-IN')} Online →`
+                      : `Pay ₹99 Advance & Confirm COD →`
+                    : editingPromoGroupId
+                      ? `Update Offer →`
+                      : `Add Bundle to Cart →`
+                  : `Please select ${remainingCount} more ${categorySingular} →`}
             </button>
           </div>
         </div>

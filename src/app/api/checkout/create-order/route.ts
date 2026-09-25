@@ -408,14 +408,15 @@ export async function POST(req: NextRequest) {
       standardShippingFee: POLICY_CONFIG.shipping.standardFee,
     });
 
-    subtotal = checkoutTotals.subtotalAfterBundles;
-    const shippingCharge = checkoutTotals.shippingCharge;
-    const codCharge = checkoutTotals.codFee;
-    const prepaidDiscount = checkoutTotals.prepaidDiscount;
-    const bundleDiscount = checkoutTotals.bundleDiscount;
-    const finalTotal = paymentMethod === 'COD' 
-      ? checkoutTotals.finalOrderValue 
-      : checkoutTotals.amountPayableNow;
+    const hasManualPromoGroups = (promoResult.promotionalBundlesCount || 0) > 0;
+    subtotal = hasManualPromoGroups ? promoResult.subtotal : checkoutTotals.subtotalAfterBundles;
+    const bundleDiscount = hasManualPromoGroups ? promoResult.promotionalDiscount : checkoutTotals.bundleDiscount;
+    const shippingCharge = subtotal >= POLICY_CONFIG.shipping.freeShippingThreshold 
+      ? 0 
+      : POLICY_CONFIG.shipping.standardFee;
+    const codCharge = paymentMethod === 'COD' ? POLICY_CONFIG.shipping.codHandlingFee : 0;
+    const prepaidDiscount = paymentModeEnum === 'ONLINE_RAZORPAY' ? 50 : 0;
+    const finalTotal = Math.max(0, subtotal - couponDiscount - prepaidDiscount + shippingCharge + (paymentMethod === 'COD' ? codCharge : 0));
 
     // Duplicate Order Prevention Guard (30s idempotency window)
     let existingRecentOrder: {
