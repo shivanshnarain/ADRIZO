@@ -17,6 +17,7 @@ import { sendOrderConfirmationEmail } from '@/lib/order-email';
 import { autoSyncOrderToShiprocket } from '@/lib/shiprocket-auto-sync';
 import { validateAndPriceOrderItems } from '@/lib/promotions';
 import { validateAndCalculateCouponDiscount } from '@/lib/coupon-engine';
+import { calculateCheckoutTotals, PaymentMode } from '@/lib/checkout-engine';
 
 /**
  * Atomically saves an order and its items to Supabase.
@@ -380,26 +381,41 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Server-validated automatic promotion tiers (₹100 for 6 products, ₹200 for 9 products)
-    const autoOfferBonus = promoResult.autoOfferDiscount || 0;
-    if (autoOfferBonus > 0) {
-      const offerCode = autoOfferBonus >= 200 ? 'OFFER200' : 'OFFER100';
-      if (appliedCouponCode) {
-        appliedCouponCode = `${appliedCouponCode} + ${offerCode}`;
-      } else {
-        appliedCouponCode = offerCode;
-      }
-      couponDiscount = Math.min(subtotal, couponDiscount + autoOfferBonus);
-    }
+    // 6. Authoritative Checkout & Promotion Calculation Engine
+    // Single authoritative source of truth across Cart, Checkout, Buy Now, and Razorpay
+    const paymentModeEnum: PaymentMode = paymentMethod === 'COD' ? 'COD' : 'ONLINE_RAZORPAY';
 
-    // 6. Authoritative Shipping Computation
-    const shippingCharge = subtotal >= POLICY_CONFIG.shipping.freeShippingThreshold 
-      ? 0 
-      : POLICY_CONFIG.shipping.standardFee;
+    const checkoutTotals = calculateCheckoutTotals({
+      items: validatedItems.map(item => ({
+        id: item.productId,
+        productId: item.productId,
+        name: item.productName,
+        productName: item.productName,
+        price: item.price,
+        originalPrice: item.mrp || item.price,
+        image: item.productImage,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        sku: item.sku,
+        categorySlug: (item as any).categorySlug || (item as any).category?.slug,
+        categoryName: (item as any).categoryName || (item as any).category?.name,
+        category: (item as any).category,
+      })),
+      paymentMode: paymentModeEnum,
+      couponDiscount,
+      shippingThreshold: POLICY_CONFIG.shipping.freeShippingThreshold,
+      standardShippingFee: POLICY_CONFIG.shipping.standardFee,
+    });
 
-    // 7. Authoritative Total Computation (COD fee = ₹99, Razorpay fee = ₹0)
-    const codCharge = paymentMethod === 'COD' ? POLICY_CONFIG.shipping.codHandlingFee : 0;
-    const finalTotal = Math.max(0, subtotal - couponDiscount + shippingCharge + codCharge);
+    subtotal = checkoutTotals.subtotalAfterBundles;
+    const shippingCharge = checkoutTotals.shippingCharge;
+    const codCharge = checkoutTotals.codFee;
+    const prepaidDiscount = checkoutTotals.prepaidDiscount;
+    const bundleDiscount = checkoutTotals.bundleDiscount;
+    const finalTotal = paymentMethod === 'COD' 
+      ? checkoutTotals.finalOrderValue 
+      : checkoutTotals.amountPayableNow;
 
     // Duplicate Order Prevention Guard (30s idempotency window)
     let existingRecentOrder: {
@@ -540,7 +556,7 @@ export async function POST(req: NextRequest) {
         subtotal,
         shipping_charge: shippingCharge,
         cod_charge: codConfirmationAmount,
-        discount: couponDiscount,
+        discount: couponDiscount + bundleDiscount,
         coupon_code: appliedCouponCode,
         total_amount: finalTotal,
         payment_method: 'COD',
@@ -589,6 +605,8 @@ export async function POST(req: NextRequest) {
         currency,
         key: getRazorpayKeyId(),
         total: finalTotal,
+        bundleDiscount,
+        subtotalAfterBundles: subtotal,
         line_items_total: magicLineItemsTotal,
         codConfirmationAmount,
         codRemainingAmount: Math.max(0, finalTotal - codConfirmationAmount),
@@ -648,7 +666,7 @@ export async function POST(req: NextRequest) {
         subtotal,
         shipping_charge: shippingCharge,
         cod_charge: 0,
-        discount: couponDiscount,
+        discount: couponDiscount + bundleDiscount + prepaidDiscount,
         coupon_code: appliedCouponCode,
         total_amount: finalTotal,
         payment_method: 'ONLINE_RAZORPAY',
@@ -693,6 +711,9 @@ export async function POST(req: NextRequest) {
         currency: razorpayOrder.currency || currency,
         key: getRazorpayKeyId(),
         total: finalTotal,
+        prepaidDiscount,
+        bundleDiscount,
+        subtotalAfterBundles: subtotal,
         line_items_total: magicLineItemsTotal,
         isMagicCheckout,
         customer: {

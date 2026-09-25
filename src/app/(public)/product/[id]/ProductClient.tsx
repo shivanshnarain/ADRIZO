@@ -538,43 +538,21 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
       return;
     }
 
-    if (isProductPromoEligible) {
-      // Open the promotion modal with the chosen item pre-selected as Main Product
-      openBuyNowPromoModal({
-        id: `${product.id}-${selectedSize || 'standard'}`,
-        productId: product.id,
-        name: product.name,
-        price: currentPrice,
-        originalPrice: originalPrice || product.price,
-        image: imagesList[activeImageIndex] || imagesList[0],
-        size: selectedSize || 'Standard',
-        color: product.color || 'Default',
-        quantity: 1,
-        maxStock,
-        sku: product.sku,
-        category: product.category ? { id: product.category.id, name: product.category.name, slug: product.category.slug } : null,
-        categorySlug: product.category?.slug,
-        categoryName: product.category?.name,
-        buyQuantity: currentProductOffer?.buyQuantity,
-        freeQuantity: currentProductOffer?.freeQuantity,
-        promotionRule: currentProductOffer?.name,
-      });
-      return;
-    }
-
-    // Normal 1-item Buy Now fallback if promotion is explicitly disabled in store settings
     const buyNowPayload = {
       productId: product.id,
       name: product.name,
       price: currentPrice,
       originalPrice: originalPrice || product.price,
       discountPercentage,
-      image: imagesList[activeImageIndex] || imagesList[0],
+      image: imagesList[activeImageIndex] || imagesList[0] || product.image,
       size: selectedSize || 'Standard',
       color: product.color || 'Default',
       quantity,
       sku: product.sku,
-      maxStock
+      maxStock,
+      categorySlug: product.category?.slug,
+      categoryName: product.category?.name,
+      category: product.category ? { id: product.category.id, name: product.category.name, slug: product.category.slug } : null,
     };
 
     if (typeof window !== 'undefined') {
