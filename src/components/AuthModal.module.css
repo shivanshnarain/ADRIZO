@@ -412,13 +412,21 @@
 
 @media (max-width: 640px) {
   .overlay {
-    padding: 0.65rem;
+    padding: 0.5rem;
   }
 
   .modalCard {
     max-width: 100%;
     width: 100%;
     border-radius: 12px;
+    box-sizing: border-box;
+  }
+
+  .closeBtn {
+    top: 0.85rem;
+    right: 0.85rem;
+    width: 32px;
+    height: 32px;
   }
 
   .imageColumn {
@@ -426,16 +434,84 @@
   }
 
   .contentColumn {
-    padding: 1.5rem 1rem 1.25rem;
+    padding: 1.25rem 1rem 1.25rem;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .segmentedTabs {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 3px;
+    gap: 3px;
+    margin-bottom: 1rem;
+  }
+
+  .tabBtn {
+    padding: 0.5rem 0.35rem;
+    font-size: 0.78rem;
+    text-align: center;
+    white-space: nowrap;
+    box-sizing: border-box;
   }
 
   .authForm {
     gap: 0.8rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .textInput,
+  .passwordInput {
+    padding: 0.7rem 0.75rem;
+    font-size: 0.875rem;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .primaryBtn {
+    padding: 0.8rem 1rem;
+    font-size: 0.84rem;
+    box-sizing: border-box;
+    width: 100%;
   }
 }
 
 @media (max-width: 360px) {
+  .overlay {
+    padding: 0.35rem;
+  }
+
   .contentColumn {
-    padding: 1.25rem 0.75rem 1rem;
+    padding: 1.1rem 0.65rem 1rem;
+  }
+
+  .title {
+    font-size: 1.05rem;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+  }
+
+  .segmentedTabs {
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .tabBtn {
+    padding: 0.45rem 0.2rem;
+    font-size: 0.72rem;
+  }
+
+  .textInput,
+  .passwordInput {
+    padding: 0.65rem 0.65rem;
+    font-size: 0.825rem;
+  }
+
+  .primaryBtn {
+    padding: 0.75rem 0.75rem;
+    font-size: 0.8rem;
   }
 }

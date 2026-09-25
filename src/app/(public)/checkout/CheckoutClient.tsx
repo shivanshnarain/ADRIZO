@@ -1577,7 +1577,7 @@ export default function CheckoutClient() {
         {/* ============================================================= */}
         {/* LEFT COLUMN: 3-STEP AMAZON/FLIPKART STYLE CHECKOUT STREAM      */}
         {/* ============================================================= */}
-        <div>
+        <div className={styles.checkoutMainStream}>
 
           {/* ========================================================= */}
           {/* ⚡ EXPRESS 1-CLICK CHECKOUT (POWERED BY RAZORPAY MAGIC)   */}
@@ -1605,11 +1605,11 @@ export default function CheckoutClient() {
               disabled={processing}
               className={styles.magicPayButton}
             >
-              <Sparkles size={18} />
-              <span>
-                {processing ? 'Opening Magic Checkout...' : `Pay ₹${finalPayable.toLocaleString('en-IN')} with Razorpay Magic Checkout`}
+              <Sparkles size={16} className={styles.magicButtonIcon} />
+              <span className={styles.magicButtonText}>
+                {processing ? 'Opening Magic Checkout...' : `Pay ₹${finalPayable.toLocaleString('en-IN')} with Magic Checkout`}
               </span>
-              <ArrowRight size={18} />
+              <ArrowRight size={16} className={styles.magicButtonIcon} />
             </button>
 
             <div className={styles.magicDivider}>
@@ -2620,8 +2620,8 @@ export default function CheckoutClient() {
         {/* ============================================================= */}
         {/* RIGHT COLUMN: PRICE SUMMARY + COUPON + GUARANTEE (desktop)   */}
         {/* ============================================================= */}
-        <div style={{ position: 'sticky', top: '2rem' }}>
-          <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', boxSizing: 'border-box' }}>
+        <div className={styles.checkoutSidebar}>
+          <div className={styles.summaryCard}>
 
             {/* Promo / Coupon Code Box */}
             <div style={{ marginBottom: '1rem' }}>
