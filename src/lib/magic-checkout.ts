@@ -129,6 +129,53 @@ export async function calculateMagicShippingInfo(payload: MagicShippingInfoPaylo
     });
   }
 
+  // If customer selected an address in Magic Checkout, proactively sync it to the pending order
+  if (addresses.length > 0 && (order_id || razorpay_order_id)) {
+    const chosenAddr = addresses[0];
+    if (chosenAddr.address1 && chosenAddr.city) {
+      const pin = (chosenAddr.zipcode || '').trim().replace(/\D/g, '');
+      const cleanAddressParts = [
+        chosenAddr.address1.trim(),
+        chosenAddr.address2 ? chosenAddr.address2.trim() : '',
+        chosenAddr.city.trim(),
+        chosenAddr.state ? `${chosenAddr.state.trim()}${pin ? ` - ${pin}` : ''}` : pin,
+        chosenAddr.country || 'India'
+      ].filter(Boolean).join(', ');
+
+      const updates: any = {
+        shipping_address: cleanAddressParts,
+        house_flat: chosenAddr.address1.trim(),
+        area_street: chosenAddr.address2 ? chosenAddr.address2.trim() : null,
+        city: chosenAddr.city.trim(),
+        state: chosenAddr.state || chosenAddr.state_code || 'Pending',
+        pincode: pin || '000000',
+        updated_at: new Date().toISOString(),
+      };
+
+      if (payload.contact) {
+        const cleanContact = payload.contact.replace(/^\+91/, '').replace(/\D/g, '');
+        if (cleanContact.length === 10) updates.customer_phone = cleanContact;
+      }
+      if (payload.email && payload.email.includes('@') && payload.email !== 'checkout@adrizo.com') {
+        updates.customer_email = payload.email.trim();
+      }
+
+      try {
+        const supabase = getAdminClient();
+        let query = supabase.from('orders').update(updates);
+        if (razorpay_order_id) {
+          query = query.eq('razorpay_order_id', razorpay_order_id);
+        } else if (order_id) {
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order_id);
+          query = isUuid ? query.eq('id', order_id) : query.eq('order_number', order_id);
+        }
+        (async () => {
+          await query;
+        })().catch((e) => console.warn('[syncPendingMagicOrderAddress warning]', e));
+      } catch {}
+    }
+  }
+
   // Fallback default shipping method if no addresses were passed in payload
   const defaultMethod: MagicShippingMethod = {
     id: 'standard_delivery',

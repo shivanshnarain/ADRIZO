@@ -51,46 +51,46 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ status: 'ok', received: true, alreadyProcessed: true }, { status: 200 });
         }
 
-        // Update Supabase
-        const webhookUpdate: any = {
+        // Ingest verified customer identity and shipping address from Magic Checkout if pending
+        const webhookUpdates: any = {
           payment_status: 'PAID',
           order_status: 'CONFIRMED',
           razorpay_payment_id: razorpayPaymentId,
           updated_at: new Date().toISOString(),
         };
 
-        const shipping = orderEntity?.shipping_address;
-        const customer = orderEntity?.customer_details;
+        const paymentContact = paymentEntity?.contact ? String(paymentEntity.contact).replace(/^\+91/, '').replace(/\D/g, '') : null;
+        if (paymentContact && (!order?.customer_phone || order.customer_phone === '')) {
+          webhookUpdates.customer_phone = paymentContact;
+        }
+        if (paymentEntity?.email && (!order?.customer_email || order.customer_email === 'checkout@adrizo.com')) {
+          webhookUpdates.customer_email = paymentEntity.email.trim();
+        }
 
-        if (shipping) {
-          const houseFlat = shipping.line1 || shipping.address1 || null;
-          const areaStreet = shipping.line2 || shipping.address2 || null;
-          const city = shipping.city || null;
-          const state = shipping.state || null;
-          const pincode = shipping.postal_code || shipping.zipcode || null;
-          const fullParts = [houseFlat, areaStreet, city, state ? `${state} - ${pincode || ''}` : pincode, 'India'].filter(Boolean);
-          if (fullParts.length > 0) {
-            webhookUpdate.shipping_address = fullParts.join(', ');
-            if (houseFlat) webhookUpdate.house_flat = houseFlat;
-            if (areaStreet) webhookUpdate.area_street = areaStreet;
-            if (city) webhookUpdate.city = city;
-            if (state) webhookUpdate.state = state;
-            if (pincode) webhookUpdate.pincode = pincode;
+        const magicAddress = orderEntity?.shipping_address;
+        if (magicAddress && (order?.shipping_address === 'Pending Magic Checkout Selection' || !order?.shipping_address)) {
+          const line1 = magicAddress.line1 || magicAddress.address1 || '';
+          const line2 = magicAddress.line2 || magicAddress.address2 || '';
+          const city = magicAddress.city || '';
+          const state = magicAddress.state || '';
+          const pin = magicAddress.zipcode || magicAddress.postal_code || magicAddress.pincode || '';
+          const name = magicAddress.name || magicAddress.full_name || '';
+
+          if (name && (order.customer_name === 'Customer' || !order.customer_name)) {
+            webhookUpdates.customer_name = name;
           }
-        }
-        if (shipping?.name || customer?.name) {
-          webhookUpdate.customer_name = shipping?.name || customer?.name;
-        }
-        if (shipping?.contact || customer?.contact) {
-          webhookUpdate.customer_phone = (shipping?.contact || customer?.contact).replace(/\D/g, '').slice(-10);
-        }
-        if (customer?.email) {
-          webhookUpdate.customer_email = customer.email;
+          if (line1) webhookUpdates.house_flat = line1;
+          if (line2) webhookUpdates.area_street = line2;
+          if (city) webhookUpdates.city = city;
+          if (state) webhookUpdates.state = state;
+          if (pin) webhookUpdates.pincode = pin;
+          webhookUpdates.shipping_address = [line1, line2, city, state ? `${state} - ${pin}` : pin, 'India'].filter(Boolean).join(', ');
         }
 
+        // Update Supabase
         await supabase
           .from('orders')
-          .update(webhookUpdate)
+          .update(webhookUpdates)
           .eq('razorpay_order_id', razorpayOrderId);
 
         console.log(`[Razorpay Webhook] Order ${order?.order_number || razorpayOrderId} successfully marked PAID`);

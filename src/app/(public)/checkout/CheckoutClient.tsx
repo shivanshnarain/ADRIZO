@@ -1058,100 +1058,106 @@ export default function CheckoutClient() {
     });
   };
 
-  // Preload Razorpay Magic Checkout script on page mount
-  useEffect(() => {
-    loadRazorpayScript();
-  }, []);
-
-  // ⚡ 1-Click Razorpay Magic Checkout (Customer Identity & Intelligent Prefill)
-  const handleMagicCheckout = async () => {
-    if (processing || isSubmittingRef.current) return;
-    if (checkoutItems.length === 0) {
-      setOrderError('Your cart is empty. Please add items to checkout.');
-      return;
-    }
-
+  // ⚡ Razorpay Magic Checkout: 1-Click Customer Identity & Intelligent Prefill
+  const handleMagicOneClickCheckout = async (prefillContact?: string) => {
     if (!consentChecked) {
       setOrderError('You must agree to the Terms of Service and Privacy Policy to continue.');
       return;
     }
 
+    if (isSubmittingRef.current || processing) return;
     isSubmittingRef.current = true;
     setProcessing(true);
     setOrderError('');
 
-    try {
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        setOrderError('Unable to load Razorpay Magic Checkout. Please check your network connection.');
-        isSubmittingRef.current = false;
-        setProcessing(false);
-        return;
-      }
+    const payload = {
+      items: checkoutItems.map(it => ({
+        productId: it.productId,
+        size: it.size,
+        color: it.color,
+        quantity: it.quantity,
+        name: it.name,
+        price: it.isFree ? 0 : it.price,
+        isFree: Boolean(it.isFree),
+        promotionRule: it.promotionRule || (it.isFree ? (bogoPromoConfig?.name || 'SPECIAL OFFER') : undefined),
+        parentId: it.parentId,
+        promoGroupId: (it as any).promoGroupId,
+      })),
+      isMagicCheckout: true,
+      paymentMethod: 'ONLINE_RAZORPAY',
+      couponCode: appliedCoupon ? appliedCoupon.code : undefined,
+      customer: {
+        name: user?.name || addressForm.fullName || undefined,
+        email: user?.email || addressForm.email || undefined,
+        phone: prefillContact || addressForm.phone || user?.phone || undefined,
+      },
+      shippingAddress: addressConfirmed ? {
+        fullName: addressForm.fullName.trim(),
+        phone: addressForm.phone.trim().replace(/\D/g, ''),
+        email: addressForm.email.trim(),
+        addressLine1: addressForm.flatHouseBuilding.trim(),
+        addressLine2: addressForm.areaStreetSector.trim(),
+        landmark: addressForm.landmark.trim(),
+        district: addressForm.district.trim(),
+        city: addressForm.city.trim(),
+        state: addressForm.state.trim(),
+        pincode: addressForm.pincode.trim().replace(/\D/g, ''),
+        country: 'India',
+      } : undefined,
+    };
 
-      // Create server-side order with isMagicCheckout: true (defers manual address form to Magic Checkout)
+    try {
       const res = await fetch('/api/checkout/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: checkoutItems.map(it => ({
-            productId: it.productId,
-            size: it.size,
-            color: it.color,
-            quantity: it.quantity,
-            name: it.name,
-            price: it.isFree ? 0 : it.price,
-            isFree: Boolean(it.isFree),
-            promotionRule: it.promotionRule || (it.isFree ? (bogoPromoConfig?.name || 'SPECIAL OFFER') : undefined),
-            parentId: it.parentId,
-            promoGroupId: (it as any).promoGroupId,
-          })),
-          isMagicCheckout: true,
-          paymentMethod: 'ONLINE_RAZORPAY',
-          couponCode: appliedCoupon ? appliedCoupon.code : undefined,
-          shippingAddress: addressConfirmed ? {
-            fullName: addressForm.fullName.trim(),
-            phone: addressForm.phone.trim().replace(/\D/g, ''),
-            email: addressForm.email.trim(),
-            addressLine1: addressForm.flatHouseBuilding.trim(),
-            addressLine2: addressForm.areaStreetSector.trim(),
-            landmark: addressForm.landmark.trim(),
-            district: addressForm.district.trim(),
-            city: addressForm.city.trim(),
-            state: addressForm.state.trim(),
-            pincode: addressForm.pincode.trim().replace(/\D/g, ''),
-            country: 'India',
-          } : undefined,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
+
       if (!data.success) {
-        setOrderError(data.error || 'Failed to initialize 1-Click Checkout. Please try again.');
+        setOrderError(data.error || 'Failed to initialize Magic Checkout. Please check your items.');
         isSubmittingRef.current = false;
         setProcessing(false);
         return;
       }
+
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        setOrderError('Failed to load secure Razorpay Magic Checkout gateway. Please check your connection.');
+        isSubmittingRef.current = false;
+        setProcessing(false);
+        return;
+      }
+
+      const contactToPrefill = prefillContact || data.customer?.phone || addressForm.phone || user?.phone || '';
+      const emailToPrefill = data.customer?.email || addressForm.email || user?.email || '';
+      const nameToPrefill = data.customer?.name || addressForm.fullName || user?.name || '';
 
       const options = {
         key: data.key,
         amount: data.amount,
         currency: data.currency || 'INR',
         name: 'ADRIZO',
-        description: `Express Order #${data.orderNumber}`,
+        description: `Order #${data.orderNumber}`,
         image: ADRIZO_LOGO_DATA_URI,
         order_id: data.razorpayOrderId,
         one_click_checkout: true,
-        show_coupons: true,
-        show_address: true,
+        remember_customer: true,
+        features: {
+          cardsaving: true,
+          truecaller_login: true,
+        },
         prefill: {
-          name: data.customer?.name || addressForm.fullName || user?.name || '',
-          email: data.customer?.email || addressForm.email || user?.email || '',
-          contact: data.customer?.phone || addressForm.phone || user?.phone || '',
+          name: nameToPrefill || undefined,
+          email: emailToPrefill || undefined,
+          contact: contactToPrefill || undefined,
         },
         notes: {
           orderNumber: data.orderNumber,
-          isMagicCheckout: 'true',
+          checkoutType: 'MAGIC_1CC',
+          customerName: nameToPrefill,
+          customerPhone: contactToPrefill,
         },
         theme: {
           color: '#09090b',
@@ -1182,7 +1188,7 @@ export default function CheckoutClient() {
               setConfirmedOrder({
                 orderNumber: data.orderNumber || data.orderId,
                 total: data.amount ? data.amount / 100 : finalPayable,
-                address: verifyData.shippingAddress || 'Verified via Razorpay Magic Checkout',
+                address: verifyData.shippingAddress || 'Confirmed via Razorpay Magic Checkout',
                 paymentMethod: 'ONLINE_RAZORPAY',
               });
             } else {
@@ -1200,6 +1206,7 @@ export default function CheckoutClient() {
           ondismiss: function () {
             isSubmittingRef.current = false;
             setProcessing(false);
+            setOrderError('Razorpay Magic Checkout was closed. You can retry anytime or continue below.');
           },
         },
       };
@@ -1208,13 +1215,13 @@ export default function CheckoutClient() {
       rzp.on('payment.failed', function (response: any) {
         isSubmittingRef.current = false;
         setProcessing(false);
-        const reason = response.error?.description || response.error?.reason || 'Payment was unsuccessful.';
+        const reason = response.error?.description || response.error?.reason || 'Payment failed.';
         router.push(`/order-failure?orderId=${data.orderId}&orderNumber=${data.orderNumber}&reason=${encodeURIComponent(reason)}`);
       });
 
       rzp.open();
     } catch (err: any) {
-      setOrderError(err.message || 'An unexpected error occurred during Magic Checkout.');
+      setOrderError(err.message || 'An unexpected error occurred while launching Magic Checkout.');
       isSubmittingRef.current = false;
       setProcessing(false);
     }
@@ -1319,6 +1326,11 @@ export default function CheckoutClient() {
           image: ADRIZO_LOGO_DATA_URI,
           order_id: data.razorpayOrderId,
           one_click_checkout: true,
+          remember_customer: true,
+          features: {
+            cardsaving: true,
+            truecaller_login: true,
+          },
           prefill: {
             name: data.customer?.name || addressForm.fullName || user?.name || '',
             email: data.customer?.email || addressForm.email || user?.email || '',
@@ -1414,8 +1426,11 @@ export default function CheckoutClient() {
         image: ADRIZO_LOGO_DATA_URI,
         order_id: data.razorpayOrderId,
         one_click_checkout: true,
-        show_coupons: true,
-        show_address: true,
+        remember_customer: true,
+        features: {
+          cardsaving: true,
+          truecaller_login: true,
+        },
         prefill: {
           name: data.customer?.name || addressForm.fullName || user?.name || '',
           email: data.customer?.email || addressForm.email || user?.email || '',
@@ -1455,7 +1470,7 @@ export default function CheckoutClient() {
               setConfirmedOrder({
                 orderNumber: data.orderNumber || data.orderId,
                 total: data.amount ? data.amount / 100 : finalPayable,
-                address: verifyData.shippingAddress || normalizedDisplayAddress,
+                address: normalizedDisplayAddress,
                 paymentMethod: 'ONLINE_RAZORPAY',
               });
             } else {
@@ -1565,47 +1580,41 @@ export default function CheckoutClient() {
         <div>
 
           {/* ========================================================= */}
-          {/* ⚡ 1-CLICK RAZORPAY MAGIC CHECKOUT (EXPRESS PREFILL)      */}
+          {/* ⚡ EXPRESS 1-CLICK CHECKOUT (POWERED BY RAZORPAY MAGIC)   */}
           {/* ========================================================= */}
-          <div className={styles.magicCheckoutCard}>
-            <div className={styles.magicHeader}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                <span className={styles.magicBoltIcon}>⚡</span>
-                <div>
-                  <h2 className={styles.magicTitle}>Express 1-Click Checkout</h2>
-                  <p className={styles.magicSubtitle}>
-                    Powered by <strong>Razorpay Magic Checkout</strong> • Auto-fills your saved delivery address & mobile OTP
-                  </p>
-                </div>
+          <div className={styles.magicCheckoutBanner}>
+            <div className={styles.magicCheckoutHeader}>
+              <div className={styles.magicBadge}>
+                <Sparkles size={13} className={styles.magicIcon} />
+                <span>EXPRESS CHECKOUT</span>
               </div>
-              <span className={styles.magicNetworkBadge}>
-                <Sparkles size={12} />
-                <span>Fast & Secure</span>
-              </span>
+              <h3 className={styles.magicTitle}>⚡ Razorpay Magic Checkout</h3>
+              <p className={styles.magicSubtitle}>
+                Instant OTP authentication with intelligent auto-fill for your saved address across 100M+ shoppers in the Razorpay network.
+              </p>
+              <div className={styles.magicNetworkBadges}>
+                <span className={styles.magicFeaturePill}><Check size={12} /> Auto-fill Saved Address</span>
+                <span className={styles.magicFeaturePill}><Check size={12} /> Instant OTP / Truecaller Login</span>
+                <span className={styles.magicFeaturePill}><Check size={12} /> UPI, Cards, Netbanking & COD</span>
+              </div>
             </div>
 
             <button
               type="button"
-              id="magic-checkout-btn"
-              onClick={handleMagicCheckout}
+              onClick={() => handleMagicOneClickCheckout()}
               disabled={processing}
-              className={styles.magicCheckoutBtn}
+              className={styles.magicPayButton}
             >
-              <span style={{ fontSize: '1.15rem' }}>⚡</span>
-              <span>{processing ? 'Connecting to Razorpay Magic...' : '1-Click Checkout with Razorpay'}</span>
-              <ArrowRight size={16} />
+              <Sparkles size={18} />
+              <span>
+                {processing ? 'Opening Magic Checkout...' : `Pay ₹${finalPayable.toLocaleString('en-IN')} with Razorpay Magic Checkout`}
+              </span>
+              <ArrowRight size={18} />
             </button>
 
-            <div className={styles.magicFeaturesRow}>
-              <span>✓ Instant Phone OTP</span>
-              <span>✓ Auto-fills Saved Address</span>
-              <span>✓ UPI / Cards / Netbanking / COD</span>
-              <span>✓ 256-Bit SSL Encrypted</span>
+            <div className={styles.magicDivider}>
+              <span>or continue with standard checkout below</span>
             </div>
-          </div>
-
-          <div className={styles.orDivider}>
-            <span>OR PROCEED WITH STANDARD CHECKOUT</span>
           </div>
 
           {/* ========================================================= */}
@@ -1654,22 +1663,19 @@ export default function CheckoutClient() {
             {/* If NOT logged in: Show Inline Auth Tabs */}
             {!user && (
               <div style={{ marginTop: '1.25rem', borderTop: '1px solid #f4f4f5', paddingTop: '1.25rem' }}>
-                <div className={styles.magicStepPrompt}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Sparkles size={15} style={{ color: '#2563eb' }} />
-                    <span style={{ fontSize: '0.85rem', color: '#18181b', fontWeight: 600 }}>
-                      Have a Razorpay account? Skip password & auto-fill address
-                    </span>
-                  </div>
+                <div className={styles.magicStep1Cta}>
                   <button
                     type="button"
-                    onClick={handleMagicCheckout}
+                    onClick={() => handleMagicOneClickCheckout()}
                     disabled={processing}
-                    className={styles.magicQuickBtn}
+                    className={styles.magicLoginButton}
                   >
-                    ⚡ Use 1-Click Checkout
+                    <Sparkles size={16} />
+                    <span>⚡ 1-Click Login & Auto-fill with Razorpay</span>
                   </button>
+                  <div className={styles.step1OrDivider}><span>or continue with ADRIZO account</span></div>
                 </div>
+
                 <div className={styles.authTabGroup}>
                   <button
                     type="button"

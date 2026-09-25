@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminClient } from '@/lib/supabase/admin';
-import { verifyRazorpaySignature, getRazorpayInstance } from '@/lib/razorpay';
+import { verifyRazorpaySignature } from '@/lib/razorpay';
 import { resolveOrderFromSupabase } from '@/lib/order-resolver';
 import { sendOrderConfirmationEmail } from '@/lib/order-email';
 import { autoSyncOrderToShiprocket } from '@/lib/shiprocket-auto-sync';
@@ -80,91 +80,62 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3b. Fetch authoritative order & customer/shipping details from Razorpay Magic Checkout
-    let rzpShippingAddress: string | null = null;
-    let rzpCustomerName: string | null = null;
-    let rzpCustomerPhone: string | null = null;
-    let rzpCustomerEmail: string | null = null;
-    let rzpHouseFlat: string | null = null;
-    let rzpAreaStreet: string | null = null;
-    let rzpCity: string | null = null;
-    let rzpState: string | null = null;
-    let rzpPincode: string | null = null;
+    // 4. Ingest customer identity & shipping address from Razorpay Magic Checkout if pending
+    let resolvedShippingAddress = supaOrder?.shipping_address;
+    const additionalUpdates: any = {};
 
     try {
+      const { getRazorpayInstance } = await import('@/lib/razorpay');
       const rzp = getRazorpayInstance();
       const [rzpOrder, rzpPayment] = await Promise.all([
         rzp.orders.fetch(razorpay_order_id).catch(() => null),
         rzp.payments.fetch(razorpay_payment_id).catch(() => null),
       ]);
 
-      const shipping = (rzpOrder as any)?.shipping_address;
-      const customer = (rzpOrder as any)?.customer_details;
-
-      if (shipping) {
-        rzpHouseFlat = shipping.line1 || shipping.address1 || null;
-        rzpAreaStreet = shipping.line2 || shipping.address2 || null;
-        rzpCity = shipping.city || null;
-        rzpState = shipping.state || null;
-        rzpPincode = shipping.postal_code || shipping.zipcode || null;
-        rzpCustomerName = shipping.name || null;
-        rzpCustomerPhone = shipping.contact || null;
-
-        const parts = [
-          rzpHouseFlat,
-          rzpAreaStreet,
-          rzpCity,
-          rzpState ? `${rzpState} - ${rzpPincode || ''}` : rzpPincode,
-          'India',
-        ].filter(Boolean);
-        if (parts.length > 0) {
-          rzpShippingAddress = parts.join(', ');
+      if (rzpPayment?.contact) {
+        const cleanPhone = String(rzpPayment.contact).replace(/^\+91/, '').replace(/\D/g, '');
+        if (cleanPhone.length === 10 && (!supaOrder?.customer_phone || supaOrder.customer_phone === '')) {
+          additionalUpdates.customer_phone = cleanPhone;
         }
       }
-
-      if (customer) {
-        if (!rzpCustomerName && customer.name) rzpCustomerName = customer.name;
-        if (!rzpCustomerPhone && customer.contact) rzpCustomerPhone = customer.contact;
-        if (customer.email) rzpCustomerEmail = customer.email;
+      if (rzpPayment?.email && (!supaOrder?.customer_email || supaOrder.customer_email === 'checkout@adrizo.com')) {
+        additionalUpdates.customer_email = rzpPayment.email.trim();
       }
 
-      if (rzpPayment) {
-        if (!rzpCustomerEmail && (rzpPayment as any).email) rzpCustomerEmail = (rzpPayment as any).email;
-        if (!rzpCustomerPhone && (rzpPayment as any).contact) rzpCustomerPhone = (rzpPayment as any).contact;
+      const magicAddress = (rzpOrder as any)?.shipping_address;
+      if (magicAddress && (supaOrder?.shipping_address === 'Pending Magic Checkout Selection' || !supaOrder?.shipping_address)) {
+        const line1 = magicAddress.line1 || magicAddress.address1 || '';
+        const line2 = magicAddress.line2 || magicAddress.address2 || '';
+        const city = magicAddress.city || '';
+        const state = magicAddress.state || '';
+        const pin = magicAddress.zipcode || magicAddress.postal_code || magicAddress.pincode || '';
+        const name = magicAddress.name || magicAddress.full_name || '';
+
+        if (name && (supaOrder.customer_name === 'Customer' || !supaOrder.customer_name)) {
+          additionalUpdates.customer_name = name;
+        }
+        if (line1) additionalUpdates.house_flat = line1;
+        if (line2) additionalUpdates.area_street = line2;
+        if (city) additionalUpdates.city = city;
+        if (state) additionalUpdates.state = state;
+        if (pin) additionalUpdates.pincode = pin;
+
+        resolvedShippingAddress = [line1, line2, city, state ? `${state} - ${pin}` : pin, 'India'].filter(Boolean).join(', ');
+        additionalUpdates.shipping_address = resolvedShippingAddress;
       }
     } catch (fetchErr) {
-      console.warn('[Verify Payment Razorpay Order/Payment Fetch Warning]', fetchErr);
+      console.warn('[verify-payment] Razorpay order/payment fetch warning:', fetchErr);
     }
 
-    // 4. Update Supabase Order to target payment status and CONFIRMED with Magic Checkout shipping info
-    const updatePayload: any = {
+    // 5. Update Supabase Order to target payment status and CONFIRMED
+    let supaUpdate = supabase.from('orders').update({
       payment_status: targetPaymentStatus,
       order_status: 'CONFIRMED',
       razorpay_payment_id,
       razorpay_signature,
+      ...additionalUpdates,
       updated_at: new Date().toISOString(),
-    };
-
-    if (rzpShippingAddress) {
-      updatePayload.shipping_address = rzpShippingAddress;
-      if (rzpHouseFlat) updatePayload.house_flat = rzpHouseFlat;
-      if (rzpAreaStreet) updatePayload.area_street = rzpAreaStreet;
-      if (rzpCity) updatePayload.city = rzpCity;
-      if (rzpState) updatePayload.state = rzpState;
-      if (rzpPincode) updatePayload.pincode = rzpPincode;
-    }
-
-    if (rzpCustomerName && rzpCustomerName !== 'Customer' && (!supaOrder?.customer_name || supaOrder.customer_name === 'Customer')) {
-      updatePayload.customer_name = rzpCustomerName;
-    }
-    if (rzpCustomerPhone && (!supaOrder?.customer_phone || supaOrder.customer_phone.length < 10)) {
-      updatePayload.customer_phone = rzpCustomerPhone.replace(/\D/g, '').slice(-10);
-    }
-    if (rzpCustomerEmail && !supaOrder?.customer_email) {
-      updatePayload.customer_email = rzpCustomerEmail;
-    }
-
-    let supaUpdate = supabase.from('orders').update(updatePayload);
+    });
 
     if (isUuid) {
       supaUpdate = supaUpdate.eq('id', orderId);
@@ -196,8 +167,8 @@ export async function POST(req: NextRequest) {
         couponCode: primaryCoupon,
         orderId: supaOrder.id,
         orderNumber: supaOrder.order_number,
-        customerEmail: rzpCustomerEmail || supaOrder.customer_email,
-        customerPhone: rzpCustomerPhone || supaOrder.customer_phone,
+        customerEmail: supaOrder.customer_email,
+        customerPhone: supaOrder.customer_phone,
         userId: supaOrder.customer_id,
         discountAmount: Number(supaOrder.discount),
       }).catch(err => console.error('[Verify Payment Coupon Usage Record Warning]', err));
@@ -208,10 +179,7 @@ export async function POST(req: NextRequest) {
       orderId: supaOrder?.id || orderId,
       orderNumber: supaOrder?.order_number,
       paymentStatus: targetPaymentStatus,
-      shippingAddress: rzpShippingAddress || supaOrder?.shipping_address,
-      customerName: rzpCustomerName || supaOrder?.customer_name,
-      customerPhone: rzpCustomerPhone || supaOrder?.customer_phone,
-      customerEmail: rzpCustomerEmail || supaOrder?.customer_email,
+      shippingAddress: resolvedShippingAddress
     });
 
   } catch (error: any) {

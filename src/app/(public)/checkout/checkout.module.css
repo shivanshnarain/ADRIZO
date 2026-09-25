@@ -1491,187 +1491,169 @@
 }
 
 /* =========================================================================
-   RAZORPAY MAGIC CHECKOUT — 1-CLICK IDENTITY & PREFILL COMPONENT
+   RAZORPAY MAGIC CHECKOUT — 1-CLICK & INTELLIGENT PREFILL STYLES
    ========================================================================= */
-
-.magicCheckoutCard {
+.magicCheckoutBanner {
   background: linear-gradient(135deg, #09090b 0%, #18181b 100%);
-  border: 1.5px solid #27272a;
-  border-radius: 14px;
-  padding: 1.35rem 1.5rem;
-  margin-bottom: 1.25rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
   color: #ffffff;
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #27272a;
   position: relative;
   overflow: hidden;
 }
 
-.magicCheckoutCard::before {
+.magicCheckoutBanner::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #3b82f6, #6366f1, #8b5cf6, #3b82f6);
-  background-size: 200% 100%;
-  animation: magicGradientMove 3s linear infinite;
+  top: -50px;
+  right: -50px;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+  pointer-events: none;
 }
 
-@keyframes magicGradientMove {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 200% 0%; }
+.magicCheckoutHeader {
+  margin-bottom: 1.25rem;
 }
 
-.magicHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.magicBoltIcon {
+.magicBadge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: rgba(59, 130, 246, 0.18);
-  border: 1px solid rgba(59, 130, 246, 0.35);
-  font-size: 1.1rem;
-  flex-shrink: 0;
+  gap: 0.4rem;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.magicIcon {
+  color: #38bdf8;
 }
 
 .magicTitle {
-  font-size: 1.1rem;
+  font-size: 1.35rem;
   font-weight: 800;
+  margin: 0 0 0.35rem 0;
   color: #ffffff;
-  margin: 0;
   letter-spacing: -0.01em;
 }
 
 .magicSubtitle {
-  font-size: 0.8rem;
+  font-size: 0.86rem;
   color: #a1a1aa;
-  margin: 3px 0 0;
-  line-height: 1.4;
+  margin: 0 0 1rem 0;
+  line-height: 1.45;
+  max-width: 580px;
 }
 
-.magicNetworkBadge {
+.magicNetworkBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.magicFeaturePill {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: rgba(37, 99, 235, 0.2);
-  color: #93c5fd;
-  border: 1px solid rgba(59, 130, 246, 0.35);
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4f4f5;
   padding: 0.25rem 0.65rem;
-  border-radius: 9999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.magicCheckoutBtn {
+.magicPayButton {
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
   background: #ffffff;
   color: #09090b;
   border: none;
   border-radius: 9px;
-  padding: 0.85rem 1.25rem;
-  font-size: 0.95rem;
+  padding: 0.95rem 1.25rem;
+  font-size: 0.98rem;
   font-weight: 800;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-.magicCheckoutBtn:hover:not(:disabled) {
+.magicPayButton:hover:not(:disabled) {
   background: #f4f4f5;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 
-.magicCheckoutBtn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.magicCheckoutBtn:disabled {
+.magicPayButton:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }
 
-.magicFeaturesRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.85rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 0.74rem;
-  color: #a1a1aa;
-}
-
-.orDivider {
-  display: flex;
-  align-items: center;
+.magicDivider {
   text-align: center;
-  margin: 1.25rem 0 1.25rem;
+  margin-top: 1rem;
+  font-size: 0.75rem;
   color: #71717a;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
-.orDivider::before,
-.orDivider::after {
-  content: '';
-  flex: 1;
-  border-bottom: 1px solid #e4e4e7;
+.magicStep1Cta {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px dashed #e4e4e7;
 }
 
-.orDivider span {
-  padding: 0 0.85rem;
-}
-
-.magicStepPrompt {
+.magicLoginButton {
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  background: #f0f7ff;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
-  padding: 0.65rem 0.85rem;
-  margin-bottom: 1rem;
-}
-
-.magicQuickBtn {
+  justify-content: center;
+  gap: 0.5rem;
   background: #09090b;
   color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  padding: 0.45rem 0.85rem;
-  font-size: 0.8rem;
+  border: 1px solid #27272a;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  transition: opacity 0.15s ease;
+  transition: all 0.15s ease;
 }
 
-.magicQuickBtn:hover:not(:disabled) {
-  opacity: 0.9;
+.magicLoginButton:hover:not(:disabled) {
+  background: #27272a;
+  border-color: #3f3f46;
 }
+
+.magicLoginButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.step1OrDivider {
+  text-align: center;
+  margin-top: 0.85rem;
+  font-size: 0.74rem;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+

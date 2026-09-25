@@ -98,9 +98,10 @@ export async function POST(req: NextRequest) {
       shippingAddress, 
       paymentMethod: rawPaymentMethod = 'COD', 
       couponCode,
-      isMagicCheckout = false,
+      isMagicCheckout: rawIsMagic = false,
+      customer: clientCustomer = {}
     } = body;
-    const isMagic = Boolean(isMagicCheckout);
+    const isMagicCheckout = Boolean(rawIsMagic);
     const rawUpper = String(rawPaymentMethod || 'COD').trim().toUpperCase();
     const paymentMethod = (rawUpper === 'CASH_ON_DELIVERY' || rawUpper === 'CASH-ON-DELIVERY') ? 'COD' : rawUpper;
 
@@ -112,31 +113,13 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // 2. Validate Delivery Address (Strict for standard checkout, deferred for 1-Click Magic Checkout)
-    if (!isMagic && !shippingAddress) {
+    // 2. Validate Delivery Address (only mandatory for manual checkout; Magic Checkout handles address selection inside modal)
+    if (!shippingAddress && !isMagicCheckout) {
       return NextResponse.json({ 
         success: false, 
         error: 'Shipping address is required.' 
       }, { status: 400 });
     }
-
-    const {
-      fullName = '',
-      phone = '',
-      email = '',
-      addressLine1 = '',
-      addressLine2 = '',
-      address = '',
-      flatHouseBuilding = '',
-      area = '',
-      areaStreetSector = '',
-      landmark = '',
-      district = '',
-      city = '',
-      state = '',
-      pincode = '',
-      country = 'India',
-    } = shippingAddress || {};
 
     // 3. Customer Auth Resolution & Profile/Address Auto-Persistence
     const adminSupabase = getAdminClient();
@@ -153,20 +136,47 @@ export async function POST(req: NextRequest) {
       console.warn('[Checkout Auth Resolution Warning]', authErr);
     }
 
-    const trimmedName = (fullName || (authCustomer?.name && authCustomer.name !== 'Customer' ? authCustomer.name : (isMagic ? 'Magic Customer' : ''))).trim();
-    const trimmedPhone = (phone || authCustomer?.phone || '').trim().replace(/[^0-9]/g, '');
-    const trimmedEmail = (email || authCustomer?.email || '').trim();
-    const trimmedAddress = (addressLine1 || address || flatHouseBuilding || (isMagic ? 'Pending Magic Checkout Selection' : '')).trim();
-    const trimmedDistrict = district ? district.trim() : '';
-    const trimmedCity = city ? city.trim() : (isMagic ? 'Pending' : '');
-    const trimmedState = state ? state.trim() : (isMagic ? 'Pending' : '');
-    const trimmedPincode = pincode ? pincode.trim().replace(/[^0-9]/g, '') : (isMagic ? '000000' : '');
+    let trimmedName = '';
+    let trimmedPhone = '';
+    let trimmedEmail = '';
+    let trimmedAddress = '';
+    let trimmedDistrict = '';
+    let trimmedCity = '';
+    let trimmedState = '';
+    let trimmedPincode = '';
+    let cleanFlat = '';
+    let cleanArea = '';
+    let cleanLandmark = '';
+    let fullShippingAddressString = '';
 
-    let authoritativeCustomerEmail = trimmedEmail || authCustomer?.email || '';
-    let authoritativeCustomerPhone = trimmedPhone || authCustomer?.phone || '';
-    let authoritativeCustomerName = (trimmedName && trimmedName !== 'Magic Customer') ? trimmedName : (authCustomer?.name || 'Customer');
+    if (shippingAddress) {
+      const {
+        fullName = '',
+        phone = '',
+        email = '',
+        addressLine1 = '',
+        addressLine2 = '',
+        address = '',
+        flatHouseBuilding = '',
+        area = '',
+        areaStreetSector = '',
+        landmark = '',
+        district = '',
+        city = '',
+        state = '',
+        pincode = '',
+        country = 'India',
+      } = shippingAddress;
 
-    if (!isMagic) {
+      trimmedName = (fullName || (authCustomer?.name && authCustomer.name !== 'Customer' ? authCustomer.name : '')).trim();
+      trimmedPhone = (phone || authCustomer?.phone || '').trim().replace(/[^0-9]/g, '');
+      trimmedEmail = (email || authCustomer?.email || '').trim();
+      trimmedAddress = (addressLine1 || address || flatHouseBuilding || '').trim();
+      trimmedDistrict = district ? district.trim() : '';
+      trimmedCity = city.trim();
+      trimmedState = state.trim();
+      trimmedPincode = pincode.trim().replace(/[^0-9]/g, '');
+
       if (!trimmedName || trimmedName.length < 2) {
         return NextResponse.json({ success: false, error: 'Please enter a valid full name.' }, { status: 400 });
       }
@@ -190,49 +200,64 @@ export async function POST(req: NextRequest) {
       if (!/^[1-9][0-9]{5}$/.test(trimmedPincode)) {
         return NextResponse.json({ success: false, error: 'Please enter a valid 6-digit Indian PIN code.' }, { status: 400 });
       }
-    }
 
-    // Normalize and construct formatted single delivery string without duplicating city/state/pin/country
-    const cleanFlat = trimmedAddress;
-    let cleanArea = (addressLine2 || area || areaStreetSector || '').trim();
-    const cleanLandmark = landmark ? landmark.trim() : '';
+      // Normalize and construct formatted single delivery string without duplicating city/state/pin/country
+      cleanFlat = trimmedAddress;
+      cleanArea = (addressLine2 || area || areaStreetSector || '').trim();
+      cleanLandmark = landmark ? landmark.trim() : '';
 
-    if (cleanArea) {
-      const areaFragments = cleanArea.split(',').map((f: string) => f.trim()).filter(Boolean);
-      const filteredArea = areaFragments.filter((frag: string) => {
-        const low = frag.toLowerCase();
-        if (low === 'india') return false;
-        if (trimmedState && low.includes(trimmedState.toLowerCase())) return false;
-        if (trimmedCity && low === trimmedCity.toLowerCase()) return false;
-        if (trimmedPincode && low.includes(trimmedPincode)) return false;
-        if (trimmedDistrict && low === trimmedDistrict.toLowerCase()) return false;
-        if (low.startsWith('landmark:')) return false;
-        if (low.startsWith('dist:')) return false;
-        return true;
-      });
-      cleanArea = filteredArea.join(', ');
-    }
-
-    const addressParts: string[] = [];
-    if (cleanFlat) addressParts.push(cleanFlat);
-    if (cleanArea && cleanArea.toLowerCase() !== cleanFlat.toLowerCase()) addressParts.push(cleanArea);
-    if (cleanLandmark) addressParts.push(`Near ${cleanLandmark.replace(/^(near|landmark:?)\s*/i, '')}`);
-    if (trimmedCity) addressParts.push(trimmedCity);
-    if (trimmedState) {
-      if (trimmedPincode) {
-        addressParts.push(`${trimmedState} - ${trimmedPincode}`);
-      } else {
-        addressParts.push(trimmedState);
+      if (cleanArea) {
+        const areaFragments = cleanArea.split(',').map((f: string) => f.trim()).filter(Boolean);
+        const filteredArea = areaFragments.filter((frag: string) => {
+          const low = frag.toLowerCase();
+          if (low === 'india') return false;
+          if (trimmedState && low.includes(trimmedState.toLowerCase())) return false;
+          if (trimmedCity && low === trimmedCity.toLowerCase()) return false;
+          if (trimmedPincode && low.includes(trimmedPincode)) return false;
+          if (trimmedDistrict && low === trimmedDistrict.toLowerCase()) return false;
+          if (low.startsWith('landmark:')) return false;
+          if (low.startsWith('dist:')) return false;
+          return true;
+        });
+        cleanArea = filteredArea.join(', ');
       }
-    } else if (trimmedPincode) {
-      addressParts.push(trimmedPincode);
+
+      const addressParts: string[] = [];
+      if (cleanFlat) addressParts.push(cleanFlat);
+      if (cleanArea && cleanArea.toLowerCase() !== cleanFlat.toLowerCase()) addressParts.push(cleanArea);
+      if (cleanLandmark) addressParts.push(`Near ${cleanLandmark.replace(/^(near|landmark:?)\s*/i, '')}`);
+      if (trimmedCity) addressParts.push(trimmedCity);
+      if (trimmedState) {
+        if (trimmedPincode) {
+          addressParts.push(`${trimmedState} - ${trimmedPincode}`);
+        } else {
+          addressParts.push(trimmedState);
+        }
+      } else if (trimmedPincode) {
+        addressParts.push(trimmedPincode);
+      }
+      addressParts.push('India');
+
+      fullShippingAddressString = addressParts.join(', ');
+    } else {
+      // 1-Click Magic Checkout flow without pre-entered address
+      trimmedName = (clientCustomer.name || authCustomer?.name || 'Customer').trim();
+      trimmedPhone = (clientCustomer.phone || authCustomer?.phone || '').trim().replace(/[^0-9]/g, '');
+      trimmedEmail = (clientCustomer.email || authCustomer?.email || 'checkout@adrizo.com').trim();
+      trimmedAddress = 'Pending Magic Checkout Selection';
+      trimmedCity = 'Pending';
+      trimmedState = 'Pending';
+      trimmedPincode = '000000';
+      cleanFlat = 'Pending Magic Checkout Selection';
+      fullShippingAddressString = 'Pending Magic Checkout Selection';
     }
-    addressParts.push('India');
 
-    const fullShippingAddressString = addressParts.join(', ');
+    let authoritativeCustomerEmail = trimmedEmail || authCustomer?.email || 'checkout@adrizo.com';
+    let authoritativeCustomerPhone = trimmedPhone || authCustomer?.phone || '';
+    let authoritativeCustomerName = trimmedName || authCustomer?.name || 'Customer';
 
-    // Persist address to customer_addresses and sync profile if customer is authenticated
-    if (authenticatedUserId) {
+    // Persist address to customer_addresses and sync profile if customer is authenticated and provided an address
+    if (authenticatedUserId && shippingAddress) {
       try {
         // 1. Check existing saved addresses to prevent duplicates
         const { data: existingAddrs } = await adminSupabase
@@ -388,34 +413,32 @@ export async function POST(req: NextRequest) {
     } | null = null;
 
     // Check Supabase (Primary Order Store)
-    if (trimmedPhone && trimmedPhone.length === 10) {
-      try {
-        const thirtySecondsAgoIso = new Date(Date.now() - 30000).toISOString();
-        const { data: recentSupaOrders } = await adminSupabase
-          .from('orders')
-          .select('id, order_number, total_amount, cod_charge, payment_method, razorpay_order_id, payment_status, order_status')
-          .eq('customer_phone', trimmedPhone)
-          .gte('created_at', thirtySecondsAgoIso)
-          .order('created_at', { ascending: false })
-          .limit(1);
+    try {
+      const thirtySecondsAgoIso = new Date(Date.now() - 30000).toISOString();
+      const { data: recentSupaOrders } = await adminSupabase
+        .from('orders')
+        .select('id, order_number, total_amount, cod_charge, payment_method, razorpay_order_id, payment_status, order_status')
+        .eq('customer_phone', trimmedPhone)
+        .gte('created_at', thirtySecondsAgoIso)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-        if (recentSupaOrders && recentSupaOrders.length > 0) {
-          const candidate = recentSupaOrders[0];
-          if (Math.abs(Number(candidate.total_amount) - finalTotal) < 0.01) {
-            existingRecentOrder = {
-              id: candidate.id,
-              orderNumber: candidate.order_number,
-              paymentMethod: candidate.payment_method || paymentMethod,
-              total: Number(candidate.total_amount),
-              codCharge: Number(candidate.cod_charge || codCharge),
-              razorpayOrderId: candidate.razorpay_order_id,
-              paymentStatus: candidate.payment_status,
-            };
-          }
+      if (recentSupaOrders && recentSupaOrders.length > 0) {
+        const candidate = recentSupaOrders[0];
+        if (Math.abs(Number(candidate.total_amount) - finalTotal) < 0.01) {
+          existingRecentOrder = {
+            id: candidate.id,
+            orderNumber: candidate.order_number,
+            paymentMethod: candidate.payment_method || paymentMethod,
+            total: Number(candidate.total_amount),
+            codCharge: Number(candidate.cod_charge || codCharge),
+            razorpayOrderId: candidate.razorpay_order_id,
+            paymentStatus: candidate.payment_status,
+          };
         }
-      } catch (supaDedupErr) {
-        console.warn('[Supabase Duplicate Prevention Warning]', supaDedupErr);
       }
+    } catch (supaDedupErr) {
+      console.warn('[Supabase Duplicate Prevention Warning]', supaDedupErr);
     }
 
     if (existingRecentOrder && (existingRecentOrder.paymentStatus === 'PAID' || existingRecentOrder.paymentStatus === 'COD_CONFIRMATION_PAID')) {
@@ -601,10 +624,10 @@ export async function POST(req: NextRequest) {
         shipping_fee: shippingCharge > 0 ? Math.round(shippingCharge * 100) : 0,
         notes: {
           orderNumber,
-          isMagicCheckout: isMagic ? 'true' : 'false',
-          customerName: trimmedName,
-          customerEmail: trimmedEmail,
-          customerPhone: trimmedPhone,
+          customerName: authoritativeCustomerName,
+          customerEmail: authoritativeCustomerEmail,
+          customerPhone: authoritativeCustomerPhone,
+          checkoutType: isMagicCheckout ? 'MAGIC_1CC' : 'STANDARD',
         }
       });
 
@@ -669,11 +692,13 @@ export async function POST(req: NextRequest) {
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency || currency,
         key: getRazorpayKeyId(),
+        total: finalTotal,
         line_items_total: magicLineItemsTotal,
+        isMagicCheckout,
         customer: {
-          name: trimmedName,
-          email: trimmedEmail,
-          phone: trimmedPhone
+          name: authoritativeCustomerName,
+          email: authoritativeCustomerEmail,
+          phone: authoritativeCustomerPhone
         }
       });
     }
