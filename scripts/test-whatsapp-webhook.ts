@@ -37,7 +37,7 @@ async function runTests() {
 
   // Test 3: Invalid Mode Request
   console.log('\n--- Test 3: Invalid Mode ---');
-  const invalidModeUrl = 'http://localhost:3000/api/whatsapp/webhook?hub.mode=unsubscribe&hub.verify_token=ADRIZO_WHATSAPP_VERIFY_2026_9K7M2&hub.challenge=ADRIZO_TEST_123';
+  const invalidModeUrl = `http://localhost:3000/api/whatsapp/webhook?hub.mode=unsubscribe&hub.verify_token=${encodeURIComponent(testToken)}&hub.challenge=ADRIZO_TEST_123`;
   const req3 = new NextRequest(invalidModeUrl, { method: 'GET' });
   const res3 = await GET(req3);
 
