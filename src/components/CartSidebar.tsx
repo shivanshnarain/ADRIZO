@@ -8,6 +8,7 @@ import FreeProductSelectorModal from './FreeProductSelectorModal';
 import ForgottenFreeItemsModal from './ForgottenFreeItemsModal';
 import Portal from '@/components/Portal';
 import { launchRazorpayCheckout } from '@/lib/razorpay-direct';
+import { getCodAdvanceAmount } from '@/config/policies';
 
 export default function CartSidebar() {
   const router = useRouter();
@@ -512,7 +513,7 @@ export default function CartSidebar() {
                   </span>
                 </div>
                 <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#71717a' }}>
-                  Pay ₹99 Advance
+                  Pay ₹{getCodAdvanceAmount()} Advance
                 </span>
               </label>
             </div>
@@ -546,7 +547,7 @@ export default function CartSidebar() {
                 ? 'Connecting to Secure Razorpay...' 
                 : paymentMode === 'ONLINE_RAZORPAY'
                   ? `Proceed to Pay ₹${Math.max(0, cartTotal - 50).toFixed(2)} Online →`
-                  : `Pay ₹99 Advance & Confirm COD →`}
+                  : `Pay ₹${getCodAdvanceAmount()} Advance & Confirm COD →`}
             </button>
           </div>
         )}

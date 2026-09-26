@@ -94,6 +94,7 @@ export async function launchRazorpayCheckout({
     }
 
     const isCod = paymentMethod === 'COD';
+    const codAdvance = data.codConfirmationAmount || 99;
     const contactToPrefill = data.customer?.phone || customer?.phone || '';
     const emailToPrefill = data.customer?.email || customer?.email || '';
     const nameToPrefill = data.customer?.name || customer?.name || '';
@@ -104,7 +105,7 @@ export async function launchRazorpayCheckout({
       currency: data.currency || 'INR',
       name: 'ADRIZO',
       description: isCod 
-        ? `Order #${data.orderNumber} (₹99 COD Advance Confirmation)`
+        ? `Order #${data.orderNumber} (₹${codAdvance} COD Advance Confirmation)`
         : `Order #${data.orderNumber}`,
       image: ADRIZO_LOGO_DATA_URI,
       order_id: data.razorpayOrderId,
@@ -112,7 +113,6 @@ export async function launchRazorpayCheckout({
       remember_customer: true,
       features: {
         cardsaving: true,
-        truecaller_login: true,
       },
       prefill: {
         name: nameToPrefill || undefined,

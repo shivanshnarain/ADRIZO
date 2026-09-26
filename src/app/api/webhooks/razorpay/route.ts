@@ -47,13 +47,16 @@ export async function POST(req: NextRequest) {
         const order = supaOrders?.[0];
 
         // Idempotency check
-        if (order && order.payment_status === 'PAID') {
+        const isCodOrder = order?.payment_method === 'COD';
+        const targetPaymentStatus = isCodOrder ? 'COD_CONFIRMATION_PAID' : 'PAID';
+
+        if (order && (order.payment_status === targetPaymentStatus || order.payment_status === 'PAID')) {
           return NextResponse.json({ status: 'ok', received: true, alreadyProcessed: true }, { status: 200 });
         }
 
         // Ingest verified customer identity and shipping address from Magic Checkout if pending
         const webhookUpdates: any = {
-          payment_status: 'PAID',
+          payment_status: targetPaymentStatus,
           order_status: 'CONFIRMED',
           razorpay_payment_id: razorpayPaymentId,
           updated_at: new Date().toISOString(),

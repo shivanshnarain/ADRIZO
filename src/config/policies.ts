@@ -20,7 +20,8 @@ export const POLICY_CONFIG = {
     standardFee: 39,             // Flat ₹39 below ₹599
     codMinOrder: 0,              // COD available for all valid orders
     codMaxOrder: 999999,         // No restrictive limit
-    codHandlingFee: 0,           // ₹99 is advance confirmation payment against total, not extra fee
+    codHandlingFee: 0,           // Extra handling fee (0 because ₹99 is advance payment against total, not extra fee)
+    codAdvanceAmount: 99,        // Dedicated online advance required to confirm COD order
     processingTimeDays: "1–2 business days",
     deliveryMetroDays: "2–4",
     deliveryRestOfIndiaDays: "3–6",
@@ -32,3 +33,7 @@ export const POLICY_CONFIG = {
     processingTimeDays: "5–7 business days",
   }
 };
+
+export function getCodAdvanceAmount(): number {
+  return POLICY_CONFIG.shipping.codAdvanceAmount ?? 99;
+}

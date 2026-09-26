@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { createClient } from '@/lib/supabase/server';
 import { getAdminClient } from '@/lib/supabase/admin';
 import { getAuthenticatedCustomer } from '@/lib/customer-auth';
-import { POLICY_CONFIG } from '@/config/policies';
+import { POLICY_CONFIG, getCodAdvanceAmount } from '@/config/policies';
 import { 
   isRazorpayConfigured, 
   getRazorpayConfigStatus,
@@ -15,7 +15,7 @@ import {
 import { resolveOrderFromSupabase } from '@/lib/order-resolver';
 import { sendOrderConfirmationEmail } from '@/lib/order-email';
 import { autoSyncOrderToShiprocket } from '@/lib/shiprocket-auto-sync';
-import { validateAndPriceOrderItems } from '@/lib/promotions';
+import { validateAndPriceOrderItems, getActivePromotionOffers } from '@/lib/promotions';
 import { validateAndCalculateCouponDiscount } from '@/lib/coupon-engine';
 import { calculateCheckoutTotals, PaymentMode } from '@/lib/checkout-engine';
 
@@ -385,6 +385,7 @@ export async function POST(req: NextRequest) {
     // Single authoritative source of truth across Cart, Checkout, Buy Now, and Razorpay
     const paymentModeEnum: PaymentMode = paymentMethod === 'COD' ? 'COD' : 'ONLINE_RAZORPAY';
 
+    const activeOffers = await getActivePromotionOffers();
     const checkoutTotals = calculateCheckoutTotals({
       items: validatedItems.map(item => ({
         id: item.productId,
@@ -401,22 +402,22 @@ export async function POST(req: NextRequest) {
         categorySlug: (item as any).categorySlug || (item as any).category?.slug,
         categoryName: (item as any).categoryName || (item as any).category?.name,
         category: (item as any).category,
+        isFree: item.isFree,
+        promoGroupId: item.promoGroupId,
+        promotionRule: item.promotionRule,
       })),
+      offers: activeOffers,
       paymentMode: paymentModeEnum,
       couponDiscount,
       shippingThreshold: POLICY_CONFIG.shipping.freeShippingThreshold,
       standardShippingFee: POLICY_CONFIG.shipping.standardFee,
     });
 
-    const hasManualPromoGroups = (promoResult.promotionalBundlesCount || 0) > 0;
-    subtotal = hasManualPromoGroups ? promoResult.subtotal : checkoutTotals.subtotalAfterBundles;
-    const bundleDiscount = hasManualPromoGroups ? promoResult.promotionalDiscount : checkoutTotals.bundleDiscount;
-    const shippingCharge = subtotal >= POLICY_CONFIG.shipping.freeShippingThreshold 
-      ? 0 
-      : POLICY_CONFIG.shipping.standardFee;
-    const codCharge = paymentMethod === 'COD' ? POLICY_CONFIG.shipping.codHandlingFee : 0;
-    const prepaidDiscount = paymentModeEnum === 'ONLINE_RAZORPAY' ? 50 : 0;
-    const finalTotal = Math.max(0, subtotal - couponDiscount - prepaidDiscount + shippingCharge + (paymentMethod === 'COD' ? codCharge : 0));
+    subtotal = checkoutTotals.subtotalAfterBundles;
+    const bundleDiscount = checkoutTotals.bundleDiscount;
+    const shippingCharge = checkoutTotals.shippingCharge;
+    const prepaidDiscount = checkoutTotals.prepaidDiscount;
+    const finalTotal = checkoutTotals.finalOrderValue;
 
     // Duplicate Order Prevention Guard (30s idempotency window)
     let existingRecentOrder: {
@@ -448,7 +449,7 @@ export async function POST(req: NextRequest) {
             orderNumber: candidate.order_number,
             paymentMethod: candidate.payment_method || paymentMethod,
             total: Number(candidate.total_amount),
-            codCharge: Number(candidate.cod_charge || codCharge),
+            codCharge: Number(candidate.cod_charge || (paymentMethod === 'COD' ? checkoutTotals.codFee : 0)),
             razorpayOrderId: candidate.razorpay_order_id,
             paymentStatus: candidate.payment_status,
           };
@@ -471,38 +472,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4b. Prepare official Magic Checkout line_items and line_items_total
-    const magicLineItems = validatedItems.map(item => {
-      const itemMrpInPaise = Math.round((item.mrp || item.price) * 100);
-      const itemOfferPriceInPaise = Math.round(item.price * 100);
-
-      const descParts: string[] = [];
-      if (item.size) descParts.push(`Size: ${item.size}`);
-      if (item.color && item.color !== 'Standard') descParts.push(`Color: ${item.color}`);
-      const description = descParts.join(' | ') || item.productName;
-
-      let imageUrl = item.productImage || '';
-      if (imageUrl && !imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-        imageUrl = `https://adrizo.com${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
-      }
-
-      return {
-        sku: item.sku || item.productId,
-        variant_id: item.selectedVariantId || `${item.productId}_${item.size || 'std'}`,
-        price: itemMrpInPaise,
-        offer_price: itemOfferPriceInPaise,
-        quantity: item.quantity,
-        name: item.productName,
-        description,
-        image_url: imageUrl,
-      };
-    });
-
-    const magicLineItemsTotal = magicLineItems.reduce(
-      (sum, it) => sum + (it.offer_price * it.quantity),
-      0
-    );
-
     // 8. Handle CASH ON DELIVERY (COD) with MANDATORY ₹99 INSTANT CONFIRMATION PAYMENT
     if (paymentMethod === 'COD') {
       const codConfigStatus = getRazorpayConfigStatus();
@@ -517,23 +486,38 @@ export async function POST(req: NextRequest) {
       const rzp = getRazorpayInstance();
       const currency = process.env.RAZORPAY_CURRENCY || 'INR';
 
-      // Dynamic calculation: customer pays ₹99 (or full total if <= ₹99) online, remaining balance on delivery
-      const codConfirmationAmount = Math.min(99, finalTotal);
-      const codRemainingAmount = Math.max(0, finalTotal - codConfirmationAmount);
+      // Dynamic calculation: customer pays dedicated ₹99 advance online, remaining balance on delivery
+      const codConfirmationAmount = checkoutTotals.amountPayableNow; // ₹99 (or full total if <= ₹99)
+      const codRemainingAmount = checkoutTotals.amountDueOnDelivery; // e.g. ₹1,200
+      const codAdvancePaise = Math.round(codConfirmationAmount * 100);
 
-      // Create Razorpay Order specifically for the COD confirmation advance payment with Magic Checkout fields
+      // Dedicated COD advance confirmation line item for Razorpay Magic Checkout
+      const codLineItems = [
+        {
+          sku: 'COD-ADVANCE-CONFIRMATION',
+          variant_id: 'cod_advance_99',
+          price: codAdvancePaise,
+          offer_price: codAdvancePaise,
+          quantity: 1,
+          name: 'Cash on Delivery (₹99 Advance Confirmation)',
+          description: `Advance confirmation for Order #${orderNumber}. Balance ₹${codRemainingAmount.toFixed(2)} payable on delivery.`,
+          image_url: 'https://adrizo.com/logo.png',
+        }
+      ];
+
+      // Create Razorpay Order specifically for the COD confirmation advance payment ONLY
       const razorpayOrder = await rzp.orders.create({
-        amount: Math.round(codConfirmationAmount * 100), // in paise
+        amount: codAdvancePaise, // 9900 paise
         currency,
         receipt: `${orderNumber}-COD99`,
-        line_items_total: magicLineItemsTotal,
-        line_items: magicLineItems as any,
+        line_items_total: codAdvancePaise,
+        line_items: codLineItems as any,
         notes: {
           orderNumber,
-          type: 'COD_CONFIRMATION',
-          customerName: trimmedName,
-          customerEmail: trimmedEmail,
-          customerPhone: trimmedPhone,
+          type: 'COD_ADVANCE',
+          customerName: authoritativeCustomerName,
+          customerEmail: authoritativeCustomerEmail,
+          customerPhone: authoritativeCustomerPhone,
           orderTotal: String(finalTotal),
           codConfirmationAmount: String(codConfirmationAmount),
           codRemainingAmount: String(codRemainingAmount),
@@ -556,7 +540,7 @@ export async function POST(req: NextRequest) {
         pincode: trimmedPincode,
         subtotal,
         shipping_charge: shippingCharge,
-        cod_charge: codConfirmationAmount,
+        cod_charge: codConfirmationAmount, // Dedicated advance payment recorded
         discount: couponDiscount + bundleDiscount,
         coupon_code: appliedCouponCode,
         total_amount: finalTotal,
@@ -580,8 +564,8 @@ export async function POST(req: NextRequest) {
         size: item.size || null,
         color: item.color || null,
         quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.price * item.quantity,
+        unit_price: item.isFree ? 0 : item.price,
+        total_price: item.isFree ? 0 : (item.price * item.quantity),
       }));
 
       const saveResult = await saveOrderToSupabase(adminSupabase, orderPayload, orderItemsPayload);
@@ -602,15 +586,15 @@ export async function POST(req: NextRequest) {
         orderNumber,
         paymentMethod: 'COD',
         razorpayOrderId: razorpayOrder.id,
-        amount: codConfirmationAmount * 100, // 9900 paise
+        amount: codAdvancePaise, // 9900 paise
         currency,
         key: getRazorpayKeyId(),
         total: finalTotal,
         bundleDiscount,
         subtotalAfterBundles: subtotal,
-        line_items_total: magicLineItemsTotal,
+        line_items_total: codAdvancePaise,
         codConfirmationAmount,
-        codRemainingAmount: Math.max(0, finalTotal - codConfirmationAmount),
+        codRemainingAmount,
         customer: {
           name: authoritativeCustomerName,
           email: authoritativeCustomerEmail,
@@ -633,12 +617,76 @@ export async function POST(req: NextRequest) {
       const rzp = getRazorpayInstance();
       const currency = process.env.RAZORPAY_CURRENCY || 'INR';
 
-      // Create Razorpay Order server-side with Magic Checkout line items (amount in paise for INR)
+      const onlineAmountToPay = checkoutTotals.amountPayableNow; // e.g. ₹1,249
+      const onlineAmountInPaise = Math.round(onlineAmountToPay * 100);
+
+      // Build official Magic Checkout line_items
+      // Free items: offer_price MUST be 0!
+      // Paid items: offer_price reflects their selling price (minus any distributed discounts)
+      const paidItems = validatedItems.filter(it => !it.isFree);
+      const totalPaidQty = paidItems.reduce((acc, it) => acc + it.quantity, 0);
+      const totalDiscountToDeductPaise = Math.round((prepaidDiscount + couponDiscount) * 100);
+      let remainingDiscountToDeductPaise = totalDiscountToDeductPaise;
+
+      const magicLineItems = validatedItems.map(item => {
+        const itemMrpInPaise = Math.round((item.mrp || item.price || 2999) * 100);
+        let itemOfferPriceInPaise = 0;
+
+        if (!item.isFree && item.price > 0) {
+          const basePaidPaise = Math.round(item.price * 100);
+          if (remainingDiscountToDeductPaise > 0) {
+            const share = Math.min(basePaidPaise - 100, Math.round(remainingDiscountToDeductPaise / Math.max(1, totalPaidQty)));
+            itemOfferPriceInPaise = Math.max(100, basePaidPaise - share);
+            remainingDiscountToDeductPaise = Math.max(0, remainingDiscountToDeductPaise - share);
+          } else {
+            itemOfferPriceInPaise = basePaidPaise;
+          }
+        } else {
+          // Free promotional item: offer_price MUST BE 0!
+          itemOfferPriceInPaise = 0;
+        }
+
+        const descParts: string[] = [];
+        if (item.size) descParts.push(`Size: ${item.size}`);
+        if (item.color && item.color !== 'Standard') descParts.push(`Color: ${item.color}`);
+        if (item.isFree) descParts.push('FREE Item');
+        const description = descParts.join(' | ') || item.productName;
+
+        let imageUrl = item.productImage || '';
+        if (imageUrl && !imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+          imageUrl = `https://adrizo.com${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+        }
+
+        return {
+          sku: item.sku || item.productId,
+          variant_id: item.selectedVariantId || `${item.productId}_${item.size || 'std'}`,
+          price: itemMrpInPaise,
+          offer_price: itemOfferPriceInPaise,
+          quantity: item.quantity,
+          name: item.productName,
+          description,
+          image_url: imageUrl,
+        };
+      });
+
+      // Adjust any rounding on first paid item
+      const currentItemsTotal = magicLineItems.reduce((sum, it) => sum + (it.offer_price * it.quantity), 0);
+      const roundingDiff = (onlineAmountInPaise - (shippingCharge > 0 ? Math.round(shippingCharge * 100) : 0)) - currentItemsTotal;
+      if (roundingDiff !== 0) {
+        const firstPaid = magicLineItems.find(it => it.offer_price > 0);
+        if (firstPaid) {
+          firstPaid.offer_price += roundingDiff;
+        }
+      }
+
+      const finalLineItemsTotal = magicLineItems.reduce((sum, it) => sum + (it.offer_price * it.quantity), 0);
+
+      // Create Razorpay Order server-side with Magic Checkout line items
       const razorpayOrder = await rzp.orders.create({
-        amount: Math.round(finalTotal * 100),
+        amount: onlineAmountInPaise,
         currency,
         receipt: orderNumber,
-        line_items_total: magicLineItemsTotal,
+        line_items_total: finalLineItemsTotal,
         line_items: magicLineItems as any,
         shipping_fee: shippingCharge > 0 ? Math.round(shippingCharge * 100) : 0,
         notes: {
@@ -669,7 +717,7 @@ export async function POST(req: NextRequest) {
         cod_charge: 0,
         discount: couponDiscount + bundleDiscount + prepaidDiscount,
         coupon_code: appliedCouponCode,
-        total_amount: finalTotal,
+        total_amount: onlineAmountToPay,
         payment_method: 'ONLINE_RAZORPAY',
         payment_status: 'PENDING',
         order_status: 'PENDING',
@@ -688,8 +736,8 @@ export async function POST(req: NextRequest) {
         size: item.size || null,
         color: item.color || null,
         quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.price * item.quantity,
+        unit_price: item.isFree ? 0 : item.price,
+        total_price: item.isFree ? 0 : (item.price * item.quantity),
       }));
 
       const saveResult = await saveOrderToSupabase(adminSupabase, onlineOrderPayload, onlineItemsPayload);
@@ -711,11 +759,11 @@ export async function POST(req: NextRequest) {
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency || currency,
         key: getRazorpayKeyId(),
-        total: finalTotal,
+        total: onlineAmountToPay,
         prepaidDiscount,
         bundleDiscount,
         subtotalAfterBundles: subtotal,
-        line_items_total: magicLineItemsTotal,
+        line_items_total: finalLineItemsTotal,
         isMagicCheckout,
         customer: {
           name: authoritativeCustomerName,
@@ -724,6 +772,7 @@ export async function POST(req: NextRequest) {
         }
       });
     }
+
 
     return NextResponse.json({ success: false, error: 'Invalid payment method selected.' }, { status: 400 });
 

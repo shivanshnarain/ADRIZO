@@ -41,15 +41,15 @@ export interface MagicAddressShippingResult {
 }
 
 /**
- * Resolves authoritative order subtotal from Supabase orders table
+ * Resolves authoritative order subtotal and payment method from Supabase orders table
  * given either the internal order number / id or razorpay_order_id.
  */
-async function resolveOrderSubtotal(orderId?: string, razorpayOrderId?: string): Promise<number | null> {
+async function resolveOrderDetails(orderId?: string, razorpayOrderId?: string): Promise<{ subtotal: number; isCodOrder: boolean } | null> {
   if (!orderId && !razorpayOrderId) return null;
 
   try {
     const supabase = getAdminClient();
-    let query = supabase.from('orders').select('subtotal, total_amount, id, order_number, razorpay_order_id');
+    let query = supabase.from('orders').select('subtotal, total_amount, id, order_number, razorpay_order_id, payment_method, payment_status');
 
     if (razorpayOrderId) {
       query = query.eq('razorpay_order_id', razorpayOrderId);
@@ -66,13 +66,22 @@ async function resolveOrderSubtotal(orderId?: string, razorpayOrderId?: string):
     if (supaOrders && supaOrders.length > 0) {
       const o = supaOrders[0];
       const sub = Number(o.subtotal ?? o.total_amount);
-      if (!isNaN(sub) && sub > 0) return sub;
+      const isCodOrder = o.payment_method === 'COD' || String(o.payment_status || '').includes('COD');
+      return {
+        subtotal: !isNaN(sub) && sub > 0 ? sub : 0,
+        isCodOrder,
+      };
     }
   } catch (err) {
-    console.warn('[resolveOrderSubtotal] Error resolving subtotal:', err);
+    console.warn('[resolveOrderDetails] Error resolving order:', err);
   }
 
   return null;
+}
+
+async function resolveOrderSubtotal(orderId?: string, razorpayOrderId?: string): Promise<number | null> {
+  const res = await resolveOrderDetails(orderId, razorpayOrderId);
+  return res ? res.subtotal : null;
 }
 
 /**
@@ -82,12 +91,13 @@ async function resolveOrderSubtotal(orderId?: string, razorpayOrderId?: string):
 export async function calculateMagicShippingInfo(payload: MagicShippingInfoPayload) {
   const { order_id, razorpay_order_id, addresses = [] } = payload;
 
-  const orderSubtotal = await resolveOrderSubtotal(order_id, razorpay_order_id);
-  const effectiveSubtotal = orderSubtotal !== null ? orderSubtotal : 0;
+  const orderDetails = await resolveOrderDetails(order_id, razorpay_order_id);
+  const effectiveSubtotal = orderDetails ? orderDetails.subtotal : 0;
+  const isCodAdvanceOrder = orderDetails ? orderDetails.isCodOrder : false;
 
   const freeShippingThreshold = POLICY_CONFIG.shipping.freeShippingThreshold; // ₹599
   const standardFeeRupees = POLICY_CONFIG.shipping.standardFee; // ₹39
-  const codFeeRupees = POLICY_CONFIG.shipping.codHandlingFee; // ₹99
+  const codFeeRupees = POLICY_CONFIG.shipping.codHandlingFee; // ₹0 extra handling fee
 
   // In paise:
   const isFreeShipping = effectiveSubtotal >= freeShippingThreshold;
@@ -108,6 +118,8 @@ export async function calculateMagicShippingInfo(payload: MagicShippingInfoPaylo
       isDeliverable = false;
     }
 
+    // For dedicated COD advance orders, cod must be false so customer pays the ₹99 advance online,
+    // and Razorpay does not prompt a prepaid upsell modal.
     const shippingMethod: MagicShippingMethod = {
       id: 'standard_delivery',
       name: 'Standard Delivery (3-5 Business Days)',
@@ -116,8 +128,8 @@ export async function calculateMagicShippingInfo(payload: MagicShippingInfoPaylo
         : `Standard flat rate delivery (₹${standardFeeRupees})`,
       serviceable: isDeliverable,
       shipping_fee: isDeliverable ? standardShippingFeePaise : 0,
-      cod: isDeliverable,
-      cod_fee: isDeliverable ? codFeePaise : 0,
+      cod: isCodAdvanceOrder ? false : isDeliverable,
+      cod_fee: isCodAdvanceOrder ? 0 : (isDeliverable ? codFeePaise : 0),
     };
 
     addressResults.push({

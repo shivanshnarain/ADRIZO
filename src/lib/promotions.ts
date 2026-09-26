@@ -271,6 +271,7 @@ export interface RawOrderItemPayload {
   productId?: string;
   name?: string;
   price?: number;
+  originalPrice?: number;
   size?: string;
   color?: string;
   quantity?: number;
@@ -296,6 +297,8 @@ export interface ValidatedLineItem {
   isFree: boolean;
   promoGroupId?: string;
   promotionRule?: string;
+  categorySlug?: string;
+  categoryName?: string;
 }
 
 export interface PromotionValidationResult {
@@ -538,7 +541,6 @@ export async function validateAndPriceOrderItems(
 
     const multiplier = totalGroupQty / baseBundleSize; // e.g. 1 -> 3 items, 2 -> 6 items, 3 -> 9 items
     const paidCountForGroup = multiplier * buyQty;
-    const freeCountForGroup = multiplier * freeQty;
 
     // Sort products by authoritative CURRENT SELLING PRICE descending.
     // The top `paidCountForGroup` products are PAID, the remaining `freeCountForGroup` products are FREE.
@@ -603,7 +605,22 @@ export async function validateAndPriceOrderItems(
     promotionalBundlesCount += multiplier;
   }
 
-  // 2. Process Regular (Non-Promotional) Items
+  // 2. Process Regular / Unbundled Items
+  // Fetch authoritative DB product & variants for all items
+  interface ResolvedRegularItem {
+    rawItem: RawOrderItemPayload;
+    product: any;
+    matchingVariant: any;
+    chosenSize: string;
+    authoritativePrice: number;
+    authoritativeMrp: number;
+    primaryImage: string;
+    variantSku: string;
+    isExplicitlyFree: boolean;
+  }
+
+  const resolvedRegular: ResolvedRegularItem[] = [];
+
   for (const item of regularItems) {
     const rawProductId = item.productId || item.id;
     const quantity = Math.max(1, parseInt(String(item.quantity || 1), 10));
@@ -625,6 +642,7 @@ export async function validateAndPriceOrderItems(
       include: {
         variants: true,
         images: { take: 1, orderBy: { sortOrder: 'asc' } },
+        category: true,
       },
     });
 
@@ -651,28 +669,185 @@ export async function validateAndPriceOrderItems(
 
     const authoritativePrice = Number(product.price);
     const authoritativeMrp = Number(product.originalPrice || product.price);
-    const lineTotal = authoritativePrice * quantity;
-
     const primaryImage = product.images[0]?.url || item.image || item.productImage || '/placeholder.png';
     const variantSku = matchingVariant?.sku || product.sku;
+    const isExplicitlyFree = Boolean(item.isFree || (item.price === 0 && item.originalPrice && item.originalPrice > 0));
+
+    // Expand by quantity so individual units can be priced
+    for (let q = 0; q < quantity; q++) {
+      resolvedRegular.push({
+        rawItem: item,
+        product,
+        matchingVariant,
+        chosenSize,
+        authoritativePrice,
+        authoritativeMrp,
+        primaryImage,
+        variantSku,
+        isExplicitlyFree,
+      });
+    }
+  }
+
+  // 2a. Separate explicit free items from unbundled items
+  const explicitFreeItems: ResolvedRegularItem[] = [];
+  const unbundledCandidateItems: ResolvedRegularItem[] = [];
+
+  for (const it of resolvedRegular) {
+    if (it.isExplicitlyFree) {
+      explicitFreeItems.push(it);
+    } else {
+      unbundledCandidateItems.push(it);
+    }
+  }
+
+  // Add explicit free items (Customer pays ₹0, commercial price = ₹0)
+  for (const freeIt of explicitFreeItems) {
+    const rawName = freeIt.rawItem.name || freeIt.product.name;
+    const displayName = rawName.startsWith('[FREE]') ? rawName : `[FREE] ${rawName}`;
 
     validatedItems.push({
-      productId: product.id,
-      productName: product.name,
-      productImage: primaryImage,
-      sku: variantSku,
-      size: chosenSize,
-      color: product.color || 'Standard',
-      quantity,
-      price: authoritativePrice,
-      mrp: authoritativeMrp,
-      selectedVariantId: matchingVariant?.id,
-      isFree: false,
+      productId: freeIt.product.id,
+      productName: displayName,
+      productImage: freeIt.primaryImage,
+      sku: freeIt.variantSku,
+      size: freeIt.chosenSize,
+      color: freeIt.product.color || 'Standard',
+      quantity: 1,
+      price: 0, // Commercial payable value = ₹0
+      mrp: freeIt.authoritativeMrp,
+      selectedVariantId: freeIt.matchingVariant?.id,
+      isFree: true,
+      promoGroupId: freeIt.rawItem.promoGroupId,
+      promotionRule: freeIt.rawItem.promotionRule || 'Promotional Free Item',
+      categorySlug: freeIt.product.category?.slug,
+      categoryName: freeIt.product.category?.name,
     });
 
-    subtotal += lineTotal;
-    catalogSubtotal += lineTotal;
-    catalogMrpSubtotal += authoritativeMrp * quantity;
+    // Subtotal increases by 0 for free items
+    catalogSubtotal += freeIt.authoritativePrice;
+    catalogMrpSubtotal += freeIt.authoritativeMrp;
+    promotionalDiscount += freeIt.authoritativePrice;
+  }
+
+  // 2b. Evaluate unbundled candidate items against active promotion offers
+  // Group by matching active offer and category
+  const offerBuckets = new Map<string, { offer: PromotionOffer | null; items: ResolvedRegularItem[] }>();
+
+  for (const it of unbundledCandidateItems) {
+    const matchingOffer = findMatchingOfferForProductOrCategory(activeOffers, {
+      productId: it.product.id,
+      categorySlug: it.product.category?.slug,
+      categoryName: it.product.category?.name,
+      productType: it.product.productType,
+      ruleName: it.rawItem.promotionRule,
+    });
+
+    const key = matchingOffer && matchingOffer.status === 'ACTIVE'
+      ? `${matchingOffer.id}_${it.product.categoryId || it.product.category?.slug || 'all'}`
+      : 'no_offer';
+
+    if (!offerBuckets.has(key)) {
+      offerBuckets.set(key, { offer: matchingOffer, items: [] });
+    }
+    offerBuckets.get(key)!.items.push(it);
+  }
+
+  for (const bucket of offerBuckets.values()) {
+    const bucketItems = bucket.items;
+    const offer = bucket.offer;
+
+    if (offer && offer.status === 'ACTIVE' && offer.buyQuantity > 0 && offer.freeQuantity > 0) {
+      const bQty = offer.buyQuantity;
+      const fQty = offer.freeQuantity;
+      const bundleSize = bQty + fQty;
+
+      // Sort descending by authoritative price (highest paid, lowest free)
+      bucketItems.sort((a, b) => b.authoritativePrice - a.authoritativePrice);
+
+      const totalQty = bucketItems.length;
+      const fullBundles = Math.floor(totalQty / bundleSize);
+      const remainder = totalQty % bundleSize;
+
+      const paidCount = fullBundles * bQty + Math.min(remainder, bQty);
+      const freeCount = fullBundles * fQty + Math.max(0, remainder - bQty);
+
+      if (freeCount > 0) {
+        promotionalBundlesCount += fullBundles;
+      }
+
+      for (let i = 0; i < totalQty; i++) {
+        const it = bucketItems[i];
+        const isFreeItem = i >= paidCount;
+
+        if (isFreeItem) {
+          validatedItems.push({
+            productId: it.product.id,
+            productName: `[FREE] ${it.product.name}`,
+            productImage: it.primaryImage,
+            sku: it.variantSku,
+            size: it.chosenSize,
+            color: it.product.color || 'Standard',
+            quantity: 1,
+            price: 0, // Commercial payable value = ₹0
+            mrp: it.authoritativeMrp,
+            selectedVariantId: it.matchingVariant?.id,
+            isFree: true,
+            promotionRule: offer.name,
+            categorySlug: it.product.category?.slug,
+            categoryName: it.product.category?.name,
+          });
+
+          catalogSubtotal += it.authoritativePrice;
+          catalogMrpSubtotal += it.authoritativeMrp;
+          promotionalDiscount += it.authoritativePrice;
+        } else {
+          validatedItems.push({
+            productId: it.product.id,
+            productName: it.product.name,
+            productImage: it.primaryImage,
+            sku: it.variantSku,
+            size: it.chosenSize,
+            color: it.product.color || 'Standard',
+            quantity: 1,
+            price: it.authoritativePrice,
+            mrp: it.authoritativeMrp,
+            selectedVariantId: it.matchingVariant?.id,
+            isFree: false,
+            promotionRule: offer.name,
+            categorySlug: it.product.category?.slug,
+            categoryName: it.product.category?.name,
+          });
+
+          subtotal += it.authoritativePrice;
+          catalogSubtotal += it.authoritativePrice;
+          catalogMrpSubtotal += it.authoritativeMrp;
+        }
+      }
+    } else {
+      // No active offer: standard paid items
+      for (const it of bucketItems) {
+        validatedItems.push({
+          productId: it.product.id,
+          productName: it.product.name,
+          productImage: it.primaryImage,
+          sku: it.variantSku,
+          size: it.chosenSize,
+          color: it.product.color || 'Standard',
+          quantity: 1,
+          price: it.authoritativePrice,
+          mrp: it.authoritativeMrp,
+          selectedVariantId: it.matchingVariant?.id,
+          isFree: false,
+          categorySlug: it.product.category?.slug,
+          categoryName: it.product.category?.name,
+        });
+
+        subtotal += it.authoritativePrice;
+        catalogSubtotal += it.authoritativePrice;
+        catalogMrpSubtotal += it.authoritativeMrp;
+      }
+    }
   }
 
   // Calculate qualifying counts across all promotional bundles in order

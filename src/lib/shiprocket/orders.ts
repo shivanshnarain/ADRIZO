@@ -187,11 +187,13 @@ export async function createShiprocketOrder(
     shipping_is_billing: true,
     order_items: orderItems,
     payment_method: paymentMethod,
-    shipping_charges: Number(order.shippingCharge || 0),
+    shipping_charges: isCod ? 0 : Number(order.shippingCharge || 0),
     giftwrap_charges: 0,
     transaction_charges: 0,
-    total_discount: Number(order.discount || 0),
-    sub_total: Number(order.subtotal || order.total),
+    total_discount: isCod ? 0 : Number(order.discount || 0),
+    sub_total: isCod 
+      ? Math.max(0, Number(order.total) - Number(order.codCharge || 99))
+      : Number(order.subtotal || order.total),
     length: dims.length,
     breadth: dims.breadth,
     height: dims.height,

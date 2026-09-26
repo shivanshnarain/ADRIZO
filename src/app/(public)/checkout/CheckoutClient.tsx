@@ -8,6 +8,7 @@ import Link from 'next/link';
 import CodSuccessModal from '@/components/CodSuccessModal';
 import { ADRIZO_LOGO_DATA_URI } from '@/lib/brand-logo';
 import { calculateCheckoutTotals, PaymentMode, getItemCategoryType } from '@/lib/checkout-engine';
+import { getCodAdvanceAmount } from '@/config/policies';
 import { 
   ShoppingBag, 
   ShieldCheck, 
@@ -122,26 +123,35 @@ export default function CheckoutClient() {
         categorySlug: buyNowItem.categorySlug || buyNowItem.category?.slug,
         categoryName: buyNowItem.categoryName || buyNowItem.category?.name,
         category: buyNowItem.category,
+        isFree: false,
+        promoGroupId: undefined,
+        promotionRule: undefined,
       }];
     }
 
-    return cart.map(item => ({
-      id: item.id,
-      productId: item.productId,
-      name: item.name,
-      productName: item.name,
-      price: item.price > 0 ? item.price : (item.originalPrice || item.price),
-      originalPrice: item.originalPrice || item.price,
-      image: item.image,
-      productImage: item.image,
-      size: item.size,
-      color: item.color,
-      quantity: item.quantity,
-      sku: item.sku,
-      categorySlug: item.categorySlug || item.category?.slug,
-      categoryName: item.categoryName || item.category?.name,
-      category: item.category,
-    }));
+    return cart.map(item => {
+      const isItemFree = Boolean(item.isFree || (item.price === 0 && item.originalPrice && item.originalPrice > 0));
+      return {
+        id: item.id,
+        productId: item.productId,
+        name: item.name,
+        productName: item.name,
+        price: isItemFree ? 0 : item.price,
+        originalPrice: item.originalPrice || item.price,
+        image: item.image,
+        productImage: item.image,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        sku: item.sku,
+        categorySlug: item.categorySlug || item.category?.slug,
+        categoryName: item.categoryName || item.category?.name,
+        category: item.category,
+        isFree: isItemFree,
+        promoGroupId: item.promoGroupId,
+        promotionRule: item.promotionRule,
+      };
+    });
   }, [isBuyNowMode, buyNowItem, cart]);
 
   // Authoritative calculations for both payment modes
@@ -252,10 +262,15 @@ export default function CheckoutClient() {
           color: it.color,
           quantity: it.quantity,
           name: it.name,
-          price: it.price,
+          price: it.isFree ? 0 : it.price,
+          originalPrice: it.originalPrice,
           categorySlug: it.categorySlug,
           categoryName: it.categoryName,
           category: it.category,
+          isFree: it.isFree,
+          promoGroupId: (it as any).promoGroupId,
+          promotionRule: (it as any).promotionRule,
+          sku: it.sku,
         })),
         isMagicCheckout: true,
         paymentMethod: paymentMode === 'COD' ? 'COD' : 'ONLINE_RAZORPAY',
@@ -295,6 +310,7 @@ export default function CheckoutClient() {
       const nameToPrefill = data.customer?.name || user?.name || '';
 
       const isCod = paymentMode === 'COD';
+      const codAdvance = getCodAdvanceAmount();
 
       const options = {
         key: data.key,
@@ -302,7 +318,7 @@ export default function CheckoutClient() {
         currency: data.currency || 'INR',
         name: 'ADRIZO',
         description: isCod 
-          ? `Order #${data.orderNumber} (₹99 COD Advance Confirmation)`
+          ? `Order #${data.orderNumber} (₹${codAdvance} COD Advance Confirmation)`
           : `Order #${data.orderNumber}`,
         image: ADRIZO_LOGO_DATA_URI,
         order_id: data.razorpayOrderId,
@@ -310,7 +326,6 @@ export default function CheckoutClient() {
         remember_customer: true,
         features: {
           cardsaving: true,
-          truecaller_login: true,
         },
         prefill: {
           name: nameToPrefill || undefined,
@@ -493,23 +508,30 @@ export default function CheckoutClient() {
                     <h4 style={{ fontWeight: 700, fontSize: '0.85rem', margin: 0, color: '#09090b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {item.name}
                     </h4>
-                    <span style={{ fontWeight: 800, fontSize: '0.875rem', color: '#09090b', marginLeft: '0.5rem' }}>
-                      ₹{(item.price * item.quantity).toFixed(2)}
+                    <span style={{ fontWeight: 800, fontSize: '0.875rem', color: (item.isFree || item.price === 0) ? '#16a34a' : '#09090b', marginLeft: '0.5rem' }}>
+                      {(item.isFree || item.price === 0) ? '₹0.00 FREE' : `₹${(item.price * item.quantity).toFixed(2)}`}
                     </span>
                   </div>
                   <div style={{ fontSize: '0.725rem', color: '#71717a', margin: '2px 0' }}>
                     Qty: <strong>{item.quantity}</strong> {item.size ? `| Size: ${item.size}` : ''} {item.color ? `| ${item.color}` : ''}
                   </div>
-                  {catType === 'T_SHIRT' && (
+                  {(item.isFree || item.price === 0) ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.675rem', fontWeight: 800, color: '#16a34a' }}>
+                      <Gift size={11} /> Promotional Free Product (₹0.00)
+                    </span>
+                  ) : item.promotionRule ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.675rem', fontWeight: 800, color: '#16a34a' }}>
+                      <Gift size={11} /> {item.promotionRule}
+                    </span>
+                  ) : catType === 'T_SHIRT' ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.675rem', fontWeight: 800, color: '#16a34a' }}>
                       <Gift size={11} /> Eligible for Buy 1 Get 2 Free
                     </span>
-                  )}
-                  {catType === 'HOODIE' && (
+                  ) : catType === 'HOODIE' ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.675rem', fontWeight: 800, color: '#b45309' }}>
                       <Gift size={11} /> Eligible for Buy 1 Get 1 Free
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
             );
@@ -689,7 +711,7 @@ export default function CheckoutClient() {
                   style={{ accentColor: '#09090b', width: '18px', height: '18px', margin: 0, cursor: 'pointer' }}
                 />
                 <label htmlFor="pay-cod" style={{ cursor: 'pointer', fontWeight: 800, fontSize: '0.95rem', color: '#09090b' }}>
-                  Cash on Delivery (Pay ₹99 Advance)
+                  Cash on Delivery (Pay ₹{getCodAdvanceAmount()} Advance)
                 </label>
               </div>
 
@@ -702,21 +724,21 @@ export default function CheckoutClient() {
                 borderRadius: '9999px', 
                 border: '1px solid #fde68a' 
               }}>
-                ₹99 ADVANCE
+                ₹{getCodAdvanceAmount()} ADVANCE
               </span>
             </div>
 
             <div style={{ marginTop: '0.65rem', paddingLeft: '1.8rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '1rem', fontWeight: 800, color: '#09090b' }}>
-                  Pay ₹99.00 Now
+                  Pay ₹{getCodAdvanceAmount()}.00 Now
                 </span>
                 <span style={{ fontSize: '0.825rem', color: '#71717a' }}>
                   • Balance <strong>₹{codTotals.amountDueOnDelivery.toFixed(2)}</strong> due on delivery
                 </span>
               </div>
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.775rem', color: '#71717a' }}>
-                Pay ₹99 online now via Razorpay to confirm booking. Pay remaining balance in cash or UPI when delivered.
+                Pay ₹{getCodAdvanceAmount()} online now via Razorpay to confirm booking. Pay remaining balance in cash or UPI when delivered.
               </p>
             </div>
           </div>
@@ -760,7 +782,7 @@ export default function CheckoutClient() {
               </>
             ) : (
               <>
-                <span>Pay ₹99 Advance & Confirm COD Order</span>
+                <span>Pay ₹{getCodAdvanceAmount()} Advance & Confirm COD Order</span>
                 <ArrowRight size={18} />
               </>
             )}
