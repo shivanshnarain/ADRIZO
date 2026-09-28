@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import CodSuccessModal from '@/components/CodSuccessModal';
 import { ADRIZO_LOGO_DATA_URI } from '@/lib/brand-logo';
+import { loadRazorpayScript, preloadRazorpayScript } from '@/lib/razorpay-script';
 import { calculateCheckoutTotals, PaymentMode, getItemCategoryType } from '@/lib/checkout-engine';
 import { getCodAdvanceAmount } from '@/config/policies';
 import { 
@@ -102,6 +103,7 @@ export default function CheckoutClient() {
     } else {
       setLoadingBuyNow(false);
     }
+    preloadRazorpayScript();
   }, [isBuyNowMode]);
 
   // Unified items list
@@ -220,27 +222,6 @@ export default function CheckoutClient() {
     setCouponError('');
   };
 
-  // Load Razorpay Script
-  const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (typeof window !== 'undefined' && (window as any).Razorpay) {
-        resolve(true);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/magic-checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => {
-        // Fallback to standard checkout.js if magic fails to load
-        const fallback = document.createElement('script');
-        fallback.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        fallback.onload = () => resolve(true);
-        fallback.onerror = () => resolve(false);
-        document.body.appendChild(fallback);
-      };
-      document.body.appendChild(script);
-    });
-  };
 
   // Launch Razorpay directly for selected payment mode
   const handleLaunchPayment = async (paymentMode: PaymentMode) => {

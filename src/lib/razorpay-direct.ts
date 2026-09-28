@@ -1,4 +1,7 @@
 import { ADRIZO_LOGO_DATA_URI } from '@/lib/brand-logo';
+import { loadRazorpayScript } from '@/lib/razorpay-script';
+
+export { loadRazorpayScript };
 
 export interface LaunchRazorpayOptions {
   items: Array<{
@@ -36,26 +39,6 @@ export interface LaunchRazorpayOptions {
   onDismiss?: () => void;
   onError?: (errorMessage: string) => void;
 }
-
-export const loadRazorpayScript = (): Promise<boolean> => {
-  return new Promise((resolve) => {
-    if (typeof window !== 'undefined' && (window as any).Razorpay) {
-      resolve(true);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/magic-checkout.js';
-    script.onload = () => resolve(true);
-    script.onerror = () => {
-      const fallback = document.createElement('script');
-      fallback.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      fallback.onload = () => resolve(true);
-      fallback.onerror = () => resolve(false);
-      document.body.appendChild(fallback);
-    };
-    document.body.appendChild(script);
-  });
-};
 
 export async function launchRazorpayCheckout({
   items,

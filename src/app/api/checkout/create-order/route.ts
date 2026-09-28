@@ -257,91 +257,93 @@ export async function POST(req: NextRequest) {
     let authoritativeCustomerPhone = trimmedPhone || authCustomer?.phone || '';
     let authoritativeCustomerName = trimmedName || authCustomer?.name || 'Customer';
 
-    // Persist address to customer_addresses and sync profile if customer is authenticated and provided an address
+    // Non-blocking Address & Profile Persistence (runs in background without delaying order creation)
     if (authenticatedUserId && shippingAddress) {
-      try {
-        // 1. Check existing saved addresses to prevent duplicates
-        const { data: existingAddrs } = await adminSupabase
-          .from('customer_addresses')
-          .select('id, address, pincode')
-          .eq('customer_id', authenticatedUserId);
-
-        const isDuplicate = (existingAddrs || []).some((a: any) =>
-          a.pincode === trimmedPincode &&
-          a.address?.toLowerCase().trim() === cleanFlat.toLowerCase().trim()
-        );
-
-        const isFirst = !existingAddrs || existingAddrs.length === 0;
-
-        if (!isDuplicate) {
-          await adminSupabase.from('customer_addresses').insert({
-            customer_id: authenticatedUserId,
-            full_name: trimmedName,
-            phone: trimmedPhone,
-            address: cleanFlat,
-            area: cleanArea || null,
-            district: trimmedDistrict || null,
-            city: trimmedCity,
-            state: trimmedState,
-            pincode: trimmedPincode,
-            landmark: cleanLandmark || null,
-            is_default: isFirst,
-          });
-        }
-
-        // 2. Update customer_profiles table
-        await adminSupabase
-          .from('customer_profiles')
-          .upsert({
-            id: authenticatedUserId,
-            full_name: trimmedName,
-            phone: trimmedPhone,
-            delivery_address: fullShippingAddressString,
-            city: trimmedCity,
-            state: trimmedState,
-            pincode: trimmedPincode,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'id' });
-
-        // 3. Update MongoDB user record if exists
+      (async () => {
         try {
-          const isMongo = /^[0-9a-fA-F]{24}$/.test(authenticatedUserId);
-          if (isMongo) {
-            await prisma.user.update({
-              where: { id: authenticatedUserId },
-              data: {
-                address: fullShippingAddressString,
-                city: trimmedCity,
-                state: trimmedState,
-                pincode: trimmedPincode,
-                phone: trimmedPhone,
-              },
-            }).catch(() => null);
-          } else if (trimmedEmail || trimmedPhone) {
-            const mUser = await prisma.user.findFirst({
-              where: {
-                OR: [
-                  trimmedEmail ? { email: trimmedEmail.toLowerCase() } : {},
-                  trimmedPhone ? { phone: trimmedPhone } : {},
-                ].filter(o => Object.keys(o).length > 0),
-              },
-            }).catch(() => null);
-            if (mUser) {
+          // 1. Check existing saved addresses to prevent duplicates
+          const { data: existingAddrs } = await adminSupabase
+            .from('customer_addresses')
+            .select('id, address, pincode')
+            .eq('customer_id', authenticatedUserId);
+
+          const isDuplicate = (existingAddrs || []).some((a: any) =>
+            a.pincode === trimmedPincode &&
+            a.address?.toLowerCase().trim() === cleanFlat.toLowerCase().trim()
+          );
+
+          const isFirst = !existingAddrs || existingAddrs.length === 0;
+
+          if (!isDuplicate) {
+            await adminSupabase.from('customer_addresses').insert({
+              customer_id: authenticatedUserId,
+              full_name: trimmedName,
+              phone: trimmedPhone,
+              address: cleanFlat,
+              area: cleanArea || null,
+              district: trimmedDistrict || null,
+              city: trimmedCity,
+              state: trimmedState,
+              pincode: trimmedPincode,
+              landmark: cleanLandmark || null,
+              is_default: isFirst,
+            });
+          }
+
+          // 2. Update customer_profiles table
+          await adminSupabase
+            .from('customer_profiles')
+            .upsert({
+              id: authenticatedUserId,
+              full_name: trimmedName,
+              phone: trimmedPhone,
+              delivery_address: fullShippingAddressString,
+              city: trimmedCity,
+              state: trimmedState,
+              pincode: trimmedPincode,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'id' });
+
+          // 3. Update MongoDB user record if exists
+          try {
+            const isMongo = /^[0-9a-fA-F]{24}$/.test(authenticatedUserId);
+            if (isMongo) {
               await prisma.user.update({
-                where: { id: mUser.id },
+                where: { id: authenticatedUserId },
                 data: {
                   address: fullShippingAddressString,
                   city: trimmedCity,
                   state: trimmedState,
                   pincode: trimmedPincode,
+                  phone: trimmedPhone,
                 },
               }).catch(() => null);
+            } else if (trimmedEmail || trimmedPhone) {
+              const mUser = await prisma.user.findFirst({
+                where: {
+                  OR: [
+                    trimmedEmail ? { email: trimmedEmail.toLowerCase() } : {},
+                    trimmedPhone ? { phone: trimmedPhone } : {},
+                  ].filter(o => Object.keys(o).length > 0),
+                },
+              }).catch(() => null);
+              if (mUser) {
+                await prisma.user.update({
+                  where: { id: mUser.id },
+                  data: {
+                    address: fullShippingAddressString,
+                    city: trimmedCity,
+                    state: trimmedState,
+                    pincode: trimmedPincode,
+                  },
+                }).catch(() => null);
+              }
             }
-          }
-        } catch {}
-      } catch (syncErr: any) {
-        console.warn('[Supabase Profile/Address Persistence Warning]', syncErr);
-      }
+          } catch {}
+        } catch (syncErr: any) {
+          console.warn('[Supabase Profile/Address Persistence Warning]', syncErr);
+        }
+      })().catch(() => {});
     }
 
     // 4. Authoritative MongoDB Product, Promotion & Inventory Verification

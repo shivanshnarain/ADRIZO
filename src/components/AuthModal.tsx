@@ -16,6 +16,7 @@ export default function AuthModal() {
     authRedirectUrl,
     triggerAuthSuccess,
     broadcastAuthChange,
+    setUser,
   } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>('SIGN_IN');
@@ -122,7 +123,9 @@ export default function AuthModal() {
           return;
         }
 
-        await fetchUser();
+        if (data.user) {
+          setUser(data.user);
+        }
         broadcastAuthChange('LOGIN');
         triggerAuthSuccess();
         handleClose();
@@ -187,8 +190,9 @@ export default function AuthModal() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        // Automatically sign in or fetch profile
-        await fetchUser();
+        if (data.user) {
+          setUser(data.user);
+        }
         broadcastAuthChange('LOGIN');
         triggerAuthSuccess();
         handleClose();
@@ -357,8 +361,10 @@ export default function AuthModal() {
               </div>
 
               <PhoneOtpAuth
-                onSuccess={async () => {
-                  await fetchUser();
+                onSuccess={(verifiedUser) => {
+                  if (verifiedUser) {
+                    setUser(verifiedUser);
+                  }
                   broadcastAuthChange('LOGIN');
                   triggerAuthSuccess();
                   handleClose();

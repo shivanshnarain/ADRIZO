@@ -96,28 +96,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  const fetchUser = useCallback(async () => {
-    try {
-      const res = await fetch('/api/auth/me');
-      if (res.ok) {
-        const data = await res.json();
-        if (data.authenticated) {
-          setUser(data.user);
+  const inFlightFetchRef = React.useRef<Promise<void> | null>(null);
+  const lastFetchTimeRef = React.useRef<number>(0);
+
+  const fetchUser = useCallback(async (force = false) => {
+    // If not forced and already fetched within last 15 seconds, reuse existing state
+    if (!force && lastFetchTimeRef.current && (Date.now() - lastFetchTimeRef.current < 15000)) {
+      return;
+    }
+
+    // Deduplicate concurrent in-flight requests: return existing active Promise
+    if (inFlightFetchRef.current) {
+      return inFlightFetchRef.current;
+    }
+
+    const fetchPromise = (async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated) {
+            setUser(data.user);
+          } else {
+            setUser(null);
+          }
         } else {
           setUser(null);
         }
-      } else {
+      } catch {
         setUser(null);
+      } finally {
+        lastFetchTimeRef.current = Date.now();
+        inFlightFetchRef.current = null;
+        setLoading(false);
       }
-    } catch {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+    })();
+
+    inFlightFetchRef.current = fetchPromise;
+    return fetchPromise;
   }, []);
 
   useEffect(() => {
-    fetchUser();
+    // Initial authoritative fetch on mount
+    fetchUser(true);
 
     // Cross-tab synchronization via BroadcastChannel
     let bc: BroadcastChannel | null = null;
@@ -127,7 +148,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         bc.onmessage = (e) => {
           if (e.data?.type === 'AUTH_CHANGED') {
             if (e.data.action === 'LOGIN') {
-              fetchUser();
+              lastFetchTimeRef.current = 0;
+              fetchUser(true);
             } else if (e.data.action === 'LOGOUT') {
               setUser(null);
             }
@@ -142,7 +164,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           const parsed = JSON.parse(e.newValue);
           if (parsed.action === 'LOGIN') {
-            fetchUser();
+            lastFetchTimeRef.current = 0;
+            fetchUser(true);
           } else if (parsed.action === 'LOGOUT') {
             setUser(null);
           }
@@ -157,10 +180,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const supabase = createClient();
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          fetchUser();
-        } else if (event === 'SIGNED_OUT') {
-          // Re-verify against server rather than unconditionally wiping state
-          fetchUser();
+          lastFetchTimeRef.current = 0;
+          fetchUser(true);
         }
       });
       unsubscribeSupabase = () => subscription?.unsubscribe();
@@ -168,22 +189,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.warn('[Supabase Auth Listener Init]', e);
     }
 
-    // Window focus and visibility change listener for instant cross-tab sync
-    const handleSync = () => {
+    // Visibility change listener for cross-tab return (throttled to 15s)
+    const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchUser();
+        fetchUser(false);
       }
     };
 
-    window.addEventListener('focus', handleSync);
-    document.addEventListener('visibilitychange', handleSync);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       bc?.close();
       window.removeEventListener('storage', handleStorage);
       unsubscribeSupabase?.();
-      window.removeEventListener('focus', handleSync);
-      document.removeEventListener('visibilitychange', handleSync);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchUser]);
 
@@ -193,9 +212,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const supabase = createClient();
         await supabase.auth.signOut();
-      } catch {
-        // Ignored
-      }
+      } catch {}
+      try {
+        const { auth } = await import('@/lib/firebase');
+        if (auth) await auth.signOut();
+      } catch {}
       await fetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
       window.location.href = '/';

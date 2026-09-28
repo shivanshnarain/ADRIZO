@@ -141,8 +141,13 @@ export function isRazorpayConfigured(): boolean {
   return getRazorpayConfigStatus().configured;
 }
 
+let cachedRazorpayInstance: Razorpay | null = null;
+let cachedKeyId: string | null = null;
+let cachedKeySecret: string | null = null;
+
 /**
  * Returns an authenticated Razorpay SDK instance.
+ * Caches and safely reuses the instance across requests in the Node.js runtime.
  * Throws a clean descriptive error if keys are not configured.
  */
 export function getRazorpayInstance(): Razorpay {
@@ -153,10 +158,18 @@ export function getRazorpayInstance(): Razorpay {
     throw new Error('Razorpay API keys are not configured in environment variables.');
   }
 
-  return new Razorpay({
+  if (cachedRazorpayInstance && cachedKeyId === keyId && cachedKeySecret === keySecret) {
+    return cachedRazorpayInstance;
+  }
+
+  cachedKeyId = keyId;
+  cachedKeySecret = keySecret;
+  cachedRazorpayInstance = new Razorpay({
     key_id: keyId,
     key_secret: keySecret,
   });
+
+  return cachedRazorpayInstance;
 }
 
 export interface RazorpayOrderLineItem {

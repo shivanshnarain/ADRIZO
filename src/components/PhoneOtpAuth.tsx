@@ -185,6 +185,15 @@ export default function PhoneOtpAuth({
     }
   };
 
+  // Pre-warm invisible reCAPTCHA to eliminate delay on Send OTP click
+  const prewarmRecaptcha = useCallback(() => {
+    if (!recaptchaVerifierRef.current && typeof window !== 'undefined') {
+      try {
+        getRecaptchaVerifier();
+      } catch {}
+    }
+  }, []);
+
   // Format Indian Mobile for display
   const getFormattedPhoneDisplay = (raw: string) => {
     const digits = getClean10Digits(raw);
@@ -402,6 +411,7 @@ export default function PhoneOtpAuth({
                 }}
                 className={styles.phoneInput}
                 autoFocus
+                onFocus={prewarmRecaptcha}
               />
             </div>
             <p className={styles.helperText}>

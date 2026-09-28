@@ -19,50 +19,10 @@ export interface AuthenticatedCustomer {
  * Only if allowAdmin is explicitly true AND no customer session exists, checks admin session.
  */
 export async function getAuthenticatedCustomer(options?: { allowAdmin?: boolean }): Promise<AuthenticatedCustomer | null> {
-  // 1. Primary: Supabase Customer Session
+  const cookieStore = await cookies();
+
+  // 1. Primary: Fast Persistent Customer JWT Token (< 1ms, zero network calls)
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (user && !authError) {
-      let customerName = user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'Customer');
-      let customerPhone = user.phone || user.user_metadata?.phone;
-
-      // Try fetching enriched name & phone from customer_profiles via service role
-      try {
-        const { getAdminClient } = await import('./supabase/admin');
-        const adminSupabase = getAdminClient();
-        const { data: prof } = await adminSupabase
-          .from('customer_profiles')
-          .select('full_name, phone')
-          .eq('id', user.id)
-          .single();
-        if (prof?.full_name) customerName = prof.full_name;
-        if (prof?.phone) customerPhone = prof.phone;
-      } catch {}
-
-      if (customerName.trim().toLowerCase() === 'administrator' || customerName.trim().toLowerCase() === 'admin') {
-        customerName = user.email ? user.email.split('@')[0] : 'Customer';
-      }
-
-      return {
-        id: user.id,
-        email: user.email?.toLowerCase(),
-        phone: customerPhone,
-        name: customerName,
-        isAdmin: false,
-      };
-    }
-  } catch {
-    // Supabase auth check failed, try persistent customer token
-  }
-
-  // 2. Persistent Customer JWT Token
-  try {
-    const cookieStore = await cookies();
     const customerToken = cookieStore.get('customer_token')?.value;
     const secret = getJwtSecret();
 
@@ -77,19 +37,6 @@ export async function getAuthenticatedCustomer(options?: { allowAdmin?: boolean 
         let phone = typeof payload.phone === 'string' ? payload.phone : undefined;
         let email = typeof payload.email === 'string' ? payload.email.toLowerCase() : undefined;
 
-        // Fetch latest profile from Supabase customer_profiles if possible
-        try {
-          const { getAdminClient } = await import('./supabase/admin');
-          const adminSupabase = getAdminClient();
-          const { data: prof } = await adminSupabase
-            .from('customer_profiles')
-            .select('full_name, phone')
-            .eq('id', payload.id as string)
-            .single();
-          if (prof?.full_name) name = prof.full_name;
-          if (prof?.phone) phone = prof.phone;
-        } catch {}
-
         if (name && (name.trim().toLowerCase() === 'administrator' || name.trim().toLowerCase() === 'admin')) {
           name = email ? email.split('@')[0] : 'Customer';
         }
@@ -98,13 +45,46 @@ export async function getAuthenticatedCustomer(options?: { allowAdmin?: boolean 
           id: payload.id as string,
           email,
           phone,
-          name,
+          name: name || (email ? email.split('@')[0] : 'Customer'),
           isAdmin: false,
         };
       }
     }
   } catch {
-    // Token invalid
+    // Customer token invalid or expired
+  }
+
+  // 2. Secondary: Supabase Customer Session (ONLY if a Supabase auth cookie actually exists)
+  try {
+    const allCookies = cookieStore.getAll();
+    const hasSupabaseCookie = allCookies.some(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'));
+
+    if (hasSupabaseCookie) {
+      const supabase = await createClient();
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (user && !authError) {
+        let customerName = user.user_metadata?.full_name || (user.email ? user.email.split('@')[0] : 'Customer');
+        let customerPhone = user.phone || user.user_metadata?.phone;
+
+        if (customerName.trim().toLowerCase() === 'administrator' || customerName.trim().toLowerCase() === 'admin') {
+          customerName = user.email ? user.email.split('@')[0] : 'Customer';
+        }
+
+        return {
+          id: user.id,
+          email: user.email?.toLowerCase(),
+          phone: customerPhone,
+          name: customerName,
+          isAdmin: false,
+        };
+      }
+    }
+  } catch {
+    // Supabase auth check failed
   }
 
   // 3. Optional: If caller explicitly permits admin override (e.g. admin managing customer orders)
