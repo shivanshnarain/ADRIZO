@@ -96,6 +96,30 @@ export async function POST(req: NextRequest) {
           .update(webhookUpdates)
           .eq('razorpay_order_id', razorpayOrderId);
 
+        // Authoritatively sync customer & address to ADRIZO
+        try {
+          const { syncRazorpayCustomerToAdrizo } = await import('@/lib/razorpay-sso');
+          await syncRazorpayCustomerToAdrizo({
+            phone: paymentContact || order?.customer_phone || null,
+            email: paymentEntity?.email || order?.customer_email || null,
+            name: (orderEntity?.shipping_address as any)?.name || (orderEntity?.shipping_address as any)?.full_name || order?.customer_name || null,
+            orderId: order?.id || razorpayOrderId,
+            setSessionCookie: false,
+            address: (webhookUpdates.house_flat && webhookUpdates.city) ? {
+              line1: webhookUpdates.house_flat,
+              line2: webhookUpdates.area_street || null,
+              city: webhookUpdates.city,
+              state: webhookUpdates.state || null,
+              pincode: webhookUpdates.pincode || null,
+              country: 'India',
+              fullName: webhookUpdates.customer_name || null,
+              phone: paymentContact || null,
+            } : null,
+          });
+        } catch (syncErr) {
+          console.warn('[Razorpay Webhook Customer Sync Warning]', syncErr);
+        }
+
         console.log(`[Razorpay Webhook] Order ${order?.order_number || razorpayOrderId} successfully marked PAID`);
 
         // Trigger Automated Order Confirmation Email with PDF invoice attached

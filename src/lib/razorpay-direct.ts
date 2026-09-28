@@ -34,6 +34,7 @@ export interface LaunchRazorpayOptions {
     shippingAddress?: string;
     codConfirmationPaid?: number;
     codRemaining?: number;
+    customer?: any;
   }) => void;
   onDismiss?: () => void;
   onError?: (errorMessage: string) => void;
@@ -135,6 +136,7 @@ export async function launchRazorpayCheckout({
               shippingAddress: verifyData.shippingAddress || 'Confirmed via Razorpay Checkout',
               codConfirmationPaid: isCod ? 99 : undefined,
               codRemaining: isCod ? data.codRemainingAmount : 0,
+              customer: verifyData.customer || undefined,
             });
           } else {
             onError?.(verifyData.error || 'Payment verification failed.');

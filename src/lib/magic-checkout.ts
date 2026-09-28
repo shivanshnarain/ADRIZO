@@ -183,6 +183,29 @@ export async function calculateMagicShippingInfo(payload: MagicShippingInfoPaylo
         }
         (async () => {
           await query;
+          if (payload.contact || payload.email) {
+            try {
+              const { syncRazorpayCustomerToAdrizo } = await import('@/lib/razorpay-sso');
+              await syncRazorpayCustomerToAdrizo({
+                phone: payload.contact,
+                email: payload.email,
+                name: null,
+                orderId: order_id || razorpay_order_id,
+                setSessionCookie: false,
+                address: {
+                  line1: chosenAddr.address1 ? chosenAddr.address1.trim() : null,
+                  line2: chosenAddr.address2 ? chosenAddr.address2.trim() : null,
+                  city: chosenAddr.city ? chosenAddr.city.trim() : null,
+                  state: chosenAddr.state || chosenAddr.state_code || null,
+                  pincode: pin,
+                  country: chosenAddr.country || 'India',
+                  phone: payload.contact || null,
+                },
+              });
+            } catch (syncErr) {
+              console.warn('[magic-checkout customer sync background error]', syncErr);
+            }
+          }
         })().catch((e) => console.warn('[syncPendingMagicOrderAddress warning]', e));
       } catch {}
     }

@@ -174,12 +174,48 @@ export async function POST(req: NextRequest) {
       }).catch(err => console.error('[Verify Payment Coupon Usage Record Warning]', err));
     }
 
+    // 8. Authoritatively sync verified customer profile & saved address to ADRIZO and establish session
+    let customerSyncResult: any = null;
+    try {
+      const { syncRazorpayCustomerToAdrizo } = await import('@/lib/razorpay-sso');
+      const finalContact = additionalUpdates.customer_phone || supaOrder?.customer_phone || null;
+      const finalEmail = additionalUpdates.customer_email || supaOrder?.customer_email || null;
+      const finalName = additionalUpdates.customer_name || supaOrder?.customer_name || null;
+      const finalLine1 = additionalUpdates.house_flat || supaOrder?.house_flat || null;
+      const finalLine2 = additionalUpdates.area_street || supaOrder?.area_street || null;
+      const finalCity = additionalUpdates.city || supaOrder?.city || null;
+      const finalState = additionalUpdates.state || supaOrder?.state || null;
+      const finalPin = additionalUpdates.pincode || supaOrder?.pincode || null;
+
+      customerSyncResult = await syncRazorpayCustomerToAdrizo({
+        phone: finalContact,
+        email: finalEmail,
+        name: finalName,
+        orderId: supaOrder?.id || orderId,
+        setSessionCookie: true,
+        address: (finalLine1 && finalCity) ? {
+          line1: finalLine1,
+          line2: finalLine2,
+          city: finalCity,
+          state: finalState,
+          pincode: finalPin,
+          country: 'India',
+          fullName: finalName,
+          phone: finalContact,
+        } : null,
+      });
+    } catch (syncErr) {
+      console.warn('[verify-payment] Customer sync warning:', syncErr);
+    }
+
     return NextResponse.json({
       success: true,
       orderId: supaOrder?.id || orderId,
       orderNumber: supaOrder?.order_number,
       paymentStatus: targetPaymentStatus,
-      shippingAddress: resolvedShippingAddress
+      shippingAddress: resolvedShippingAddress,
+      customer: customerSyncResult?.user || null,
+      addressSynced: customerSyncResult?.addressSynced || false,
     });
 
   } catch (error: any) {

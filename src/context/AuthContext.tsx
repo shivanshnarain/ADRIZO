@@ -30,7 +30,7 @@ type AuthContextType = {
   broadcastAuthChange: (action: 'LOGIN' | 'LOGOUT') => void;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
   logout: () => Promise<void>;
-  fetchUser: () => Promise<void>;
+  fetchUser: (force?: boolean) => Promise<void>;
   updateProfile: (profileData: Partial<User>) => Promise<{ success: boolean; error?: string }>;
 };
 
