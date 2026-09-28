@@ -658,6 +658,7 @@ export async function POST(req: NextRequest) {
         if (imageUrl && !imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
           imageUrl = `https://adrizo.com${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
         }
+        const hasValidImage = Boolean(imageUrl && imageUrl.startsWith('https://') && !imageUrl.includes('placeholder'));
 
         return {
           sku: item.sku || item.productId,
@@ -667,7 +668,7 @@ export async function POST(req: NextRequest) {
           quantity: item.quantity,
           name: item.productName,
           description,
-          image_url: imageUrl,
+          ...(hasValidImage ? { image_url: imageUrl } : {}),
         };
       });
 

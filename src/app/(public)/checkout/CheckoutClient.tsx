@@ -6,7 +6,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import CodSuccessModal from '@/components/CodSuccessModal';
-import { ADRIZO_LOGO_DATA_URI } from '@/lib/brand-logo';
 import { loadRazorpayScript, preloadRazorpayScript } from '@/lib/razorpay-script';
 import { calculateCheckoutTotals, PaymentMode, getItemCategoryType } from '@/lib/checkout-engine';
 import { getCodAdvanceAmount } from '@/config/policies';
@@ -57,7 +56,7 @@ export default function CheckoutClient() {
   const [buyNowItem, setBuyNowItem] = useState<BuyNowItem | null>(null);
   const [loadingBuyNow, setLoadingBuyNow] = useState(isBuyNowMode);
 
-  // Payment Selection: ONLINE_RAZORPAY (default, ₹50 discount) vs COD (₹99 advance)
+  // Payment Selection: ONLINE_RAZORPAY vs COD (₹99 advance)
   const [selectedPaymentMode, setSelectedPaymentMode] = useState<PaymentMode>('ONLINE_RAZORPAY');
 
   // Coupon state
@@ -301,7 +300,9 @@ export default function CheckoutClient() {
         description: isCod 
           ? `Order #${data.orderNumber} (₹${codAdvance} COD Advance Confirmation)`
           : `Order #${data.orderNumber}`,
-        image: ADRIZO_LOGO_DATA_URI,
+        image: typeof window !== 'undefined' && window.location?.origin 
+          ? `${window.location.origin}/adrizo-logo-transparent.png` 
+          : 'https://adrizo.com/adrizo-logo-transparent.png',
         order_id: data.razorpayOrderId,
         one_click_checkout: true,
         remember_customer: true,
@@ -320,7 +321,7 @@ export default function CheckoutClient() {
           customerPhone: contactToPrefill,
         },
         theme: {
-          color: '#09090b',
+          color: '#18181b',
         },
         handler: async function (response: any) {
           try {
@@ -608,7 +609,7 @@ export default function CheckoutClient() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
           
-          {/* OPTION 1: FULL ONLINE PAYMENT (RECOMMENDED, ₹50 OFF) */}
+          {/* OPTION 1: FULL ONLINE PAYMENT (RECOMMENDED) */}
           <div
             onClick={() => setSelectedPaymentMode('ONLINE_RAZORPAY')}
             style={{
@@ -636,18 +637,6 @@ export default function CheckoutClient() {
                   Pay Online (UPI, Cards, Netbanking)
                 </label>
               </div>
-
-              <span style={{ 
-                background: '#dcfce7', 
-                color: '#15803d', 
-                fontSize: '0.725rem', 
-                fontWeight: 900, 
-                padding: '0.2rem 0.55rem', 
-                borderRadius: '9999px', 
-                border: '1px solid #86efac' 
-              }}>
-                ₹50 EXTRA OFF
-              </span>
             </div>
 
             <div style={{ marginTop: '0.65rem', paddingLeft: '1.8rem' }}>
@@ -655,11 +644,6 @@ export default function CheckoutClient() {
                 <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#09090b' }}>
                   ₹{onlineTotals.amountPayableNow.toFixed(2)}
                 </span>
-                {onlineTotals.prepaidDiscount > 0 && (
-                  <span style={{ fontSize: '0.85rem', color: '#71717a', textDecoration: 'line-through' }}>
-                    ₹{(onlineTotals.subtotalAfterBundles - onlineTotals.couponDiscount).toFixed(2)}
-                  </span>
-                )}
               </div>
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.775rem', color: '#71717a' }}>
                 Pay securely through Razorpay using Google Pay, PhonePe, Paytm, Cards, or Netbanking.

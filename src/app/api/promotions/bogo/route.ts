@@ -4,6 +4,13 @@ import { getActivePromotionOffers, getAllPromotionOffers, findMatchingOfferForPr
 
 export const dynamic = 'force-dynamic';
 
+interface CacheEntry {
+  timestamp: number;
+  data: any;
+}
+const bogoServerCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds TTL
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -11,18 +18,31 @@ export async function GET(request: NextRequest) {
     const categoryIdQuery = searchParams.get('categoryId')?.trim();
     const productQuery = searchParams.get('productId')?.trim();
 
+    const cacheKey = `${productQuery || ''}_${categoryIdQuery || ''}_${categoryQuery || ''}`;
+    const cached = bogoServerCache.get(cacheKey);
+    const now = Date.now();
+    if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+      return NextResponse.json(cached.data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        },
+      });
+    }
+
     const activeOffers = await getActivePromotionOffers();
 
     if (activeOffers.length === 0) {
       const allOffers = await getAllPromotionOffers();
       const first = allOffers[0];
-      return NextResponse.json({
+      const emptyPayload = {
         success: true,
         active: false,
         promotion: first ? { ...first, active: false, status: 'INACTIVE' } : null,
         offers: [],
         products: [],
-      });
+      };
+      bogoServerCache.set(cacheKey, { timestamp: now, data: emptyPayload });
+      return NextResponse.json(emptyPayload);
     }
 
     // Look up qualifying product if productId provided
@@ -82,7 +102,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Query Active Products with variants and images
+    // Query Active Products with variants and images (capped at 40 for optimal response latency)
     const rawProducts = await prisma.product.findMany({
       where: whereClause,
       include: {
@@ -91,7 +111,7 @@ export async function GET(request: NextRequest) {
         variants: true,
       },
       orderBy: { createdAt: 'desc' },
-      take: 200,
+      take: 40,
     });
 
     // Map products and resolve available sizes
@@ -118,7 +138,7 @@ export async function GET(request: NextRequest) {
 
       availableSizes = Array.from(new Set(availableSizes));
 
-      const primaryImage = p.images[0]?.url || '/placeholder.png';
+      const primaryImage = p.images[0]?.url || '/adrizo-logo-transparent.png';
       const allImages = p.images && p.images.length > 0 
         ? p.images.map((img) => img.url).filter(Boolean) 
         : [primaryImage];
@@ -146,7 +166,7 @@ export async function GET(request: NextRequest) {
 
     const isOfferActive = targetOffer ? targetOffer.status === 'ACTIVE' : false;
 
-    return NextResponse.json({
+    const responsePayload = {
       success: true,
       active: isOfferActive,
       promotion: targetOffer ? { ...targetOffer, active: isOfferActive } : null,
@@ -157,6 +177,14 @@ export async function GET(request: NextRequest) {
         slug: qualifyingProduct.category.slug,
       } : (products[0]?.category || null),
       products,
+    };
+
+    bogoServerCache.set(cacheKey, { timestamp: now, data: responsePayload });
+
+    return NextResponse.json(responsePayload, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+      },
     });
   } catch (error: any) {
     console.error('[Promotion API Error]', error);

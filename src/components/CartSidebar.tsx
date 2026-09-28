@@ -7,8 +7,6 @@ import { useRouter } from 'next/navigation';
 import FreeProductSelectorModal from './FreeProductSelectorModal';
 import ForgottenFreeItemsModal from './ForgottenFreeItemsModal';
 import Portal from '@/components/Portal';
-import { launchRazorpayCheckout } from '@/lib/razorpay-direct';
-import { getCodAdvanceAmount } from '@/config/policies';
 
 export default function CartSidebar() {
   const router = useRouter();
@@ -32,8 +30,7 @@ export default function CartSidebar() {
     bogoPromoConfig,
   } = useCart();
 
-  const [paymentMode, setPaymentMode] = React.useState<'ONLINE_RAZORPAY' | 'COD'>('ONLINE_RAZORPAY');
-  const [isLaunchingPayment, setIsLaunchingPayment] = React.useState(false);
+
 
   // Group cart items into promotional bundles (by promoGroupId) and standalone items
   const { promoBundles, standaloneItems } = useMemo(() => {
@@ -73,53 +70,20 @@ export default function CartSidebar() {
     return { promoBundles: bundles, standaloneItems: standalones };
   }, [cart]);
 
-  const startDirectRazorpayCheckout = (selectedPaymentMode: 'ONLINE_RAZORPAY' | 'COD') => {
-    setIsLaunchingPayment(true);
-    launchRazorpayCheckout({
-      items: cart.map(i => ({
-        productId: i.productId,
-        size: i.size,
-        color: i.color,
-        quantity: i.quantity,
-        name: i.name,
-        price: i.isFree ? 0 : i.price,
-        categorySlug: i.categorySlug,
-        categoryName: i.categoryName,
-        category: i.category,
-        isFree: i.isFree,
-        promotionRule: i.promotionRule,
-        parentId: i.parentId,
-        promoGroupId: i.promoGroupId,
-      })),
-      paymentMethod: selectedPaymentMode,
-      onSuccess: ({ orderId, orderNumber }) => {
-        setIsLaunchingPayment(false);
-        setIsCartOpen(false);
-        clearCart();
-        router.push(`/order-success?orderId=${orderId}&orderNumber=${orderNumber}`);
-      },
-      onDismiss: () => {
-        setIsLaunchingPayment(false);
-      },
-      onError: (errMsg) => {
-        setIsLaunchingPayment(false);
-        alert(errMsg || 'Failed to initialize payment.');
-      }
-    });
-  };
-
   const handleProceedToCheckout = (e: React.MouseEvent) => {
     e.preventDefault();
     if (hasEligibleBogoItem && freeItemsCount < allowedFreeItemsCount && promoBundles.length === 0) {
       setIsForgottenModalOpen(true);
       return;
     }
-    startDirectRazorpayCheckout(paymentMode);
+    setIsCartOpen(false);
+    router.push('/checkout');
   };
 
   const handleProceedWithoutFree = () => {
     setIsForgottenModalOpen(false);
-    startDirectRazorpayCheckout(paymentMode);
+    setIsCartOpen(false);
+    router.push('/checkout');
   };
 
   if (!isCartOpen) {
@@ -450,89 +414,22 @@ export default function CartSidebar() {
               </div>
             )}
 
-            {paymentMode === 'ONLINE_RAZORPAY' && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.85rem', color: '#16a34a', fontWeight: 700 }}>
-                <span>Prepaid Discount (Online Payment)</span>
-                <span>-₹50.00</span>
-              </div>
-            )}
 
-            {/* Payment Method Selector */}
-            <div style={{ marginTop: '0.75rem', marginBottom: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              <label 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  padding: '0.5rem 0.75rem', 
-                  borderRadius: '8px', 
-                  border: paymentMode === 'ONLINE_RAZORPAY' ? '1.5px solid #09090b' : '1px solid #e4e4e7',
-                  background: paymentMode === 'ONLINE_RAZORPAY' ? '#fafafa' : '#ffffff',
-                  cursor: 'pointer'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input 
-                    type="radio" 
-                    name="cart_payment_mode" 
-                    checked={paymentMode === 'ONLINE_RAZORPAY'}
-                    onChange={() => setPaymentMode('ONLINE_RAZORPAY')}
-                    style={{ accentColor: '#09090b' }}
-                  />
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#09090b' }}>
-                    Pay Online (UPI / Card / NetBanking)
-                  </span>
-                </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 800, background: '#FFC800', color: '#000000', padding: '0.12rem 0.45rem', borderRadius: '4px' }}>
-                  ₹50 Extra Off
-                </span>
-              </label>
 
-              <label 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  padding: '0.5rem 0.75rem', 
-                  borderRadius: '8px', 
-                  border: paymentMode === 'COD' ? '1.5px solid #09090b' : '1px solid #e4e4e7',
-                  background: paymentMode === 'COD' ? '#fafafa' : '#ffffff',
-                  cursor: 'pointer'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input 
-                    type="radio" 
-                    name="cart_payment_mode" 
-                    checked={paymentMode === 'COD'}
-                    onChange={() => setPaymentMode('COD')}
-                    style={{ accentColor: '#09090b' }}
-                  />
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#09090b' }}>
-                    Cash on Delivery (COD)
-                  </span>
-                </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#71717a' }}>
-                  Pay ₹{getCodAdvanceAmount()} Advance
-                </span>
-              </label>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.85rem', fontSize: '1.15rem', fontWeight: 900, borderTop: '1px solid #e4e4e7', paddingTop: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.85rem', fontSize: '1.15rem', fontWeight: 900, borderTop: '1px solid #e4e4e7', paddingTop: '0.75rem' }}>
               <span>Total Payable</span>
-              <span>₹{paymentMode === 'ONLINE_RAZORPAY' ? Math.max(0, cartTotal - 50).toFixed(2) : cartTotal.toFixed(2)}</span>
+              <span>₹{cartTotal.toFixed(2)}</span>
             </div>
 
             <button
               type="button"
               onClick={handleProceedToCheckout}
-              disabled={isLaunchingPayment}
               style={{ 
                 display: 'block', 
                 width: '100%', 
                 textAlign: 'center', 
                 textDecoration: 'none', 
-                cursor: isLaunchingPayment ? 'not-allowed' : 'pointer', 
+                cursor: 'pointer', 
                 border: 'none', 
                 padding: '0.85rem', 
                 borderRadius: '9999px', 
@@ -540,14 +437,9 @@ export default function CartSidebar() {
                 fontSize: '0.95rem',
                 background: '#09090b',
                 color: '#ffffff',
-                opacity: isLaunchingPayment ? 0.75 : 1
               }}
             >
-              {isLaunchingPayment 
-                ? 'Connecting to Secure Razorpay...' 
-                : paymentMode === 'ONLINE_RAZORPAY'
-                  ? `Proceed to Pay ₹${Math.max(0, cartTotal - 50).toFixed(2)} Online →`
-                  : `Pay ₹${getCodAdvanceAmount()} Advance & Confirm COD →`}
+              Proceed to Checkout →
             </button>
           </div>
         )}

@@ -1,4 +1,3 @@
-import { ADRIZO_LOGO_DATA_URI } from '@/lib/brand-logo';
 import { loadRazorpayScript } from '@/lib/razorpay-script';
 
 export { loadRazorpayScript };
@@ -90,7 +89,9 @@ export async function launchRazorpayCheckout({
       description: isCod 
         ? `Order #${data.orderNumber} (₹${codAdvance} COD Advance Confirmation)`
         : `Order #${data.orderNumber}`,
-      image: ADRIZO_LOGO_DATA_URI,
+      image: typeof window !== 'undefined' && window.location?.origin 
+        ? `${window.location.origin}/adrizo-logo-transparent.png` 
+        : 'https://adrizo.com/adrizo-logo-transparent.png',
       order_id: data.razorpayOrderId,
       one_click_checkout: true,
       remember_customer: true,
@@ -109,7 +110,7 @@ export async function launchRazorpayCheckout({
         customerPhone: contactToPrefill,
       },
       theme: {
-        color: '#09090b',
+        color: '#18181b',
       },
       handler: async function (response: any) {
         try {

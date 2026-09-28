@@ -308,3 +308,13 @@ img[src*="customer"] {
   -webkit-user-select: none !important;
 }
 
+/* Razorpay checkout iframe guaranteed foreground & touch interactive */
+.razorpay-container,
+iframe[name="razorpay-checkout-frame"],
+iframe.razorpay-checkout-frame {
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+

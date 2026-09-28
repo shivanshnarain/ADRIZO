@@ -447,11 +447,8 @@ export function calculateCheckoutTotals({
   const validCouponDiscount = Math.min(subtotalAfterBundles, Math.max(0, couponDiscount));
   const basePayable = Math.max(0, subtotalAfterBundles - validCouponDiscount);
 
-  // Universal Prepaid Incentive: ₹50 OFF universal incentive for full online payment
-  const isPrepaid = paymentMode === 'ONLINE_RAZORPAY' || paymentMode === 'PREPAID';
-  const rawPrepaidDiscount = isPrepaid ? 50 : 0;
-  // Cap prepaid discount so amount payable is at least ₹1 if basePayable > 0
-  const prepaidDiscount = isPrepaid ? Math.min(rawPrepaidDiscount, Math.max(0, basePayable - 1)) : 0;
+  // No artificial prepaid/online discount: payable price remains the actual configured price
+  const prepaidDiscount = 0;
 
   // COD Calculation: ₹99 online advance confirmation paid via Razorpay now.
   // The ₹99 advance is an advance against the order total, NOT an additional surcharge.
@@ -470,7 +467,7 @@ export function calculateCheckoutTotals({
     amountDueOnDelivery = Math.max(0, fullOrderPayable - codAdvanceAmount);
   } else {
     // For Prepaid: Customer pays the full amount online now
-    amountPayableNow = Math.max(1, basePayable - prepaidDiscount + shippingCharge);
+    amountPayableNow = Math.max(0, basePayable + shippingCharge);
     amountDueOnDelivery = 0;
   }
 
