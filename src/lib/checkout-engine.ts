@@ -443,16 +443,16 @@ export function calculateCheckoutTotals({
   // Shipping Calculation
   const shippingCharge = subtotalAfterBundles >= shippingThreshold ? 0 : standardShippingFee;
 
-  // Coupon Discount
-  const validCouponDiscount = Math.min(subtotalAfterBundles, Math.max(0, couponDiscount));
-  const basePayable = Math.max(0, subtotalAfterBundles - validCouponDiscount);
+  // Coupon Discount: Coupons are strictly applicable to online payments only, never COD
+  const isCod = paymentMode === 'COD';
+  const effectiveCouponDiscount = isCod ? 0 : Math.min(subtotalAfterBundles, Math.max(0, couponDiscount));
+  const basePayable = Math.max(0, subtotalAfterBundles - effectiveCouponDiscount);
 
   // No artificial prepaid/online discount: payable price remains the actual configured price
   const prepaidDiscount = 0;
 
   // COD Calculation: ₹99 online advance confirmation paid via Razorpay now.
   // The ₹99 advance is an advance against the order total, NOT an additional surcharge.
-  const isCod = paymentMode === 'COD';
   const configuredCodAdvance = getCodAdvanceAmount();
   const fullOrderPayable = basePayable + shippingCharge;
   const codAdvanceAmount = isCod ? Math.min(configuredCodAdvance, fullOrderPayable) : 0;
@@ -480,7 +480,7 @@ export function calculateCheckoutTotals({
     hoodieBundleSavings,
     bundleDiscount,
     subtotalAfterBundles,
-    couponDiscount: validCouponDiscount,
+    couponDiscount: effectiveCouponDiscount,
     prepaidDiscount,
     codFee: isCod ? codAdvanceAmount : 0,
     shippingCharge,

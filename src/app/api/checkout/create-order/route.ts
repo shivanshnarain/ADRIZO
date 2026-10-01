@@ -375,6 +375,7 @@ export async function POST(req: NextRequest) {
         customerPhone: authoritativeCustomerPhone,
         customerEmail: authoritativeCustomerEmail,
         userId: authenticatedUserId || undefined,
+        paymentMode: paymentMethod === 'COD' ? 'COD' : 'ONLINE',
       });
 
       if (couponResult.success) {

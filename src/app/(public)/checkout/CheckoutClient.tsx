@@ -24,7 +24,13 @@ import {
   RefreshCw, 
   CheckCircle2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Zap,
+  Percent,
+  Package,
+  Wallet,
+  X,
+  Check
 } from 'lucide-react';
 
 interface BuyNowItem {
@@ -175,9 +181,9 @@ export default function CheckoutClient() {
   const activeTotals = selectedPaymentMode === 'COD' ? codTotals : onlineTotals;
 
   // Coupon application handler
-  const handleApplyCoupon = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const code = couponInput.trim().toUpperCase();
+  const handleApplyCoupon = async (e?: React.FormEvent, directCode?: string) => {
+    if (e) e.preventDefault();
+    const code = (directCode || couponInput).trim().toUpperCase();
     if (!code) return;
 
     setValidatingCoupon(true);
@@ -194,6 +200,7 @@ export default function CheckoutClient() {
           customerEmail: user?.email,
           customerPhone: user?.phone,
           userId: user?.id,
+          paymentMode: selectedPaymentMode === 'COD' ? 'COD' : 'ONLINE',
         }),
       });
 
@@ -206,6 +213,7 @@ export default function CheckoutClient() {
           value: data.coupon.value,
         });
         setCouponInput('');
+        setCouponError('');
       } else {
         setCouponError(data.error || 'Invalid promotion code.');
       }
@@ -577,7 +585,7 @@ export default function CheckoutClient() {
           )}
         </div>
 
-        {/* Pricing Breakdown */}
+        {/* Pricing Breakdown inside Order Items Card */}
         <div style={{ borderTop: '1px solid #e4e4e7', paddingTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#71717a' }}>
             <span>Catalog Subtotal</span>
@@ -593,13 +601,6 @@ export default function CheckoutClient() {
             </div>
           )}
 
-          {activeTotals.couponDiscount > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 700 }}>
-              <span>Coupon Discount</span>
-              <span>-₹{activeTotals.couponDiscount.toFixed(2)}</span>
-            </div>
-          )}
-
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#71717a' }}>
             <span>Shipping Charge</span>
             <span style={{ color: '#16a34a', fontWeight: 700 }}>FREE (All India)</span>
@@ -607,15 +608,194 @@ export default function CheckoutClient() {
         </div>
       </div>
 
-      {/* 2. CHOOSE PAYMENT MODE (PREMIUM UNIFIED TILES) */}
-      <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+      {/* 2. HAVE A COUPON? CARD (MATCHING REFERENCE IMAGE) */}
+      <div style={{ 
+        background: '#ffffff', 
+        border: '1px solid #e2e8f0', 
+        borderRadius: '14px', 
+        padding: '1.15rem 1.25rem', 
+        marginBottom: '1.25rem', 
+        boxShadow: '0 1px 3px rgba(0,0,0,0.03)' 
+      }}>
+        {/* Header Toggle */}
+        <div 
+          role="button"
+          tabIndex={0}
+          onClick={() => setShowCouponInput(prev => !prev)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowCouponInput(prev => !prev); }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', outline: 'none' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ 
+              width: '34px', 
+              height: '34px', 
+              borderRadius: '50%', 
+              background: '#16a34a', 
+              color: '#ffffff', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              flexShrink: 0,
+              boxShadow: '0 2px 6px rgba(22,163,74,0.25)'
+            }}>
+              <Percent size={18} strokeWidth={2.6} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '0.975rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em' }}>
+                Have a coupon?
+              </h3>
+              <p style={{ margin: '2px 0 0', fontSize: '0.775rem', color: '#64748b', fontWeight: 500 }}>
+                Apply coupon code to get extra savings
+              </p>
+            </div>
+          </div>
+          <div style={{ color: '#64748b' }}>
+            {showCouponInput ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </div>
+        </div>
+
+        {/* Expandable Coupon Form & Status */}
+        {showCouponInput && (
+          <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid #f1f5f9' }}>
+            {appliedCoupon ? (
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '0.5rem',
+                background: '#f0fdf4', 
+                border: '1px solid #bbf7d0', 
+                borderRadius: '10px', 
+                padding: '0.75rem 1rem' 
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#15803d', fontWeight: 800, fontSize: '0.875rem' }}>
+                    <Tag size={16} />
+                    <span>Coupon <strong>{appliedCoupon.code}</strong> Applied</span>
+                    <span style={{ background: '#dcfce7', color: '#166534', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800 }}>
+                      -₹{appliedCoupon.discount} OFF
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #fca5a5',
+                      color: '#dc2626',
+                      borderRadius: '6px',
+                      padding: '0.25rem 0.65rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+                {selectedPaymentMode === 'COD' && (
+                  <div style={{ fontSize: '0.75rem', color: '#b45309', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>⚠️ Coupon applicable on online payment only.</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <form 
+                  onSubmit={(e) => handleApplyCoupon(e)} 
+                  style={{ display: 'flex', gap: '0.5rem', flexWrap: 'nowrap' }}
+                >
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    placeholder="Enter coupon code (e.g. ADDRESSO50)"
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      letterSpacing: '0.02em',
+                      outline: 'none',
+                      color: '#0f172a'
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={validatingCoupon || !couponInput.trim()}
+                    style={{
+                      background: '#16a34a',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.65rem 1.25rem',
+                      fontSize: '0.875rem',
+                      fontWeight: 800,
+                      cursor: validatingCoupon || !couponInput.trim() ? 'not-allowed' : 'pointer',
+                      opacity: validatingCoupon || !couponInput.trim() ? 0.7 : 1,
+                      flexShrink: 0,
+                      boxShadow: '0 2px 6px rgba(22,163,74,0.2)'
+                    }}
+                  >
+                    {validatingCoupon ? 'Applying...' : 'Apply'}
+                  </button>
+                </form>
+
+                {couponError && (
+                  <p style={{ color: '#dc2626', fontSize: '0.75rem', margin: '0.45rem 0 0', fontWeight: 600 }}>
+                    {couponError}
+                  </p>
+                )}
+
+                {/* Quick Offer Hint Banner from Reference Image */}
+                <div 
+                  onClick={() => {
+                    setCouponInput('ADDRESSO50');
+                    handleApplyCoupon(undefined, 'ADDRESSO50');
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  style={{ 
+                    marginTop: '0.75rem', 
+                    background: '#f0fdf4', 
+                    border: '1px solid #bbf7d0', 
+                    borderRadius: '8px', 
+                    padding: '0.65rem 0.85rem',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '0.6rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ color: '#16a34a', marginTop: '2px', flexShrink: 0 }}>
+                    <Tag size={15} />
+                  </div>
+                  <div style={{ fontSize: '0.775rem', color: '#166534', lineHeight: 1.45 }}>
+                    <div>
+                      Use <strong style={{ color: '#15803d' }}>ADDRESSO50</strong> to get <strong style={{ color: '#15803d' }}>₹50 OFF</strong> on online payment
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#65a30d', marginTop: '1px' }}>
+                      Note: Coupons are applicable only on online payment.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 3. SELECT PAYMENT OPTION SECTION (PREMIUM CARDS) */}
+      <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.25rem', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: '0 0 1rem', color: '#09090b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <CreditCard size={18} /> Select Payment Option
         </h3>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.85rem' }}>
           
-          {/* OPTION 1: FULL ONLINE PAYMENT */}
+          {/* OPTION 1: PAY ONLINE */}
           <div
             role="button"
             tabIndex={0}
@@ -623,110 +803,145 @@ export default function CheckoutClient() {
             onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setSelectedPaymentMode('ONLINE_RAZORPAY'); }}
             style={{
               cursor: 'pointer',
-              border: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '2px solid #09090b' : '1px solid #e4e4e7',
-              borderRadius: '12px',
+              border: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '2px solid #2563eb' : '1px solid #e2e8f0',
+              borderRadius: '14px',
               padding: '1.15rem 1.25rem',
-              background: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '#fafafa' : '#ffffff',
-              boxShadow: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '0 4px 14px rgba(0,0,0,0.05)' : '0 1px 2px rgba(0,0,0,0.02)',
+              background: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '#f0f7ff' : '#ffffff',
+              boxShadow: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '0 4px 16px rgba(37,99,235,0.08)' : '0 1px 2px rgba(0,0,0,0.02)',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               position: 'relative',
               outline: 'none',
             }}
           >
-            {/* Top row: Radio + Icon + Titles on left | Price + Tag on right */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1, minWidth: 0 }}>
-                {/* Custom Radio Indicator */}
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  border: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '2px solid #09090b' : '1.5px solid #d4d4d8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  background: '#ffffff',
-                  transition: 'border-color 0.2s ease',
-                }}>
-                  {selectedPaymentMode === 'ONLINE_RAZORPAY' && (
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#09090b' }} />
-                  )}
-                </div>
-
-                {/* Icon Container */}
-                <div style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '10px',
-                  background: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '#09090b' : '#f4f4f5',
-                  color: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '#ffffff' : '#71717a',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all 0.2s ease',
-                }}>
-                  <CreditCard size={18} />
-                </div>
-
-                {/* Typography Hierarchy */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.975rem', color: '#09090b', letterSpacing: '-0.01em' }}>
-                      Pay Online
-                    </span>
-                    <span style={{
-                      fontSize: '0.675rem',
-                      fontWeight: 800,
-                      color: '#15803d',
-                      background: '#f0fdf4',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '9999px',
-                      border: '1px solid #bbf7d0',
-                      letterSpacing: '0.02em',
-                    }}>
-                      RECOMMENDED
-                    </span>
-                  </div>
-                  <span style={{ fontSize: '0.775rem', color: '#71717a', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    UPI (Google Pay, PhonePe), Cards & NetBanking
-                  </span>
-                </div>
+            {/* Top Row: Radio, Card Icon, Titles & Recommended Badge */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+              {/* Custom Radio Indicator */}
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                border: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '2px solid #2563eb' : '1.5px solid #cbd5e1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                background: '#ffffff',
+                marginTop: '2px',
+                transition: 'border-color 0.2s ease',
+              }}>
+                {selectedPaymentMode === 'ONLINE_RAZORPAY' && (
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#2563eb' }} />
+                )}
               </div>
 
-              {/* Price Column */}
-              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem', flexShrink: 0 }}>
-                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#09090b', letterSpacing: '-0.02em' }}>
-                  ₹{onlineTotals.amountPayableNow.toFixed(2)}
-                </span>
-                <span style={{ fontSize: '0.7rem', color: '#71717a', fontWeight: 600 }}>
-                  Full Payment
-                </span>
+              {/* Light blue icon box */}
+              <div style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '10px',
+                background: '#dbeafe',
+                color: '#2563eb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <CreditCard size={20} />
+              </div>
+
+              {/* Texts & Recommended Badge */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a', letterSpacing: '-0.01em' }}>
+                    Pay Online
+                  </span>
+                  <span style={{
+                    fontSize: '0.675rem',
+                    fontWeight: 800,
+                    color: '#059669',
+                    background: '#ecfdf5',
+                    padding: '0.2rem 0.55rem',
+                    borderRadius: '9999px',
+                    border: '1px solid #a7f3d0',
+                    letterSpacing: '0.03em',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '3px'
+                  }}>
+                    👑 RECOMMENDED
+                  </span>
+                </div>
+                <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
+                  Pay securely via UPI, Cards, NetBanking
+                </p>
+
+                {/* Payment Method Badges Row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
+                  {/* GPay */}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: '#ffffff', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                      <path fill="#FBBC05" d="M5.28 14.27a7.18 7.18 0 0 1 0-4.54V6.58H1.25a11.98 11.98 0 0 0 0 10.84l4.03-3.15z"/>
+                      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                    </svg>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#3c4043', letterSpacing: '-0.2px' }}>Pay</span>
+                  </div>
+                  {/* PhonePe */}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#5f259f', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
+                    <span style={{ color: '#ffffff', fontSize: '10.5px', fontWeight: 800 }}>पे PhonePe</span>
+                  </div>
+                  {/* Paytm */}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#ffffff', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
+                    <span style={{ color: '#002970', fontSize: '11px', fontWeight: 900 }}>pay</span>
+                    <span style={{ color: '#00b9f5', fontSize: '11px', fontWeight: 900 }}>tm</span>
+                  </div>
+                  {/* VISA */}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#ffffff', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
+                    <span style={{ color: '#1a1f71', fontSize: '11.5px', fontWeight: 900, fontStyle: 'italic', letterSpacing: '0.4px' }}>VISA</span>
+                  </div>
+                  {/* Mastercard */}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#ffffff', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
+                    <svg width="22" height="14" viewBox="0 0 28 18">
+                      <circle cx="9" cy="9" r="8" fill="#EB001B"/>
+                      <circle cx="19" cy="9" r="8" fill="#F79E1B" fillOpacity="0.88"/>
+                    </svg>
+                  </div>
+                  {/* RuPay */}
+                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#ffffff', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
+                    <span style={{ color: '#092350', fontSize: '11px', fontWeight: 900, fontStyle: 'italic' }}>RuPay</span>
+                    <span style={{ color: '#00a651', fontSize: '11px', fontWeight: 900, fontStyle: 'italic', marginLeft: '1px' }}>❯</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Bottom details strip */}
+            {/* 3-Chip Feature Footer */}
             <div style={{
-              marginTop: '0.85rem',
-              paddingTop: '0.75rem',
-              borderTop: '1px solid #f4f4f5',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
+              marginTop: '1rem',
+              paddingTop: '0.85rem',
+              borderTop: '1px solid #e2e8f0',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
               gap: '0.5rem',
-              fontSize: '0.75rem',
-              color: '#71717a',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#52525b', fontWeight: 600 }}>
-                <ShieldCheck size={14} color="#16a34a" />
-                <span>Instant Order Confirmation • Zero Processing Fee</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Zap size={12} color="#16a34a" fill="#16a34a" />
+                </div>
+                <span>Instant Confirmation</span>
               </div>
-              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                <span style={{ background: '#f4f4f5', color: '#52525b', padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.675rem', fontWeight: 700 }}>UPI</span>
-                <span style={{ background: '#f4f4f5', color: '#52525b', padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.675rem', fontWeight: 700 }}>Cards</span>
-                <span style={{ background: '#f4f4f5', color: '#52525b', padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.675rem', fontWeight: 700 }}>NetBanking</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <ShieldCheck size={13} color="#2563eb" />
+                </div>
+                <span>100% Secure Payments</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Percent size={12} color="#db2777" strokeWidth={2.6} />
+                </div>
+                <span>Zero Processing Fee</span>
               </div>
             </div>
           </div>
@@ -739,162 +954,302 @@ export default function CheckoutClient() {
             onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setSelectedPaymentMode('COD'); }}
             style={{
               cursor: 'pointer',
-              border: selectedPaymentMode === 'COD' ? '2px solid #09090b' : '1px solid #e4e4e7',
-              borderRadius: '12px',
+              border: selectedPaymentMode === 'COD' ? '2px solid #ea580c' : '1px solid #e2e8f0',
+              borderRadius: '14px',
               padding: '1.15rem 1.25rem',
-              background: selectedPaymentMode === 'COD' ? '#fafafa' : '#ffffff',
-              boxShadow: selectedPaymentMode === 'COD' ? '0 4px 14px rgba(0,0,0,0.05)' : '0 1px 2px rgba(0,0,0,0.02)',
+              background: selectedPaymentMode === 'COD' ? '#fffaf5' : '#ffffff',
+              boxShadow: selectedPaymentMode === 'COD' ? '0 4px 16px rgba(234,88,12,0.08)' : '0 1px 2px rgba(0,0,0,0.02)',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               position: 'relative',
               outline: 'none',
             }}
           >
-            {/* Top row: Radio + Icon + Titles on left | Price + Tag on right */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1, minWidth: 0 }}>
-                {/* Custom Radio Indicator */}
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  border: selectedPaymentMode === 'COD' ? '2px solid #09090b' : '1.5px solid #d4d4d8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  background: '#ffffff',
-                  transition: 'border-color 0.2s ease',
-                }}>
-                  {selectedPaymentMode === 'COD' && (
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#09090b' }} />
-                  )}
-                </div>
-
-                {/* Icon Container */}
-                <div style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '10px',
-                  background: selectedPaymentMode === 'COD' ? '#09090b' : '#f4f4f5',
-                  color: selectedPaymentMode === 'COD' ? '#ffffff' : '#71717a',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all 0.2s ease',
-                }}>
-                  <Truck size={18} />
-                </div>
-
-                {/* Typography Hierarchy */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.975rem', color: '#09090b', letterSpacing: '-0.01em' }}>
-                      Cash on Delivery
-                    </span>
-                    <span style={{
-                      fontSize: '0.675rem',
-                      fontWeight: 800,
-                      color: '#92400e',
-                      background: '#fef3c7',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '9999px',
-                      border: '1px solid #fde68a',
-                      letterSpacing: '0.02em',
-                    }}>
-                      ₹{getCodAdvanceAmount()} ADVANCE
-                    </span>
-                  </div>
-                  <span style={{ fontSize: '0.775rem', color: '#71717a', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    Pay ₹{getCodAdvanceAmount()} advance to confirm • Balance at doorstep
-                  </span>
-                </div>
+            {/* Top Row: Radio, Truck Icon, Titles & Advance Badge */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem' }}>
+              {/* Custom Radio Indicator */}
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                border: selectedPaymentMode === 'COD' ? '2px solid #ea580c' : '1.5px solid #cbd5e1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                background: '#ffffff',
+                marginTop: '2px',
+                transition: 'border-color 0.2s ease',
+              }}>
+                {selectedPaymentMode === 'COD' && (
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ea580c' }} />
+                )}
               </div>
 
-              {/* Price Column */}
-              <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem', flexShrink: 0 }}>
-                <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#09090b', letterSpacing: '-0.02em' }}>
-                  ₹{getCodAdvanceAmount()}.00
-                </span>
-                <span style={{ fontSize: '0.7rem', color: '#71717a', fontWeight: 600 }}>
-                  Pay Advance
-                </span>
+              {/* Light peach icon box */}
+              <div style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '10px',
+                background: '#ffedd5',
+                color: '#ea580c',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Truck size={20} />
+              </div>
+
+              {/* Texts & Advance Badge */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a', letterSpacing: '-0.01em' }}>
+                    Cash on Delivery
+                  </span>
+                  <span style={{
+                    fontSize: '0.675rem',
+                    fontWeight: 800,
+                    color: '#b45309',
+                    background: '#fef3c7',
+                    padding: '0.2rem 0.55rem',
+                    borderRadius: '9999px',
+                    border: '1px solid #fde68a',
+                    letterSpacing: '0.03em',
+                  }}>
+                    ₹{getCodAdvanceAmount()} ADVANCE
+                  </span>
+                </div>
+                <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
+                  Pay ₹{getCodAdvanceAmount()} advance to confirm your order
+                </p>
               </div>
             </div>
 
-            {/* Bottom details strip */}
+            {/* 3-Chip Feature Footer */}
             <div style={{
-              marginTop: '0.85rem',
-              paddingTop: '0.75rem',
-              borderTop: '1px solid #f4f4f5',
+              marginTop: '1rem',
+              paddingTop: '0.85rem',
+              borderTop: '1px solid #fed7aa',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+              gap: '0.5rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffedd5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Package size={12} color="#ea580c" />
+                </div>
+                <span>Check product before paying</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <ShieldCheck size={13} color="#2563eb" />
+                </div>
+                <span>Safe & Reliable</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Wallet size={12} color="#b45309" />
+                </div>
+                <span>Pay remaining on delivery</span>
+              </div>
+            </div>
+
+            {/* COD breakdown note */}
+            <div style={{
+              marginTop: '0.75rem',
+              background: '#fff7ed',
+              border: '1px solid #ffedd5',
+              borderRadius: '8px',
+              padding: '0.5rem 0.75rem',
               display: 'flex',
-              flexDirection: 'column',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
               gap: '0.35rem',
               fontSize: '0.75rem',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <span style={{ color: '#09090b', fontWeight: 700 }}>
-                  Online Advance: ₹{getCodAdvanceAmount()}.00
-                </span>
-                <span style={{ color: '#b45309', fontWeight: 700 }}>
-                  Remaining Balance: ₹{codTotals.amountDueOnDelivery.toFixed(2)} (on delivery)
-                </span>
-              </div>
-              <p style={{ margin: 0, fontSize: '0.725rem', color: '#71717a', lineHeight: 1.4 }}>
-                Pay ₹{getCodAdvanceAmount()} online advance now via Razorpay to confirm booking. Pay remaining ₹{codTotals.amountDueOnDelivery.toFixed(2)} in Cash or UPI upon delivery.
-              </p>
+              <span style={{ color: '#0f172a', fontWeight: 700 }}>
+                Online Advance: ₹{getCodAdvanceAmount()}.00
+              </span>
+              <span style={{ color: '#c2410c', fontWeight: 700 }}>
+                Remaining Balance: ₹{codTotals.amountDueOnDelivery.toFixed(2)} (on delivery)
+              </span>
             </div>
           </div>
 
         </div>
+      </div>
 
-        {/* PRIMARY SUBMIT BUTTON */}
-        <div style={{ marginTop: '1.5rem' }}>
-          <button
-            type="button"
-            disabled={processing}
-            onClick={() => handleLaunchPayment(selectedPaymentMode)}
-            style={{
-              width: '100%',
+      {/* 4. ORDER PRICING SUMMARY CARD (FROM REFERENCE IMAGE) */}
+      <div style={{ 
+        background: '#ffffff', 
+        border: '1px solid #e2e8f0', 
+        borderRadius: '14px', 
+        padding: '1.25rem', 
+        marginBottom: '1.25rem', 
+        boxShadow: '0 1px 3px rgba(0,0,0,0.02)' 
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+          {/* Order Total */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', color: '#475569' }}>
+            <span>Order Total ({checkoutItems.reduce((acc, it) => acc + (it.quantity || 1), 0)} items)</span>
+            <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>
+              ₹{activeTotals.subtotalAfterBundles.toLocaleString('en-IN')}
+            </span>
+          </div>
+
+          {/* Coupon Discount Row (if applied) */}
+          {appliedCoupon && selectedPaymentMode === 'ONLINE_RAZORPAY' && activeTotals.couponDiscount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', color: '#16a34a' }}>
+              <span style={{ fontWeight: 600 }}>Coupon Discount ({appliedCoupon.code})</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ fontWeight: 800 }}>- ₹{activeTotals.couponDiscount.toLocaleString('en-IN')}</span>
+                <button 
+                  type="button" 
+                  onClick={handleRemoveCoupon} 
+                  title="Remove coupon"
+                  style={{ 
+                    background: '#fee2e2', 
+                    border: 'none', 
+                    color: '#dc2626', 
+                    width: '18px', 
+                    height: '18px', 
+                    borderRadius: '50%', 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    padding: 0
+                  }}
+                >
+                  <X size={12} strokeWidth={2.5} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {appliedCoupon && selectedPaymentMode === 'COD' && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#b45309', background: '#fffbeb', padding: '0.45rem 0.75rem', borderRadius: '8px' }}>
+              <span>Coupon <strong>{appliedCoupon.code}</strong></span>
+              <span style={{ fontWeight: 700 }}>Coupon applicable on online payment only.</span>
+            </div>
+          )}
+
+          {/* Divider line */}
+          <div style={{ height: '1px', background: '#f1f5f9', margin: '0.2rem 0' }} />
+
+          {/* Final Payable Amount */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a' }}>
+                {selectedPaymentMode === 'COD' ? 'Payable Now (Advance)' : 'Final Payable Amount'}
+              </span>
+              {selectedPaymentMode === 'COD' && (
+                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                  Remaining ₹{codTotals.amountDueOnDelivery.toLocaleString('en-IN')} due upon delivery
+                </p>
+              )}
+            </div>
+            <span style={{ fontWeight: 900, fontSize: '1.45rem', color: '#16a34a', letterSpacing: '-0.02em' }}>
+              ₹{activeTotals.amountPayableNow.toLocaleString('en-IN')}
+            </span>
+          </div>
+
+          {/* Green Savings Ribbon */}
+          {((appliedCoupon && selectedPaymentMode === 'ONLINE_RAZORPAY' && activeTotals.couponDiscount > 0) || activeTotals.bundleDiscount > 0) && (
+            <div style={{
+              marginTop: '0.25rem',
+              background: '#ecfdf5',
+              border: '1px solid #bbf7d0',
+              borderRadius: '8px',
+              padding: '0.55rem 0.85rem',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
               gap: '0.5rem',
-              background: '#09090b',
-              color: '#ffffff',
-              border: 'none',
-              padding: '1rem',
-              borderRadius: '8px',
-              fontSize: '1rem',
-              fontWeight: 800,
-              cursor: processing ? 'not-allowed' : 'pointer',
-              opacity: processing ? 0.75 : 1,
-              boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
-              transition: 'transform 0.15s ease'
-            }}
-          >
-            {processing ? (
-              <>
-                <RefreshCw size={18} className="animate-spin" />
-                <span>Opening Secure Razorpay Checkout...</span>
-              </>
-            ) : selectedPaymentMode === 'ONLINE_RAZORPAY' ? (
-              <>
-                <span>Pay ₹{onlineTotals.amountPayableNow.toFixed(2)} Online</span>
-                <ArrowRight size={18} />
-              </>
-            ) : (
-              <>
-                <span>Pay ₹{getCodAdvanceAmount()} Advance & Confirm COD Order</span>
-                <ArrowRight size={18} />
-              </>
-            )}
-          </button>
+              color: '#15803d',
+              fontSize: '0.825rem',
+              fontWeight: 700
+            }}>
+              <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#16a34a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Percent size={11} strokeWidth={2.8} />
+              </div>
+              <span>
+                {appliedCoupon && selectedPaymentMode === 'ONLINE_RAZORPAY' && activeTotals.couponDiscount > 0
+                  ? `You are saving ₹${activeTotals.couponDiscount} with this coupon!`
+                  : `You are saving ₹${activeTotals.bundleDiscount} with your bundle offer!`}
+              </span>
+            </div>
+          )}
         </div>
+      </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.85rem', color: '#71717a', fontSize: '0.75rem' }}>
-          <Lock size={12} />
+      {/* 5. PRIMARY SUBMIT CTA BUTTON */}
+      <div style={{ marginBottom: '1rem' }}>
+        <button
+          type="button"
+          disabled={processing}
+          onClick={() => handleLaunchPayment(selectedPaymentMode)}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.65rem',
+            background: '#09090b',
+            color: '#ffffff',
+            border: 'none',
+            padding: '1.05rem',
+            borderRadius: '12px',
+            fontSize: '1.05rem',
+            fontWeight: 800,
+            cursor: processing ? 'not-allowed' : 'pointer',
+            opacity: processing ? 0.75 : 1,
+            boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
+            transition: 'transform 0.15s ease',
+          }}
+        >
+          {processing ? (
+            <>
+              <RefreshCw size={18} className="animate-spin" />
+              <span>Opening Secure Razorpay Checkout...</span>
+            </>
+          ) : selectedPaymentMode === 'ONLINE_RAZORPAY' ? (
+            <>
+              <Lock size={16} />
+              <span>Pay ₹{onlineTotals.amountPayableNow.toLocaleString('en-IN')} Online →</span>
+            </>
+          ) : (
+            <>
+              <Lock size={16} />
+              <span>Pay ₹{getCodAdvanceAmount()} Advance →</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* 6. TRUST FOOTER BADGES */}
+      <div style={{ textAlign: 'center', marginTop: '0.75rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: '#64748b', fontSize: '0.75rem', fontWeight: 500 }}>
+          <Lock size={12} color="#64748b" />
           <span>All transactions are 256-bit encrypted & verified directly with Razorpay</span>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.65rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '4px 10px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 800, color: '#065f46' }}>
+            <CheckCircle2 size={13} color="#059669" />
+            <span>PCI DSS COMPLIANT</span>
+          </div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '4px 10px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 800, color: '#065f46' }}>
+            <Lock size={12} color="#059669" />
+            <span>SSL SECURED</span>
+          </div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '4px 10px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 800, color: '#1e40af' }}>
+            <span style={{ fontSize: '0.625rem', color: '#64748b', fontWeight: 600 }}>POWERED BY</span>
+            <span style={{ color: '#0c2340', fontWeight: 900, fontStyle: 'italic', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+              <Zap size={11} fill="#3399cc" color="#3399cc" /> Razorpay
+            </span>
+          </div>
         </div>
       </div>
 

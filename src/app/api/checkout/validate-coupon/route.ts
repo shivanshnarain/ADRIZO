@@ -4,7 +4,7 @@ import { validateAndCalculateCouponDiscount } from '@/lib/coupon-engine';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { couponCode, subtotal, items = [], customerEmail, customerPhone, userId } = body;
+    const { couponCode, subtotal, items = [], customerEmail, customerPhone, userId, paymentMode } = body;
 
     const numSubtotal = Number(subtotal) || 0;
     if (numSubtotal <= 0) {
@@ -18,11 +18,13 @@ export async function POST(req: NextRequest) {
       customerEmail,
       customerPhone,
       userId,
+      paymentMode,
     });
 
     if (!result.success) {
       return NextResponse.json({
         valid: false,
+        code: result.error?.code,
         error: result.error?.description || 'Invalid promo code.',
       }, { status: 400 });
     }
@@ -40,10 +42,11 @@ export async function POST(req: NextRequest) {
       discount: result.discount,
       finalPayable: result.finalPayable,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : 'Failed to validate coupon.';
     return NextResponse.json({
       valid: false,
-      error: error.message || 'Failed to validate coupon.',
+      error: errMessage,
     }, { status: 500 });
   }
 }

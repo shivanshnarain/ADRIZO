@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import type { Coupon } from '@prisma/client';
 import { getAdminClient } from '@/lib/supabase/admin';
 
 export interface PromotionItemInput {
@@ -29,6 +30,7 @@ export interface ValidateCouponOptions {
   userId?: string;
   orderId?: string;
   razorpayOrderId?: string;
+  paymentMode?: string;
 }
 
 export interface FormattedPromotion {
@@ -113,6 +115,16 @@ export async function seedDefaultCouponsIfEmpty() {
         firstOrderOnly: true,
         active: true,
         description: 'First order exclusive: 15% discount on orders above ₹799 (up to ₹350).',
+      },
+      {
+        couponCode: 'ADDRESSO50',
+        discountType: 'fixed',
+        discountValue: 50,
+        minimumOrderValue: 0,
+        maximumDiscount: 50,
+        firstOrderOnly: false,
+        active: true,
+        description: 'Get ₹50 OFF on online payment.',
       },
     ];
 
@@ -323,10 +335,69 @@ export async function validateAndCalculateCouponDiscount(
   const cleanCode = couponCode.trim().toUpperCase();
   const now = new Date();
 
+  // 0. COD restriction check for online-only coupons (e.g. ADDRESSO50)
+  const isCodPayment = options.paymentMode && (
+    options.paymentMode.toUpperCase() === 'COD' || 
+    options.paymentMode.toUpperCase() === 'CASH_ON_DELIVERY' ||
+    options.paymentMode.toUpperCase() === 'CASH-ON-DELIVERY'
+  );
+
+  if (cleanCode === 'ADDRESSO50' && isCodPayment) {
+    return {
+      success: false,
+      error: { code: 'ONLINE_ONLY', description: 'Coupon applicable on online payment only.' },
+      discount: 0,
+      discountInPaise: 0,
+      amount: 0,
+      subtotal,
+      finalPayable: subtotal,
+      currency: 'INR',
+    };
+  }
+
   // 1. Fetch coupon from database
   let coupon = await prisma.coupon.findUnique({
     where: { couponCode: cleanCode },
   });
+
+  // Dedicated fallback for ADDRESSO50 (₹50 Flat OFF on online payment)
+  if (!coupon && cleanCode === 'ADDRESSO50') {
+    coupon = await prisma.coupon.create({
+      data: {
+        couponCode: 'ADDRESSO50',
+        discountType: 'fixed',
+        discountValue: 50,
+        minimumOrderValue: 0,
+        maximumDiscount: 50,
+        firstOrderOnly: false,
+        active: true,
+        description: 'Get ₹50 OFF on online payment.',
+      },
+    }).catch(() => null);
+
+    if (!coupon) {
+      coupon = {
+        id: 'coupon-addresso50',
+        couponCode: 'ADDRESSO50',
+        discountType: 'fixed',
+        discountValue: 50,
+        minimumOrderValue: 0,
+        maximumDiscount: 50,
+        firstOrderOnly: false,
+        active: true,
+        description: 'Get ₹50 OFF on online payment.',
+        startDate: null,
+        expiryDate: null,
+        usageLimit: null,
+        usageCount: 0,
+        perCustomerLimit: null,
+        applicableProducts: [],
+        applicableCategories: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Coupon;
+    }
+  }
 
   // Backward compatibility fallback: check store_discounts setting if not in Coupon collection
   if (!coupon) {
@@ -356,6 +427,20 @@ export async function validateAndCalculateCouponDiscount(
     return {
       success: false,
       error: { code: 'INVALID_COUPON', description: `Promo code "${cleanCode}" is invalid.` },
+      discount: 0,
+      discountInPaise: 0,
+      amount: 0,
+      subtotal,
+      finalPayable: subtotal,
+      currency: 'INR',
+    };
+  }
+
+  // Check if coupon itself is online-only and user selected COD
+  if (isCodPayment && (cleanCode === 'ADDRESSO50' || /online only|online payment only/i.test(coupon.description || ''))) {
+    return {
+      success: false,
+      error: { code: 'ONLINE_ONLY', description: 'Coupon applicable on online payment only.' },
       discount: 0,
       discountInPaise: 0,
       amount: 0,
