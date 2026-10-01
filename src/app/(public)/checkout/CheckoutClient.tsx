@@ -75,7 +75,7 @@ export default function CheckoutClient() {
   } | null>(null);
   const [couponError, setCouponError] = useState('');
   const [validatingCoupon, setValidatingCoupon] = useState(false);
-  const [showCouponInput, setShowCouponInput] = useState(false);
+  const [showCouponInput, setShowCouponInput] = useState(true);
 
   // Processing & Error states
   const [processing, setProcessing] = useState(false);
@@ -270,11 +270,15 @@ export default function CheckoutClient() {
         },
       };
 
-      const res = await fetch('/api/checkout/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      // Parallelize create-order API request and Razorpay script loading to eliminate launch latency
+      const [res, scriptLoaded] = await Promise.all([
+        fetch('/api/checkout/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }),
+        loadRazorpayScript(),
+      ]);
 
       const data = await res.json();
 
@@ -285,7 +289,6 @@ export default function CheckoutClient() {
         return;
       }
 
-      const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         setOrderError('Failed to load secure Razorpay gateway. Please check your internet connection.');
         isSubmittingRef.current = false;
@@ -534,57 +537,6 @@ export default function CheckoutClient() {
           })}
         </div>
 
-        {/* Coupon Section */}
-        <div style={{ borderTop: '1px solid #f4f4f5', paddingTop: '0.85rem', marginBottom: '0.85rem' }}>
-          {appliedCoupon ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.825rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#15803d', fontWeight: 700 }}>
-                <Tag size={14} />
-                <span>Coupon <strong>{appliedCoupon.code}</strong> applied (-₹{appliedCoupon.discount.toFixed(2)})</span>
-              </div>
-              <button 
-                type="button" 
-                onClick={handleRemoveCoupon} 
-                style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <div>
-              <button 
-                type="button" 
-                onClick={() => setShowCouponInput(!showCouponInput)} 
-                style={{ background: 'none', border: 'none', color: '#4f46e5', cursor: 'pointer', fontSize: '0.825rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem', padding: 0 }}
-              >
-                <Tag size={13} />
-                <span>Have a promo code or gift voucher?</span>
-                {showCouponInput ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </button>
-
-              {showCouponInput && (
-                <form onSubmit={handleApplyCoupon} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.65rem' }}>
-                  <input
-                    type="text"
-                    value={couponInput}
-                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                    placeholder="ENTER CODE (e.g. ADRIZO50)"
-                    style={{ flex: 1, padding: '0.45rem 0.75rem', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.825rem', textTransform: 'uppercase', fontWeight: 700 }}
-                  />
-                  <button
-                    type="submit"
-                    disabled={validatingCoupon || !couponInput.trim()}
-                    style={{ background: '#09090b', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '0.45rem 1rem', fontSize: '0.825rem', fontWeight: 800, cursor: 'pointer' }}
-                  >
-                    {validatingCoupon ? 'Checking...' : 'Apply'}
-                  </button>
-                </form>
-              )}
-              {couponError && <p style={{ color: '#dc2626', fontSize: '0.75rem', margin: '0.4rem 0 0', fontWeight: 600 }}>{couponError}</p>}
-            </div>
-          )}
-        </div>
-
         {/* Pricing Breakdown inside Order Items Card */}
         <div style={{ borderTop: '1px solid #e4e4e7', paddingTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#71717a' }}>
@@ -708,7 +660,7 @@ export default function CheckoutClient() {
                     type="text"
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                    placeholder="Enter coupon code (e.g. ADDRESSO50)"
+                    placeholder="Enter coupon code (e.g. ADRIZO50)"
                     style={{
                       flex: 1,
                       minWidth: 0,
@@ -752,8 +704,8 @@ export default function CheckoutClient() {
                 {/* Quick Offer Hint Banner from Reference Image */}
                 <div 
                   onClick={() => {
-                    setCouponInput('ADDRESSO50');
-                    handleApplyCoupon(undefined, 'ADDRESSO50');
+                    setCouponInput('ADRIZO50');
+                    handleApplyCoupon(undefined, 'ADRIZO50');
                   }}
                   role="button"
                   tabIndex={0}
@@ -774,7 +726,7 @@ export default function CheckoutClient() {
                   </div>
                   <div style={{ fontSize: '0.775rem', color: '#166534', lineHeight: 1.45 }}>
                     <div>
-                      Use <strong style={{ color: '#15803d' }}>ADDRESSO50</strong> to get <strong style={{ color: '#15803d' }}>₹50 OFF</strong> on online payment
+                      Use <strong style={{ color: '#15803d' }}>ADRIZO50</strong> to get <strong style={{ color: '#15803d' }}>₹50 OFF</strong> on online payment
                     </div>
                     <div style={{ fontSize: '0.7rem', color: '#65a30d', marginTop: '1px' }}>
                       Note: Coupons are applicable only on online payment.
@@ -803,12 +755,12 @@ export default function CheckoutClient() {
             onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setSelectedPaymentMode('ONLINE_RAZORPAY'); }}
             style={{
               cursor: 'pointer',
-              border: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '2px solid #2563eb' : '1px solid #e2e8f0',
+              border: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '2px solid #09090b' : '1px solid #e2e8f0',
               borderRadius: '14px',
               padding: '1.15rem 1.25rem',
-              background: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '#f0f7ff' : '#ffffff',
-              boxShadow: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '0 4px 16px rgba(37,99,235,0.08)' : '0 1px 2px rgba(0,0,0,0.02)',
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              background: '#ffffff',
+              boxShadow: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '0 4px 14px rgba(0,0,0,0.06)' : '0 1px 2px rgba(0,0,0,0.02)',
+              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
               position: 'relative',
               outline: 'none',
             }}
@@ -820,7 +772,7 @@ export default function CheckoutClient() {
                 width: '20px',
                 height: '20px',
                 borderRadius: '50%',
-                border: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '2px solid #2563eb' : '1.5px solid #cbd5e1',
+                border: selectedPaymentMode === 'ONLINE_RAZORPAY' ? '2px solid #09090b' : '1.5px solid #cbd5e1',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -830,17 +782,17 @@ export default function CheckoutClient() {
                 transition: 'border-color 0.2s ease',
               }}>
                 {selectedPaymentMode === 'ONLINE_RAZORPAY' && (
-                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#2563eb' }} />
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#09090b' }} />
                 )}
               </div>
 
-              {/* Light blue icon box */}
+              {/* Neutral icon box */}
               <div style={{
-                width: '42px',
-                height: '42px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '10px',
-                background: '#dbeafe',
-                color: '#2563eb',
+                background: '#f4f4f5',
+                color: '#09090b',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -863,85 +815,155 @@ export default function CheckoutClient() {
                     padding: '0.2rem 0.55rem',
                     borderRadius: '9999px',
                     border: '1px solid #a7f3d0',
-                    letterSpacing: '0.03em',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '3px'
+                    letterSpacing: '0.04em',
                   }}>
-                    👑 RECOMMENDED
+                    RECOMMENDED
                   </span>
                 </div>
                 <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
                   Pay securely via UPI, Cards, NetBanking
                 </p>
 
-                {/* Payment Method Badges Row */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
+                {/* Payment Method Badges: Strictly ONE SINGLE HORIZONTAL ROW of 6 Logos */}
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(6, 1fr)', 
+                  gap: '0.35rem', 
+                  marginTop: '0.75rem',
+                  width: '100%',
+                }}>
                   {/* GPay */}
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: '#ffffff', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
-                    <svg width="13" height="13" viewBox="0 0 24 24">
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    gap: '2px', 
+                    background: '#ffffff', 
+                    border: '1px solid #e2e8f0', 
+                    borderRadius: '6px', 
+                    height: '24px', 
+                    minWidth: 0,
+                    padding: '0 2px' 
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
                       <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
                       <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
                       <path fill="#FBBC05" d="M5.28 14.27a7.18 7.18 0 0 1 0-4.54V6.58H1.25a11.98 11.98 0 0 0 0 10.84l4.03-3.15z"/>
                       <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                     </svg>
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#3c4043', letterSpacing: '-0.2px' }}>Pay</span>
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#3c4043', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>Pay</span>
                   </div>
                   {/* PhonePe */}
-                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#5f259f', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
-                    <span style={{ color: '#ffffff', fontSize: '10.5px', fontWeight: 800 }}>पे PhonePe</span>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    background: '#5f259f', 
+                    borderRadius: '6px', 
+                    height: '24px', 
+                    minWidth: 0,
+                    padding: '0 2px' 
+                  }}>
+                    <span style={{ color: '#ffffff', fontSize: '9.5px', fontWeight: 800, whiteSpace: 'nowrap' }}>PhonePe</span>
                   </div>
                   {/* Paytm */}
-                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#ffffff', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
-                    <span style={{ color: '#002970', fontSize: '11px', fontWeight: 900 }}>pay</span>
-                    <span style={{ color: '#00b9f5', fontSize: '11px', fontWeight: 900 }}>tm</span>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    background: '#ffffff', 
+                    border: '1px solid #e2e8f0', 
+                    borderRadius: '6px', 
+                    height: '24px', 
+                    minWidth: 0,
+                    padding: '0 2px' 
+                  }}>
+                    <span style={{ color: '#002970', fontSize: '10px', fontWeight: 900 }}>pay</span>
+                    <span style={{ color: '#00b9f5', fontSize: '10px', fontWeight: 900 }}>tm</span>
                   </div>
                   {/* VISA */}
-                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#ffffff', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
-                    <span style={{ color: '#1a1f71', fontSize: '11.5px', fontWeight: 900, fontStyle: 'italic', letterSpacing: '0.4px' }}>VISA</span>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    background: '#ffffff', 
+                    border: '1px solid #e2e8f0', 
+                    borderRadius: '6px', 
+                    height: '24px', 
+                    minWidth: 0,
+                    padding: '0 2px' 
+                  }}>
+                    <span style={{ color: '#1a1f71', fontSize: '10.5px', fontWeight: 900, fontStyle: 'italic', letterSpacing: '0.3px' }}>VISA</span>
                   </div>
                   {/* Mastercard */}
-                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#ffffff', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
-                    <svg width="22" height="14" viewBox="0 0 28 18">
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    background: '#ffffff', 
+                    border: '1px solid #e2e8f0', 
+                    borderRadius: '6px', 
+                    height: '24px', 
+                    minWidth: 0,
+                    padding: '0 2px' 
+                  }}>
+                    <svg width="20" height="13" viewBox="0 0 28 18">
                       <circle cx="9" cy="9" r="8" fill="#EB001B"/>
                       <circle cx="19" cy="9" r="8" fill="#F79E1B" fillOpacity="0.88"/>
                     </svg>
                   </div>
                   {/* RuPay */}
-                  <div style={{ display: 'inline-flex', alignItems: 'center', background: '#ffffff', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px', height: '24px', flexShrink: 0 }}>
-                    <span style={{ color: '#092350', fontSize: '11px', fontWeight: 900, fontStyle: 'italic' }}>RuPay</span>
-                    <span style={{ color: '#00a651', fontSize: '11px', fontWeight: 900, fontStyle: 'italic', marginLeft: '1px' }}>❯</span>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    background: '#ffffff', 
+                    border: '1px solid #e2e8f0', 
+                    borderRadius: '6px', 
+                    height: '24px', 
+                    minWidth: 0,
+                    padding: '0 2px' 
+                  }}>
+                    <span style={{ color: '#092350', fontSize: '10px', fontWeight: 900, fontStyle: 'italic' }}>RuPay</span>
+                    <span style={{ color: '#00a651', fontSize: '10px', fontWeight: 900, fontStyle: 'italic' }}>❯</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* 3-Chip Feature Footer */}
+            {/* 3 Benefits: Strictly ONE SINGLE HORIZONTAL ROW with Circular Icons */}
             <div style={{
               marginTop: '1rem',
               paddingTop: '0.85rem',
-              borderTop: '1px solid #e2e8f0',
+              borderTop: '1px solid #f1f5f9',
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: '0.5rem',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '0.35rem',
+              width: '100%',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Zap size={12} color="#16a34a" fill="#16a34a" />
+                  <Zap size={11} color="#16a34a" fill="#16a34a" />
                 </div>
-                <span>Instant Confirmation</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
+                  Instant Confirmation
+                </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <ShieldCheck size={13} color="#2563eb" />
+                  <ShieldCheck size={12} color="#2563eb" />
                 </div>
-                <span>100% Secure Payments</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
+                  100% Secure Payments
+                </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Percent size={12} color="#db2777" strokeWidth={2.6} />
+                  <Percent size={11} color="#db2777" strokeWidth={2.6} />
                 </div>
-                <span>Zero Processing Fee</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
+                  Zero Processing Fee
+                </span>
               </div>
             </div>
           </div>
@@ -954,12 +976,12 @@ export default function CheckoutClient() {
             onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') setSelectedPaymentMode('COD'); }}
             style={{
               cursor: 'pointer',
-              border: selectedPaymentMode === 'COD' ? '2px solid #ea580c' : '1px solid #e2e8f0',
+              border: selectedPaymentMode === 'COD' ? '2px solid #09090b' : '1px solid #e2e8f0',
               borderRadius: '14px',
               padding: '1.15rem 1.25rem',
-              background: selectedPaymentMode === 'COD' ? '#fffaf5' : '#ffffff',
-              boxShadow: selectedPaymentMode === 'COD' ? '0 4px 16px rgba(234,88,12,0.08)' : '0 1px 2px rgba(0,0,0,0.02)',
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              background: '#ffffff',
+              boxShadow: selectedPaymentMode === 'COD' ? '0 4px 14px rgba(0,0,0,0.06)' : '0 1px 2px rgba(0,0,0,0.02)',
+              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
               position: 'relative',
               outline: 'none',
             }}
@@ -971,7 +993,7 @@ export default function CheckoutClient() {
                 width: '20px',
                 height: '20px',
                 borderRadius: '50%',
-                border: selectedPaymentMode === 'COD' ? '2px solid #ea580c' : '1.5px solid #cbd5e1',
+                border: selectedPaymentMode === 'COD' ? '2px solid #09090b' : '1.5px solid #cbd5e1',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -981,17 +1003,17 @@ export default function CheckoutClient() {
                 transition: 'border-color 0.2s ease',
               }}>
                 {selectedPaymentMode === 'COD' && (
-                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ea580c' }} />
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#09090b' }} />
                 )}
               </div>
 
-              {/* Light peach icon box */}
+              {/* Neutral icon box */}
               <div style={{
-                width: '42px',
-                height: '42px',
+                width: '40px',
+                height: '40px',
                 borderRadius: '10px',
-                background: '#ffedd5',
-                color: '#ea580c',
+                background: '#f4f4f5',
+                color: '#09090b',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1025,40 +1047,47 @@ export default function CheckoutClient() {
               </div>
             </div>
 
-            {/* 3-Chip Feature Footer */}
+            {/* 3 COD Benefits: Strictly ONE SINGLE HORIZONTAL ROW with Circular Icons */}
             <div style={{
               marginTop: '1rem',
               paddingTop: '0.85rem',
-              borderTop: '1px solid #fed7aa',
+              borderTop: '1px solid #f1f5f9',
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: '0.5rem',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '0.35rem',
+              width: '100%',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffedd5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Package size={12} color="#ea580c" />
+                  <Package size={11} color="#ea580c" />
                 </div>
-                <span>Check product before paying</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
+                  Check product before paying
+                </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <ShieldCheck size={13} color="#2563eb" />
+                  <ShieldCheck size={12} color="#2563eb" />
                 </div>
-                <span>Safe & Reliable</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
+                  Safe & Reliable
+                </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
                 <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Wallet size={12} color="#b45309" />
+                  <Wallet size={11} color="#b45309" />
                 </div>
-                <span>Pay remaining on delivery</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
+                  Pay remaining on delivery
+                </span>
               </div>
             </div>
 
             {/* COD breakdown note */}
             <div style={{
               marginTop: '0.75rem',
-              background: '#fff7ed',
-              border: '1px solid #ffedd5',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
               borderRadius: '8px',
               padding: '0.5rem 0.75rem',
               display: 'flex',
@@ -1071,7 +1100,7 @@ export default function CheckoutClient() {
               <span style={{ color: '#0f172a', fontWeight: 700 }}>
                 Online Advance: ₹{getCodAdvanceAmount()}.00
               </span>
-              <span style={{ color: '#c2410c', fontWeight: 700 }}>
+              <span style={{ color: '#64748b', fontWeight: 700 }}>
                 Remaining Balance: ₹{codTotals.amountDueOnDelivery.toFixed(2)} (on delivery)
               </span>
             </div>

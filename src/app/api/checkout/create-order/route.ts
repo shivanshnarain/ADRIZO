@@ -346,8 +346,11 @@ export async function POST(req: NextRequest) {
       })().catch(() => {});
     }
 
-    // 4. Authoritative MongoDB Product, Promotion & Inventory Verification
-    const promoResult = await validateAndPriceOrderItems(items);
+    // 4. Authoritative MongoDB Product, Promotion & Inventory Verification (parallelized for latency optimization)
+    const [promoResult, activeOffers] = await Promise.all([
+      validateAndPriceOrderItems(items),
+      getActivePromotionOffers(),
+    ]);
     if (!promoResult.success) {
       return NextResponse.json({
         success: false,
@@ -388,7 +391,6 @@ export async function POST(req: NextRequest) {
     // Single authoritative source of truth across Cart, Checkout, Buy Now, and Razorpay
     const paymentModeEnum: PaymentMode = paymentMethod === 'COD' ? 'COD' : 'ONLINE_RAZORPAY';
 
-    const activeOffers = await getActivePromotionOffers();
     const checkoutTotals = calculateCheckoutTotals({
       items: validatedItems.map(item => ({
         id: item.productId,

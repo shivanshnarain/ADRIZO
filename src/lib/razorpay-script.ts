@@ -77,14 +77,5 @@ export function loadRazorpayScript(): Promise<boolean> {
 
 export function preloadRazorpayScript(): void {
   if (typeof window === 'undefined') return;
-  // Use requestIdleCallback if available, otherwise setTimeout
-  if ('requestIdleCallback' in window && typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(() => {
-      loadRazorpayScript().catch(() => {});
-    });
-  } else {
-    setTimeout(() => {
-      loadRazorpayScript().catch(() => {});
-    }, 100);
-  }
+  loadRazorpayScript().catch(() => {});
 }

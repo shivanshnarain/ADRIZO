@@ -88,13 +88,13 @@ export async function seedDefaultCouponsIfEmpty() {
       },
       {
         couponCode: 'ADRIZO50',
-        discountType: 'percentage',
+        discountType: 'fixed',
         discountValue: 50,
-        minimumOrderValue: 1999,
-        maximumDiscount: 1000,
+        minimumOrderValue: 0,
+        maximumDiscount: 50,
         firstOrderOnly: false,
         active: true,
-        description: 'Get 50% discount on order subtotal above ₹1999 (up to ₹1,000).',
+        description: 'Get ₹50 OFF on online payment.',
       },
       {
         couponCode: 'FLAT200',
@@ -115,16 +115,6 @@ export async function seedDefaultCouponsIfEmpty() {
         firstOrderOnly: true,
         active: true,
         description: 'First order exclusive: 15% discount on orders above ₹799 (up to ₹350).',
-      },
-      {
-        couponCode: 'ADDRESSO50',
-        discountType: 'fixed',
-        discountValue: 50,
-        minimumOrderValue: 0,
-        maximumDiscount: 50,
-        firstOrderOnly: false,
-        active: true,
-        description: 'Get ₹50 OFF on online payment.',
       },
     ];
 
@@ -335,14 +325,15 @@ export async function validateAndCalculateCouponDiscount(
   const cleanCode = couponCode.trim().toUpperCase();
   const now = new Date();
 
-  // 0. COD restriction check for online-only coupons (e.g. ADDRESSO50)
+  // 0. COD restriction check for online-only coupons (ADRIZO50 & ADDRESSO50)
+  const isOnlineOnlyCoupon = cleanCode === 'ADRIZO50' || cleanCode === 'ADDRESSO50';
   const isCodPayment = options.paymentMode && (
     options.paymentMode.toUpperCase() === 'COD' || 
     options.paymentMode.toUpperCase() === 'CASH_ON_DELIVERY' ||
     options.paymentMode.toUpperCase() === 'CASH-ON-DELIVERY'
   );
 
-  if (cleanCode === 'ADDRESSO50' && isCodPayment) {
+  if (isOnlineOnlyCoupon && isCodPayment) {
     return {
       success: false,
       error: { code: 'ONLINE_ONLY', description: 'Coupon applicable on online payment only.' },
@@ -360,43 +351,28 @@ export async function validateAndCalculateCouponDiscount(
     where: { couponCode: cleanCode },
   });
 
-  // Dedicated fallback for ADDRESSO50 (₹50 Flat OFF on online payment)
-  if (!coupon && cleanCode === 'ADDRESSO50') {
-    coupon = await prisma.coupon.create({
-      data: {
-        couponCode: 'ADDRESSO50',
-        discountType: 'fixed',
-        discountValue: 50,
-        minimumOrderValue: 0,
-        maximumDiscount: 50,
-        firstOrderOnly: false,
-        active: true,
-        description: 'Get ₹50 OFF on online payment.',
-      },
-    }).catch(() => null);
-
-    if (!coupon) {
-      coupon = {
-        id: 'coupon-addresso50',
-        couponCode: 'ADDRESSO50',
-        discountType: 'fixed',
-        discountValue: 50,
-        minimumOrderValue: 0,
-        maximumDiscount: 50,
-        firstOrderOnly: false,
-        active: true,
-        description: 'Get ₹50 OFF on online payment.',
-        startDate: null,
-        expiryDate: null,
-        usageLimit: null,
-        usageCount: 0,
-        perCustomerLimit: null,
-        applicableProducts: [],
-        applicableCategories: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      } as Coupon;
-    }
+  // Dedicated authoritative handler for ADRIZO50 & ADDRESSO50 (Flat ₹50 OFF on online payment, min spend ₹0)
+  if (isOnlineOnlyCoupon) {
+    coupon = {
+      id: coupon?.id || 'coupon-adrizo50',
+      couponCode: 'ADRIZO50',
+      discountType: 'fixed',
+      discountValue: 50,
+      minimumOrderValue: 0,
+      maximumDiscount: 50,
+      firstOrderOnly: false,
+      active: true,
+      description: 'Get ₹50 OFF on online payment.',
+      startDate: null,
+      expiryDate: null,
+      usageLimit: null,
+      usageCount: coupon?.usageCount || 0,
+      perCustomerLimit: null,
+      applicableProducts: [],
+      applicableCategories: [],
+      createdAt: coupon?.createdAt || new Date(),
+      updatedAt: new Date(),
+    } as Coupon;
   }
 
   // Backward compatibility fallback: check store_discounts setting if not in Coupon collection
