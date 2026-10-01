@@ -37,6 +37,7 @@ yarn-error.log*
 .env.test
 .env.production
 .env.firebase
+.env.vercel
 !.env.example
 
 # vercel
