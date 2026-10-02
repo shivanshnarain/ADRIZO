@@ -21,37 +21,25 @@ export default function ImageProtection() {
 
     window.addEventListener('adrizo-share-toast', handleToast);
 
-    // 2. Best-Effort Image Protection Handlers
+    // 2. High-performance, lightweight Image Protection Handlers (no main-thread blocking)
     const isProtectedTarget = (target: EventTarget | null): boolean => {
       if (!target || !(target instanceof HTMLElement)) return false;
 
-      // Check if it's an image element
+      // Fast check: direct image element
       if (target.tagName === 'IMG') {
         const src = (target as HTMLImageElement).src || '';
-        // Do not intercept essential brand logos or system SVG icons
         if (src.includes('logo') || src.includes('favicon') || src.endsWith('.svg')) {
           return false;
         }
         return true;
       }
 
-      // Check if clicked element is inside a protected image wrapper or customer showcase
-      if (
-        target.closest('[data-protected-img="true"]') ||
-        target.closest('.protected-image') ||
-        target.closest('[class*="mainImageCard"]') ||
-        target.closest('[class*="imageContainer"]') ||
-        target.closest('[class*="categoryCardImageWrap"]') ||
-        target.closest('[class*="heroBg"]') ||
-        target.closest('[class*="mobileHeroSection"]') ||
-        target.closest('[class*="desktopHeroSection"]') ||
-        target.closest('[class*="photoCard"]') ||
-        target.closest('[class*="lightboxContent"]')
-      ) {
-        return true;
-      }
-
-      return false;
+      // Fast selector match (no recursive regex substring scans)
+      return Boolean(
+        target.closest(
+          '[data-protected-img="true"], .protected-image, [class*="mainImage"], [class*="photoCard"]'
+        )
+      );
     };
 
     // Prevent context menu (Save image as, Copy image address) on protected images
@@ -68,22 +56,13 @@ export default function ImageProtection() {
       }
     };
 
-    // Prevent text/image selection highlight over product images
-    const handleSelectStart = (e: Event) => {
-      if (isProtectedTarget(e.target)) {
-        e.preventDefault();
-      }
-    };
-
     document.addEventListener('contextmenu', handleContextMenu, { capture: true });
     document.addEventListener('dragstart', handleDragStart, { capture: true });
-    document.addEventListener('selectstart', handleSelectStart, { capture: true });
 
     return () => {
       window.removeEventListener('adrizo-share-toast', handleToast);
       document.removeEventListener('contextmenu', handleContextMenu, { capture: true });
       document.removeEventListener('dragstart', handleDragStart, { capture: true });
-      document.removeEventListener('selectstart', handleSelectStart, { capture: true });
     };
   }, []);
 

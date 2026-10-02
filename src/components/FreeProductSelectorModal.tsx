@@ -12,7 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useCart, CartItem } from '../context/CartContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import styles from './FreeProductSelectorModal.module.css';
 
 // COLORFUL GIFT ICON SVG COMPONENT (Golden box, bright red ribbon & bow, crisp highlights)
@@ -325,6 +325,7 @@ const clientBogoCache = new Map<string, { timestamp: number; data: any }>();
 
 export default function FreeProductSelectorModal() {
   const router = useRouter();
+  const pathname = usePathname();
   const {
     isBogoSelectorOpen,
     setIsBogoSelectorOpen,
@@ -417,19 +418,29 @@ export default function FreeProductSelectorModal() {
     };
   }, [isBogoSelectorOpen]);
 
+  // Close modal and unlock body whenever pathname changes
+  useEffect(() => {
+    if (isBogoSelectorOpen) {
+      setIsBogoSelectorOpen(false);
+      setDetailProduct(null);
+    }
+  }, [pathname]);
+
   // =========================================================================
-  // REQUIREMENT 8: BROWSER BACK BUTTON INTEGRATION FOR PRODUCT DETAILS
+  // REQUIREMENT 8: BROWSER BACK BUTTON INTEGRATION FOR MODAL & PRODUCT DETAILS
   // =========================================================================
   useEffect(() => {
     const handlePopState = () => {
       if (detailProduct) {
         setDetailProduct(null);
+      } else if (isBogoSelectorOpen) {
+        setIsBogoSelectorOpen(false);
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [detailProduct]);
+  }, [detailProduct, isBogoSelectorOpen, setIsBogoSelectorOpen]);
 
   // Derive original triggering product that qualified for offer
   const triggerProduct: SelectedSlotItem | null = useMemo(() => {

@@ -91,6 +91,14 @@ export default function Header() {
   const shopDropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Close all navigation overlays, dropdowns, and search drawers on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsSearchOpen(false);
+    setIsShopDropdownOpen(false);
+    setIsUserDropdownOpen(false);
+  }, [pathname]);
+
   // Close user dropdown on outside click or escape
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

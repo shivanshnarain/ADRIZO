@@ -178,13 +178,11 @@ export default function ProductClient({ product, initialRelatedProducts = [] }: 
   useEffect(() => {
     if (typeof window !== 'undefined' && imagesList.length > 1) {
       const nextIdx = (activeImageIndex + 1) % imagesList.length;
-      if (!loadedIndices.includes(nextIdx)) {
-        setLoadedIndices((prev) => [...prev, nextIdx]);
-      }
+      setLoadedIndices((prev) => (prev.includes(nextIdx) ? prev : [...prev, nextIdx]));
       const preloadImg = new window.Image();
       preloadImg.src = imagesList[nextIdx];
     }
-  }, [activeImageIndex, imagesList, loadedIndices]);
+  }, [activeImageIndex, imagesList]);
 
   // Exclusive accordion state: only ONE accordion can ever be open at a time
   const [activeAccordion, setActiveAccordion] = useState<string | null>(null);

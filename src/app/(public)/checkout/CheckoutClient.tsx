@@ -467,33 +467,148 @@ export default function CheckoutClient() {
           )}
         </div>
 
+        {/* CSS for Subtle, Premium Floating FREE Badge */}
+        <style>{`
+          @keyframes adrizoFreeFloat {
+            0%, 100% {
+              transform: translateY(0);
+            }
+            50% {
+              transform: translateY(-2.5px);
+            }
+          }
+          .adrizoFloatingFreeBadge {
+            animation: adrizoFreeFloat 2.6s ease-in-out infinite;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .adrizoFloatingFreeBadge {
+              animation: none !important;
+            }
+          }
+        `}</style>
+
         {/* Compact Items List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.25rem' }}>
           {checkoutItems.map((item, idx) => {
+            const isItemFree = Boolean(item.isFree || item.price === 0);
+            const cleanName = item.name.replace(/^\[FREE\]\s*/i, '').trim();
             const catType = getItemCategoryType({
-              name: item.name,
+              name: cleanName,
               categorySlug: item.categorySlug,
               categoryName: item.categoryName,
             });
 
             return (
-              <div key={`${item.productId}-${idx}`} style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', background: '#fafafa', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #f4f4f5' }}>
-                <div style={{ width: '48px', height: '60px', backgroundColor: '#f4f4f5', backgroundImage: `url(${item.image})`, backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '6px', flexShrink: 0 }} />
+              <div 
+                key={`${item.productId}-${idx}`} 
+                style={{ 
+                  display: 'flex', 
+                  gap: '0.85rem', 
+                  alignItems: 'center', 
+                  background: '#fafafa', 
+                  padding: '0.65rem 0.85rem', 
+                  borderRadius: '8px', 
+                  border: '1px solid #f4f4f5',
+                  position: 'relative'
+                }}
+              >
+                {/* Product Image Wrapper with Floating FREE Badge */}
+                <div 
+                  style={{ 
+                    position: 'relative', 
+                    width: '48px', 
+                    height: '60px', 
+                    flexShrink: 0 
+                  }}
+                >
+                  <div 
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      backgroundColor: '#f4f4f5', 
+                      backgroundImage: `url(${item.image})`, 
+                      backgroundSize: 'cover', 
+                      backgroundPosition: 'center', 
+                      borderRadius: '6px' 
+                    }} 
+                  />
+                  {isItemFree && (
+                    <span
+                      className="adrizoFloatingFreeBadge"
+                      style={{
+                        position: 'absolute',
+                        top: '-5px',
+                        left: '-5px',
+                        background: '#FFC800',
+                        color: '#09090b',
+                        fontSize: '0.525rem',
+                        fontWeight: 900,
+                        letterSpacing: '0.06em',
+                        padding: '1.5px 5px',
+                        borderRadius: '4px',
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.15)',
+                        pointerEvents: 'none',
+                        zIndex: 2,
+                        lineHeight: 1.2
+                      }}
+                    >
+                      FREE
+                    </span>
+                  )}
+                </div>
+
+                {/* Product Details - Matching Paid Card Spacing Rhythm */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <h4 style={{ fontWeight: 700, fontSize: '0.85rem', margin: 0, color: '#09090b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {item.name}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h4 
+                      style={{ 
+                        fontWeight: 700, 
+                        fontSize: '0.85rem', 
+                        margin: 0, 
+                        color: '#09090b', 
+                        whiteSpace: 'nowrap', 
+                        overflow: 'hidden', 
+                        textOverflow: 'ellipsis',
+                        flex: 1,
+                        paddingRight: '0.5rem'
+                      }}
+                      title={cleanName}
+                    >
+                      {cleanName}
                     </h4>
-                    <span style={{ fontWeight: 800, fontSize: '0.875rem', color: (item.isFree || item.price === 0) ? '#16a34a' : '#09090b', marginLeft: '0.5rem' }}>
-                      {(item.isFree || item.price === 0) ? '₹0.00 FREE' : `₹${(item.price * item.quantity).toFixed(2)}`}
+                    <span 
+                      style={{ 
+                        fontWeight: 800, 
+                        fontSize: '0.875rem', 
+                        color: '#09090b', 
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {isItemFree ? '₹0.00' : `₹${(item.price * item.quantity).toFixed(2)}`}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.725rem', color: '#71717a', margin: '2px 0' }}>
+                  <div style={{ fontSize: '0.725rem', color: '#71717a', margin: '2px 0 2px' }}>
                     Qty: <strong>{item.quantity}</strong> {item.size ? `| Size: ${item.size}` : ''} {item.color ? `| ${item.color}` : ''}
                   </div>
-                  {(item.isFree || item.price === 0) ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.675rem', fontWeight: 800, color: '#16a34a' }}>
-                      <Gift size={11} /> Promotional Free Product (₹0.00)
+                  {isItemFree ? (
+                    <span 
+                      style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '0.3rem', 
+                        fontSize: '0.675rem', 
+                        fontWeight: 800, 
+                        color: '#854d0e',
+                        background: '#fffbeb',
+                        border: '1px solid #fef08a',
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        width: 'fit-content'
+                      }}
+                    >
+                      <Gift size={11} strokeWidth={2.4} color="#FFC800" fill="#FFC800" />
+                      <span>Promotional Free Product (₹0.00)</span>
                     </span>
                   ) : item.promotionRule ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.675rem', fontWeight: 800, color: '#16a34a' }}>
@@ -522,11 +637,11 @@ export default function CheckoutClient() {
           </div>
 
           {activeTotals.bundleDiscount > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: 700 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#b45309', fontWeight: 700 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                <Sparkles size={13} /> Automatic Bundle Savings
+                <Sparkles size={13} color="#FFC800" fill="#FFC800" /> Bundle Offer Savings
               </span>
-              <span>-₹{activeTotals.bundleDiscount.toFixed(2)}</span>
+              <span style={{ fontWeight: 800, color: '#b45309' }}>-₹{activeTotals.bundleDiscount.toFixed(2)}</span>
             </div>
           )}
 
@@ -559,13 +674,13 @@ export default function CheckoutClient() {
               width: '34px', 
               height: '34px', 
               borderRadius: '50%', 
-              background: '#16a34a', 
-              color: '#ffffff', 
+              background: '#FFC800', 
+              color: '#09090b', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
               flexShrink: 0,
-              boxShadow: '0 2px 6px rgba(22,163,74,0.25)'
+              boxShadow: '0 2px 6px rgba(255,200,0,0.25)'
             }}>
               <Percent size={18} strokeWidth={2.6} />
             </div>
@@ -591,16 +706,16 @@ export default function CheckoutClient() {
                 display: 'flex', 
                 flexDirection: 'column', 
                 gap: '0.5rem',
-                background: '#f0fdf4', 
-                border: '1px solid #bbf7d0', 
+                background: '#f8fafc', 
+                border: '1px solid #e2e8f0', 
                 borderRadius: '10px', 
                 padding: '0.75rem 1rem' 
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#15803d', fontWeight: 800, fontSize: '0.875rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#09090b', fontWeight: 800, fontSize: '0.875rem' }}>
                     <Tag size={16} />
                     <span>Coupon <strong>{appliedCoupon.code}</strong> Applied</span>
-                    <span style={{ background: '#dcfce7', color: '#166534', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800 }}>
+                    <span style={{ background: '#FFC800', color: '#09090b', padding: '0.15rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800 }}>
                       -₹{appliedCoupon.discount} OFF
                     </span>
                   </div>
@@ -655,7 +770,7 @@ export default function CheckoutClient() {
                     type="submit"
                     disabled={validatingCoupon || !couponInput.trim()}
                     style={{
-                      background: '#16a34a',
+                      background: '#09090b',
                       color: '#ffffff',
                       border: 'none',
                       borderRadius: '8px',
@@ -665,7 +780,7 @@ export default function CheckoutClient() {
                       cursor: validatingCoupon || !couponInput.trim() ? 'not-allowed' : 'pointer',
                       opacity: validatingCoupon || !couponInput.trim() ? 0.7 : 1,
                       flexShrink: 0,
-                      boxShadow: '0 2px 6px rgba(22,163,74,0.2)'
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
                     }}
                   >
                     {validatingCoupon ? 'Applying...' : 'Apply'}
@@ -678,7 +793,7 @@ export default function CheckoutClient() {
                   </p>
                 )}
 
-                {/* Quick Offer Hint Banner from Reference Image */}
+                {/* Quick Offer Hint Banner */}
                 <div 
                   onClick={() => {
                     setCouponInput('ADRIZO50');
@@ -688,8 +803,8 @@ export default function CheckoutClient() {
                   tabIndex={0}
                   style={{ 
                     marginTop: '0.75rem', 
-                    background: '#f0fdf4', 
-                    border: '1px solid #bbf7d0', 
+                    background: '#f8fafc', 
+                    border: '1px solid #e2e8f0', 
                     borderRadius: '8px', 
                     padding: '0.65rem 0.85rem',
                     display: 'flex',
@@ -698,14 +813,14 @@ export default function CheckoutClient() {
                     cursor: 'pointer'
                   }}
                 >
-                  <div style={{ color: '#16a34a', marginTop: '2px', flexShrink: 0 }}>
+                  <div style={{ color: '#09090b', marginTop: '2px', flexShrink: 0 }}>
                     <Tag size={15} />
                   </div>
-                  <div style={{ fontSize: '0.775rem', color: '#166534', lineHeight: 1.45 }}>
+                  <div style={{ fontSize: '0.775rem', color: '#09090b', lineHeight: 1.45 }}>
                     <div>
-                      Use <strong style={{ color: '#15803d' }}>ADRIZO50</strong> to get <strong style={{ color: '#15803d' }}>₹50 OFF</strong> on online payment
+                      Use <strong style={{ color: '#09090b', fontWeight: 800 }}>ADRIZO50</strong> to get <strong style={{ color: '#09090b', fontWeight: 800 }}>₹50 OFF</strong> on online payment
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: '#65a30d', marginTop: '1px' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
                       Note: Coupons are applicable only on online payment.
                     </div>
                   </div>

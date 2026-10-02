@@ -50,16 +50,25 @@ export default function CustomerPhotoShowcase({
       refreshPhotos();
     }
 
-    // Refresh when user returns to tab
+    let lastFetchTime = Date.now();
+
+    // Refresh when user returns to tab (throttled to at most once every 60s)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        refreshPhotos();
+        const now = Date.now();
+        if (now - lastFetchTime > 60000) {
+          lastFetchTime = now;
+          refreshPhotos();
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Periodic lightweight background sync (every 60s)
-    const intervalId = setInterval(refreshPhotos, 60000);
+    const intervalId = setInterval(() => {
+      lastFetchTime = Date.now();
+      refreshPhotos();
+    }, 60000);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
