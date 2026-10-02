@@ -94,11 +94,6 @@ export async function launchRazorpayCheckout({
         ? `${window.location.origin}/adrizo-logo-transparent.png` 
         : 'https://adrizo.com/adrizo-logo-transparent.png',
       order_id: data.razorpayOrderId,
-      one_click_checkout: true,
-      remember_customer: true,
-      features: {
-        cardsaving: true,
-      },
       prefill: {
         name: nameToPrefill || undefined,
         email: emailToPrefill || undefined,
@@ -111,7 +106,7 @@ export async function launchRazorpayCheckout({
         customerPhone: contactToPrefill,
       },
       theme: {
-        color: '#18181b',
+        color: '#09090b',
       },
       handler: async function (response: any) {
         try {

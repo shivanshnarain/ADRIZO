@@ -10,21 +10,24 @@
 
 declare global {
   interface Window {
-    Razorpay?: unknown;
+    Razorpay?: new (options: Record<string, unknown>) => {
+      open: () => void;
+      on: (event: string, handler: (response: unknown) => void) => void;
+    };
   }
 }
 
 let scriptLoadingPromise: Promise<boolean> | null = null;
 
 export function isRazorpayLoaded(): boolean {
-  return typeof window !== 'undefined' && Boolean(window.Razorpay);
+  return typeof window !== 'undefined' && typeof window.Razorpay === 'function';
 }
 
 export function loadRazorpayScript(): Promise<boolean> {
   if (typeof window === 'undefined') return Promise.resolve(false);
 
   // 1. If already available on window, resolve immediately
-  if (window.Razorpay) {
+  if (typeof window.Razorpay === 'function') {
     return Promise.resolve(true);
   }
 
@@ -33,43 +36,55 @@ export function loadRazorpayScript(): Promise<boolean> {
     return scriptLoadingPromise;
   }
 
-  // 3. Check if script tag is already in DOM
-  const existingScript = document.querySelector<HTMLScriptElement>('script[src*="checkout.razorpay.com"]');
-  if (existingScript) {
-    scriptLoadingPromise = new Promise((resolve) => {
-      if (window.Razorpay) {
+  // 3. Create single Promise
+  scriptLoadingPromise = new Promise<boolean>((resolve) => {
+    // Check if script tag is already in DOM
+    const existingScript = document.querySelector<HTMLScriptElement>('script[src*="checkout.razorpay.com"]');
+    if (existingScript) {
+      if (typeof window.Razorpay === 'function') {
         resolve(true);
         return;
       }
-      existingScript.addEventListener('load', () => resolve(true), { once: true });
-      existingScript.addEventListener('error', () => resolve(false), { once: true });
-    });
-    return scriptLoadingPromise;
-  }
+      let checks = 0;
+      const interval = setInterval(() => {
+        checks++;
+        if (typeof window.Razorpay === 'function') {
+          clearInterval(interval);
+          resolve(true);
+        } else if (checks > 30) {
+          clearInterval(interval);
+          resolve(false);
+        }
+      }, 100);
 
-  // 4. Create and append script tag
-  scriptLoadingPromise = new Promise<boolean>((resolve) => {
+      existingScript.addEventListener('load', () => {
+        clearInterval(interval);
+        resolve(true);
+      }, { once: true });
+      existingScript.addEventListener('error', () => {
+        clearInterval(interval);
+        resolve(false);
+      }, { once: true });
+      return;
+    }
+
+    // 4. Create and append official standard Razorpay checkout.js script
     const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/magic-checkout.js';
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
+    script.id = 'razorpay-checkout-script';
+
     script.onload = () => {
       resolve(true);
     };
+
     script.onerror = () => {
-      // Fallback to standard checkout.js if magic checkout script fails
-      console.warn('[Razorpay] Magic checkout script failed, falling back to standard checkout.js');
-      const fallback = document.createElement('script');
-      fallback.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      fallback.async = true;
-      fallback.onload = () => resolve(true);
-      fallback.onerror = () => {
-        console.error('[Razorpay] Both Magic Checkout and standard checkout scripts failed to load');
-        scriptLoadingPromise = null;
-        resolve(false);
-      };
-      document.body.appendChild(fallback);
+      console.error('[Razorpay] Failed to load official Razorpay checkout script');
+      scriptLoadingPromise = null;
+      resolve(false);
     };
-    document.body.appendChild(script);
+
+    document.head.appendChild(script);
   });
 
   return scriptLoadingPromise;

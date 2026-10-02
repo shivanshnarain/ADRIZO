@@ -282,14 +282,14 @@ export default function CheckoutClient() {
 
       const data = await res.json();
 
-      if (!data.success) {
+      if (!data.success || !data.razorpayOrderId) {
         setOrderError(data.error || 'Failed to initialize payment order. Please try again.');
         isSubmittingRef.current = false;
         setProcessing(false);
         return;
       }
 
-      if (!scriptLoaded) {
+      if (!scriptLoaded || typeof (window as any).Razorpay !== 'function') {
         setOrderError('Failed to load secure Razorpay gateway. Please check your internet connection.');
         isSubmittingRef.current = false;
         setProcessing(false);
@@ -315,11 +315,6 @@ export default function CheckoutClient() {
           ? `${window.location.origin}/adrizo-logo-transparent.png` 
           : 'https://adrizo.com/adrizo-logo-transparent.png',
         order_id: data.razorpayOrderId,
-        one_click_checkout: true,
-        remember_customer: true,
-        features: {
-          cardsaving: true,
-        },
         prefill: {
           name: nameToPrefill || undefined,
           email: emailToPrefill || undefined,
@@ -332,58 +327,10 @@ export default function CheckoutClient() {
           customerPhone: contactToPrefill,
         },
         theme: {
-          color: '#18181b',
-        },
-        handler: async function (response: any) {
-          try {
-            const verifyRes = await fetch('/api/checkout/verify-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                orderId: data.orderId,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
-
-            const verifyData = await verifyRes.json();
-
-            if (verifyData.success) {
-              if (isBuyNowMode && typeof window !== 'undefined') {
-                sessionStorage.removeItem('adrizo_buy_now');
-              } else {
-                clearCart();
-              }
-              setProcessing(false);
-              isSubmittingRef.current = false;
-
-              // Instant Auth & Customer Profile Synchronization
-              try {
-                broadcastAuthChange('LOGIN');
-                fetchUser(true);
-              } catch {}
-
-              setConfirmedOrder({
-                orderNumber: data.orderNumber || data.orderId,
-                total: data.total || (isCod ? data.amount / 100 : onlineTotals.amountPayableNow),
-                codConfirmationPaid: isCod ? 99 : undefined,
-                codRemaining: isCod ? data.codRemainingAmount : 0,
-                address: verifyData.shippingAddress || 'Confirmed via Razorpay Checkout',
-                paymentMethod: isCod ? 'COD' : 'ONLINE_RAZORPAY',
-              });
-            } else {
-              setProcessing(false);
-              isSubmittingRef.current = false;
-              router.push(`/order-failure?orderId=${data.orderId}&orderNumber=${data.orderNumber}&reason=${encodeURIComponent(verifyData.error || 'Signature Verification Failed')}`);
-            }
-          } catch (err: any) {
-            setProcessing(false);
-            isSubmittingRef.current = false;
-            router.push(`/order-failure?orderId=${data.orderId}&orderNumber=${data.orderNumber}&reason=${encodeURIComponent(err.message || 'Verification Error')}`);
-          }
+          color: '#09090b',
         },
         modal: {
+          confirm_close: true,
           ondismiss: function () {
             isSubmittingRef.current = false;
             setProcessing(false);
@@ -820,149 +767,137 @@ export default function CheckoutClient() {
                     RECOMMENDED
                   </span>
                 </div>
-                <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
+                <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b', fontWeight: 500, textAlign: 'left' }}>
                   Pay securely via UPI, Cards, NetBanking
                 </p>
-
-                {/* Payment Method Badges: Strictly ONE SINGLE HORIZONTAL ROW of 6 Logos */}
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(6, 1fr)', 
-                  gap: '0.35rem', 
-                  marginTop: '0.75rem',
-                  width: '100%',
-                }}>
-                  {/* GPay */}
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    gap: '2px', 
-                    background: '#ffffff', 
-                    border: '1px solid #e2e8f0', 
-                    borderRadius: '6px', 
-                    height: '24px', 
-                    minWidth: 0,
-                    padding: '0 2px' 
-                  }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
-                      <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                      <path fill="#FBBC05" d="M5.28 14.27a7.18 7.18 0 0 1 0-4.54V6.58H1.25a11.98 11.98 0 0 0 0 10.84l4.03-3.15z"/>
-                      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                    </svg>
-                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#3c4043', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>Pay</span>
-                  </div>
-                  {/* PhonePe */}
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    background: '#5f259f', 
-                    borderRadius: '6px', 
-                    height: '24px', 
-                    minWidth: 0,
-                    padding: '0 2px' 
-                  }}>
-                    <span style={{ color: '#ffffff', fontSize: '9.5px', fontWeight: 800, whiteSpace: 'nowrap' }}>PhonePe</span>
-                  </div>
-                  {/* Paytm */}
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    background: '#ffffff', 
-                    border: '1px solid #e2e8f0', 
-                    borderRadius: '6px', 
-                    height: '24px', 
-                    minWidth: 0,
-                    padding: '0 2px' 
-                  }}>
-                    <span style={{ color: '#002970', fontSize: '10px', fontWeight: 900 }}>pay</span>
-                    <span style={{ color: '#00b9f5', fontSize: '10px', fontWeight: 900 }}>tm</span>
-                  </div>
-                  {/* VISA */}
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    background: '#ffffff', 
-                    border: '1px solid #e2e8f0', 
-                    borderRadius: '6px', 
-                    height: '24px', 
-                    minWidth: 0,
-                    padding: '0 2px' 
-                  }}>
-                    <span style={{ color: '#1a1f71', fontSize: '10.5px', fontWeight: 900, fontStyle: 'italic', letterSpacing: '0.3px' }}>VISA</span>
-                  </div>
-                  {/* Mastercard */}
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    background: '#ffffff', 
-                    border: '1px solid #e2e8f0', 
-                    borderRadius: '6px', 
-                    height: '24px', 
-                    minWidth: 0,
-                    padding: '0 2px' 
-                  }}>
-                    <svg width="20" height="13" viewBox="0 0 28 18">
-                      <circle cx="9" cy="9" r="8" fill="#EB001B"/>
-                      <circle cx="19" cy="9" r="8" fill="#F79E1B" fillOpacity="0.88"/>
-                    </svg>
-                  </div>
-                  {/* RuPay */}
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    background: '#ffffff', 
-                    border: '1px solid #e2e8f0', 
-                    borderRadius: '6px', 
-                    height: '24px', 
-                    minWidth: 0,
-                    padding: '0 2px' 
-                  }}>
-                    <span style={{ color: '#092350', fontSize: '10px', fontWeight: 900, fontStyle: 'italic' }}>RuPay</span>
-                    <span style={{ color: '#00a651', fontSize: '10px', fontWeight: 900, fontStyle: 'italic' }}>❯</span>
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* 3 Benefits: Strictly ONE SINGLE HORIZONTAL ROW with Circular Icons */}
-            <div style={{
-              marginTop: '1rem',
-              paddingTop: '0.85rem',
-              borderTop: '1px solid #f1f5f9',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '0.35rem',
+            {/* Payment Method Badges: Strictly ONE SINGLE HORIZONTAL ROW of 6 Logos starting from LEFT */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', 
+              gap: 'clamp(4px, 1.2vw, 8px)', 
+              marginTop: '0.9rem',
               width: '100%',
+              boxSizing: 'border-box',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
-                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Zap size={11} color="#16a34a" fill="#16a34a" />
+              {/* Google Pay */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                background: '#ffffff', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '6px', 
+                height: '28px', 
+                minWidth: 0,
+                padding: '0 4px',
+                boxSizing: 'border-box',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px', minWidth: 0 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.27a7.18 7.18 0 0 1 0-4.54V6.58H1.25a11.98 11.98 0 0 0 0 10.84l4.03-3.15z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                  </svg>
+                  <span style={{ fontSize: 'clamp(8px, 1.8vw, 10.5px)', fontWeight: 700, color: '#3c4043', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
+                    Pay
+                  </span>
                 </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
-                  Instant Confirmation
+              </div>
+
+              {/* PhonePe */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                background: '#5f259f', 
+                border: '1px solid #5f259f',
+                borderRadius: '6px', 
+                height: '28px', 
+                minWidth: 0,
+                padding: '0 4px',
+                boxSizing: 'border-box',
+              }}>
+                <span style={{ color: '#ffffff', fontSize: 'clamp(7.5px, 1.7vw, 10px)', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                  PhonePe
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
-                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <ShieldCheck size={12} color="#2563eb" />
-                </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
-                  100% Secure Payments
+
+              {/* Paytm */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                background: '#ffffff', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '6px', 
+                height: '28px', 
+                minWidth: 0,
+                padding: '0 4px',
+                boxSizing: 'border-box',
+              }}>
+                <span style={{ fontSize: 'clamp(8px, 1.8vw, 10.5px)', fontWeight: 900, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ color: '#002970' }}>pay</span>
+                  <span style={{ color: '#00b9f5' }}>tm</span>
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
-                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Percent size={11} color="#db2777" strokeWidth={2.6} />
-                </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
-                  Zero Processing Fee
+
+              {/* VISA */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                background: '#ffffff', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '6px', 
+                height: '28px', 
+                minWidth: 0,
+                padding: '0 4px',
+                boxSizing: 'border-box',
+              }}>
+                <span style={{ color: '#1a1f71', fontSize: 'clamp(8.5px, 1.9vw, 11px)', fontWeight: 900, fontStyle: 'italic', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>
+                  VISA
+                </span>
+              </div>
+
+              {/* Mastercard */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                background: '#ffffff', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '6px', 
+                height: '28px', 
+                minWidth: 0,
+                padding: '0 4px',
+                boxSizing: 'border-box',
+              }}>
+                <svg width="22" height="14" viewBox="0 0 28 18" style={{ flexShrink: 0 }}>
+                  <circle cx="9" cy="9" r="8" fill="#EB001B"/>
+                  <circle cx="19" cy="9" r="8" fill="#F79E1B" fillOpacity="0.88"/>
+                </svg>
+              </div>
+
+              {/* RuPay */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                background: '#ffffff', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '6px', 
+                height: '28px', 
+                minWidth: 0,
+                padding: '0 4px',
+                boxSizing: 'border-box',
+              }}>
+                <span style={{ fontSize: 'clamp(8px, 1.8vw, 10px)', fontWeight: 900, fontStyle: 'italic', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+                  <span style={{ color: '#092350' }}>RuPay</span>
+                  <span style={{ color: '#00a651', marginLeft: '1px' }}>❯</span>
                 </span>
               </div>
             </div>
@@ -1041,51 +976,15 @@ export default function CheckoutClient() {
                     ₹{getCodAdvanceAmount()} ADVANCE
                   </span>
                 </div>
-                <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
+                <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b', fontWeight: 500, textAlign: 'left' }}>
                   Pay ₹{getCodAdvanceAmount()} advance to confirm your order
                 </p>
               </div>
             </div>
 
-            {/* 3 COD Benefits: Strictly ONE SINGLE HORIZONTAL ROW with Circular Icons */}
-            <div style={{
-              marginTop: '1rem',
-              paddingTop: '0.85rem',
-              borderTop: '1px solid #f1f5f9',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '0.35rem',
-              width: '100%',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
-                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#ffedd5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Package size={11} color="#ea580c" />
-                </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
-                  Check product before paying
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
-                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <ShieldCheck size={12} color="#2563eb" />
-                </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
-                  Safe & Reliable
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
-                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Wallet size={11} color="#b45309" />
-                </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#334155', lineHeight: 1.15 }}>
-                  Pay remaining on delivery
-                </span>
-              </div>
-            </div>
-
             {/* COD breakdown note */}
             <div style={{
-              marginTop: '0.75rem',
+              marginTop: '0.85rem',
               background: '#f8fafc',
               border: '1px solid #e2e8f0',
               borderRadius: '8px',

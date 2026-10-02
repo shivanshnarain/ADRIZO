@@ -437,27 +437,29 @@ export async function POST(req: NextRequest) {
 
     // Check Supabase (Primary Order Store)
     try {
-      const thirtySecondsAgoIso = new Date(Date.now() - 30000).toISOString();
-      const { data: recentSupaOrders } = await adminSupabase
-        .from('orders')
-        .select('id, order_number, total_amount, cod_charge, payment_method, razorpay_order_id, payment_status, order_status')
-        .eq('customer_phone', trimmedPhone)
-        .gte('created_at', thirtySecondsAgoIso)
-        .order('created_at', { ascending: false })
-        .limit(1);
+      if (trimmedPhone && trimmedPhone.length >= 10) {
+        const thirtySecondsAgoIso = new Date(Date.now() - 30000).toISOString();
+        const { data: recentSupaOrders } = await adminSupabase
+          .from('orders')
+          .select('id, order_number, total_amount, cod_charge, payment_method, razorpay_order_id, payment_status, order_status')
+          .eq('customer_phone', trimmedPhone)
+          .gte('created_at', thirtySecondsAgoIso)
+          .order('created_at', { ascending: false })
+          .limit(1);
 
-      if (recentSupaOrders && recentSupaOrders.length > 0) {
-        const candidate = recentSupaOrders[0];
-        if (Math.abs(Number(candidate.total_amount) - finalTotal) < 0.01) {
-          existingRecentOrder = {
-            id: candidate.id,
-            orderNumber: candidate.order_number,
-            paymentMethod: candidate.payment_method || paymentMethod,
-            total: Number(candidate.total_amount),
-            codCharge: Number(candidate.cod_charge || (paymentMethod === 'COD' ? checkoutTotals.codFee : 0)),
-            razorpayOrderId: candidate.razorpay_order_id,
-            paymentStatus: candidate.payment_status,
-          };
+        if (recentSupaOrders && recentSupaOrders.length > 0) {
+          const candidate = recentSupaOrders[0];
+          if (Math.abs(Number(candidate.total_amount) - finalTotal) < 0.01) {
+            existingRecentOrder = {
+              id: candidate.id,
+              orderNumber: candidate.order_number,
+              paymentMethod: candidate.payment_method || paymentMethod,
+              total: Number(candidate.total_amount),
+              codCharge: Number(candidate.cod_charge || (paymentMethod === 'COD' ? checkoutTotals.codFee : 0)),
+              razorpayOrderId: candidate.razorpay_order_id,
+              paymentStatus: candidate.payment_status,
+            };
+          }
         }
       }
     } catch (supaDedupErr) {
