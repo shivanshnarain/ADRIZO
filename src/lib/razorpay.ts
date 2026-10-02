@@ -28,24 +28,11 @@ export function loadEnvFallback() {
   if (envFallbackLoaded) return;
   envFallbackLoaded = true;
 
-  // On Vercel / serverless production, check if already valid before skipping disk
-  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-    const currentKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    const currentSecret = process.env.RAZORPAY_KEY_SECRET;
-    if (
-      currentKey &&
-      currentSecret &&
-      !isDeprecatedKey(currentKey) &&
-      !isDeprecatedKey(currentSecret)
-    ) {
-      return;
-    }
-  }
-
   try {
     const candidates = [
       path.resolve(process.cwd(), '.env.local'),
       path.resolve(process.cwd(), '.env'),
+      path.resolve(process.cwd(), '.env.production'),
       path.resolve(process.cwd(), '.env.vercel'),
     ];
     for (const fullPath of candidates) {
@@ -60,8 +47,7 @@ export function loadEnvFallback() {
 
           if (key === 'RAZORPAY_KEY_ID' || key === 'NEXT_PUBLIC_RAZORPAY_KEY_ID' || key === 'RAZORPAY_KEY_SECRET') {
             if (val && !isDeprecatedKey(val)) {
-              const currentVal = process.env[key];
-              if (!currentVal || isDeprecatedKey(currentVal)) {
+              if (!process.env[key]) {
                 process.env[key] = val;
               }
             }
@@ -75,26 +61,40 @@ export function loadEnvFallback() {
 }
 
 /**
+ * Authoritative production live Razorpay Key ID
+ */
+export const DEFAULT_RAZORPAY_KEY_ID = 'rzp_live_Tiib0FXtrAbDDN';
+
+/**
  * Returns the authoritative active Razorpay Key ID for client and server.
  */
 export function getRazorpayKeyId(): string {
   loadEnvFallback();
-  const keys = [
-    process.env.RAZORPAY_KEY_ID,
-    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-    process.env.RAZORPAY_API_KEY,
-    process.env.RAZORPAY_KEY,
-    process.env.NEXT_PUBLIC_RAZORPAY_KEY,
-  ];
-
-  for (const rawKey of keys) {
-    const clean = rawKey?.trim().replace(/^["']|["']$/g, '') || '';
-    if (clean && !isDeprecatedKey(clean)) {
-      return clean;
+  
+  // 1. Check primary RAZORPAY_KEY_ID
+  const primary = process.env.RAZORPAY_KEY_ID?.trim().replace(/^["']|["']$/g, '');
+  if (primary) {
+    const lower = primary.toLowerCase();
+    // If it's a known old deprecated live key from previous migrations, fall back to active live key
+    if (lower.includes('tyio72mcolkjpn') || lower.includes('taj9ubralpmyhj')) {
+      return DEFAULT_RAZORPAY_KEY_ID;
     }
+    // If it's a placeholder (e.g. your_razorpay, placeholder), return it so validation correctly flags it
+    return primary;
   }
 
-  return '';
+  // 2. Check NEXT_PUBLIC_RAZORPAY_KEY_ID
+  const publicFallback = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.trim().replace(/^["']|["']$/g, '');
+  if (publicFallback) {
+    const lower = publicFallback.toLowerCase();
+    if (lower.includes('tyio72mcolkjpn') || lower.includes('taj9ubralpmyhj')) {
+      return DEFAULT_RAZORPAY_KEY_ID;
+    }
+    return publicFallback;
+  }
+
+  // 3. Fallback to authoritative active production live key
+  return DEFAULT_RAZORPAY_KEY_ID;
 }
 
 /**
@@ -110,7 +110,7 @@ export function getRazorpaySecret(): string {
 
   for (const rawSecret of secrets) {
     const clean = rawSecret?.trim().replace(/^["']|["']$/g, '') || '';
-    if (clean && !isDeprecatedKey(clean)) {
+    if (clean) {
       return clean;
     }
   }
@@ -121,14 +121,14 @@ export function getRazorpaySecret(): string {
 export const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
 
 /**
- * Returns detailed status and human-readable reason if Razorpay is not configured.
+ * Returns detailed status and reason if Razorpay is not configured.
  */
 export function getRazorpayConfigStatus(): { configured: boolean; reason?: string } {
   const rawKey = getRazorpayKeyId();
   const rawSecret = getRazorpaySecret();
 
   if (!rawKey && !rawSecret) {
-    return { configured: false, reason: 'Razorpay keys are not configured in environment variables.' };
+    return { configured: false, reason: 'Razorpay credentials are not configured in environment variables.' };
   }
   if (!rawKey) {
     return { configured: false, reason: 'RAZORPAY_KEY_ID is missing or set to a deprecated/placeholder key in environment variables.' };

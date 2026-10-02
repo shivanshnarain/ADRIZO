@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
+const rawKey = process.env.RAZORPAY_KEY_ID?.trim() || '';
+const rawKeyLower = rawKey.toLowerCase();
+const isDeprecated =
+  !rawKey ||
+  rawKeyLower.includes('tyio72mcolkjpn') ||
+  rawKeyLower.includes('taj9ubralpmyhj');
+
+const activeRazorpayKeyId = isDeprecated ? 'rzp_live_Tiib0FXtrAbDDN' : rawKey;
+
 const nextConfig: NextConfig = {
+  env: {
+    RAZORPAY_KEY_ID: activeRazorpayKeyId,
+    NEXT_PUBLIC_RAZORPAY_KEY_ID: activeRazorpayKeyId,
+    RAZORPAY_CURRENCY: process.env.RAZORPAY_CURRENCY || 'INR',
+  },
   images: {
     remotePatterns: [
       {

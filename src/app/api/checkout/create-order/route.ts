@@ -483,9 +483,10 @@ export async function POST(req: NextRequest) {
     if (paymentMethod === 'COD') {
       const codConfigStatus = getRazorpayConfigStatus();
       if (!codConfigStatus.configured) {
+        console.error('[Razorpay COD Server Config Issue]', codConfigStatus.reason);
         return NextResponse.json({
           success: false,
-          error: codConfigStatus.reason || 'Online payment gateway is awaiting credential configuration for COD ₹99 confirmation.'
+          error: 'Unable to initialize online advance confirmation at this time. Please try again or select Pay Online.'
         }, { status: 400 });
       }
 
@@ -614,9 +615,10 @@ export async function POST(req: NextRequest) {
     if (paymentMethod === 'ONLINE_RAZORPAY' || paymentMethod === 'RAZORPAY') {
       const onlineConfigStatus = getRazorpayConfigStatus();
       if (!onlineConfigStatus.configured) {
+        console.error('[Razorpay Online Server Config Issue]', onlineConfigStatus.reason);
         return NextResponse.json({
           success: false,
-          error: onlineConfigStatus.reason || 'Online payment gateway is awaiting credential configuration. Please configure RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env, or select Cash on Delivery to place your order right now.'
+          error: 'Unable to initialize payment gateway at this time. Please try again or select Cash on Delivery.'
         }, { status: 400 });
       }
 
