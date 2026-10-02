@@ -788,14 +788,20 @@ export async function POST(req: NextRequest) {
 
   } catch (error: any) {
     console.error('[Create Order API Error]', error);
-    const errorMessage = 
-      error?.error?.description || 
-      error?.description || 
-      error?.message || 
-      (typeof error === 'string' ? error : 'Something went wrong while processing your order. Please try again.');
+    const rawDesc = error?.error?.description || error?.description || error?.message;
+    const rawLower = String(rawDesc || '').toLowerCase();
+
+    // Prevent internal gateway diagnostics from leaking to customers
+    let customerError = 'Something went wrong while processing your order. Please try again or choose Cash on Delivery.';
+    if (rawLower.includes('authentication failed') || rawLower.includes('unauthorized') || rawLower.includes('key')) {
+      customerError = 'Unable to initialize online payment gateway at this time. Please try again or select Cash on Delivery.';
+    } else if (rawDesc && typeof rawDesc === 'string' && !rawLower.includes('razorpay') && !rawLower.includes('secret') && !rawLower.includes('env')) {
+      customerError = rawDesc;
+    }
+
     return NextResponse.json({
       success: false,
-      error: errorMessage
+      error: customerError
     }, { status: 500 });
   }
 }

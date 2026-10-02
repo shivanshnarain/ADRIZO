@@ -280,12 +280,14 @@ export default function CheckoutClient() {
 
       if (!data.success || !data.razorpayOrderId) {
         const rawErr = String(data.error || '');
+        const rawErrLower = rawErr.toLowerCase();
         const isTechnicalOrEnvError =
-          rawErr.includes('RAZORPAY') ||
-          rawErr.includes('environment variables') ||
-          rawErr.includes('deprecated') ||
-          rawErr.includes('placeholder') ||
-          rawErr.includes('keys are not configured');
+          rawErrLower.includes('razorpay') ||
+          rawErrLower.includes('environment variables') ||
+          rawErrLower.includes('deprecated') ||
+          rawErrLower.includes('placeholder') ||
+          rawErrLower.includes('keys are not configured') ||
+          rawErrLower.includes('authentication failed');
         setOrderError(
           isTechnicalOrEnvError
             ? 'Unable to initialize payment gateway. Please try again or select Cash on Delivery.'
