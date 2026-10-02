@@ -5,6 +5,21 @@ import path from 'path';
 
 let envFallbackLoaded = false;
 
+export function isDeprecatedKey(key?: string): boolean {
+  if (!key) return true;
+  const lower = key.toLowerCase();
+  return (
+    lower.includes('tyio72mcolkjpn') ||
+    lower.includes('taj9ubralpmyhj') ||
+    lower.includes('u074tazdfzv0bccctm7dblvm') ||
+    lower.includes('placeholder') ||
+    lower.includes('replace_with') ||
+    lower.includes('your_key') ||
+    lower.includes('your_razorpay') ||
+    key.trim().length < 8
+  );
+}
+
 /**
  * Ensures active production credentials from .env.vercel or .env are loaded
  * and automatically overrides deprecated/placeholder credentials from stale Vercel dashboard states.
@@ -13,9 +28,18 @@ export function loadEnvFallback() {
   if (envFallbackLoaded) return;
   envFallbackLoaded = true;
 
-  // On Vercel / serverless production, environment variables are injected directly in process.env
+  // On Vercel / serverless production, check if already valid before skipping disk
   if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-    return;
+    const currentKey = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    const currentSecret = process.env.RAZORPAY_KEY_SECRET;
+    if (
+      currentKey &&
+      currentSecret &&
+      !isDeprecatedKey(currentKey) &&
+      !isDeprecatedKey(currentSecret)
+    ) {
+      return;
+    }
   }
 
   try {
@@ -25,8 +49,8 @@ export function loadEnvFallback() {
       path.resolve(process.cwd(), '.env.vercel'),
     ];
     for (const fullPath of candidates) {
-      if (fs.existsSync(fullPath)) {
-        const content = fs.readFileSync(fullPath, 'utf-8');
+      if (fs.existsSync(/*turbopackIgnore: true*/ fullPath)) {
+        const content = fs.readFileSync(/*turbopackIgnore: true*/ fullPath, 'utf-8');
         for (const line of content.split('\n')) {
           const trimmed = line.trim();
           if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
@@ -35,15 +59,9 @@ export function loadEnvFallback() {
           const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
 
           if (key === 'RAZORPAY_KEY_ID' || key === 'NEXT_PUBLIC_RAZORPAY_KEY_ID' || key === 'RAZORPAY_KEY_SECRET') {
-            if (val && !val.includes('REPLACE_WITH') && !val.includes('placeholder')) {
+            if (val && !isDeprecatedKey(val)) {
               const currentVal = process.env[key];
-              if (
-                !currentVal ||
-                currentVal.includes('TYio72mColkjPN') ||
-                currentVal.includes('U074TAZdfZv0BCcCTm7DblVm') ||
-                currentVal.includes('REPLACE_WITH') ||
-                (key === 'RAZORPAY_KEY_SECRET' && val.length > 10)
-              ) {
+              if (!currentVal || isDeprecatedKey(currentVal)) {
                 process.env[key] = val;
               }
             }
@@ -61,13 +79,22 @@ export function loadEnvFallback() {
  */
 export function getRazorpayKeyId(): string {
   loadEnvFallback();
-  const rawKey =
-    process.env.RAZORPAY_KEY_ID ||
-    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-    process.env.RAZORPAY_API_KEY ||
-    process.env.RAZORPAY_KEY ||
-    process.env.NEXT_PUBLIC_RAZORPAY_KEY;
-  return rawKey?.trim().replace(/^["']|["']$/g, '') || '';
+  const keys = [
+    process.env.RAZORPAY_KEY_ID,
+    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+    process.env.RAZORPAY_API_KEY,
+    process.env.RAZORPAY_KEY,
+    process.env.NEXT_PUBLIC_RAZORPAY_KEY,
+  ];
+
+  for (const rawKey of keys) {
+    const clean = rawKey?.trim().replace(/^["']|["']$/g, '') || '';
+    if (clean && !isDeprecatedKey(clean)) {
+      return clean;
+    }
+  }
+
+  return '';
 }
 
 /**
@@ -75,11 +102,20 @@ export function getRazorpayKeyId(): string {
  */
 export function getRazorpaySecret(): string {
   loadEnvFallback();
-  const rawSecret =
-    process.env.RAZORPAY_KEY_SECRET ||
-    process.env.RAZORPAY_SECRET ||
-    process.env.RAZORPAY_API_SECRET;
-  return rawSecret?.trim().replace(/^["']|["']$/g, '') || '';
+  const secrets = [
+    process.env.RAZORPAY_KEY_SECRET,
+    process.env.RAZORPAY_SECRET,
+    process.env.RAZORPAY_API_SECRET,
+  ];
+
+  for (const rawSecret of secrets) {
+    const clean = rawSecret?.trim().replace(/^["']|["']$/g, '') || '';
+    if (clean && !isDeprecatedKey(clean)) {
+      return clean;
+    }
+  }
+
+  return '';
 }
 
 export const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
@@ -95,10 +131,10 @@ export function getRazorpayConfigStatus(): { configured: boolean; reason?: strin
     return { configured: false, reason: 'Razorpay keys are not configured in environment variables.' };
   }
   if (!rawKey) {
-    return { configured: false, reason: 'RAZORPAY_KEY_ID is missing in environment variables.' };
+    return { configured: false, reason: 'RAZORPAY_KEY_ID is missing or set to a deprecated/placeholder key in environment variables.' };
   }
   if (!rawSecret) {
-    return { configured: false, reason: 'RAZORPAY_KEY_SECRET is missing in environment variables.' };
+    return { configured: false, reason: 'RAZORPAY_KEY_SECRET is missing or set to a deprecated/placeholder key in environment variables.' };
   }
 
   const trimmedKey = rawKey.toLowerCase();
@@ -107,26 +143,19 @@ export function getRazorpayConfigStatus(): { configured: boolean; reason?: strin
   if (trimmedSecret.includes('u074tazdfzv0bccctm7dblvm')) {
     return {
       configured: false,
-      reason: 'The Vercel environment still contains the deprecated OLD Razorpay API Secret. Please update RAZORPAY_KEY_SECRET in Vercel Project Settings and redeploy.',
+      reason: 'The environment contains the deprecated OLD Razorpay API Secret. Please update RAZORPAY_KEY_SECRET in environment settings.',
     };
   }
 
-  if (trimmedKey.includes('tyio72mcolkjpn')) {
+  if (trimmedKey.includes('tyio72mcolkjpn') || trimmedKey.includes('taj9ubralpmyhj')) {
     return {
       configured: false,
-      reason: 'The Vercel environment still contains the deprecated OLD Razorpay Key ID. Please update RAZORPAY_KEY_ID in Vercel Project Settings and redeploy.',
+      reason: 'The environment contains a deprecated Razorpay Key ID. Please update RAZORPAY_KEY_ID in environment settings to the active live key.',
     };
   }
 
-  if (
-    trimmedKey.includes('placeholder') ||
-    trimmedSecret.includes('placeholder') ||
-    trimmedKey.includes('your_razorpay') ||
-    trimmedSecret.includes('your_razorpay') ||
-    trimmedKey === 'your_key_id' ||
-    trimmedSecret === 'your_key_secret'
-  ) {
-    return { configured: false, reason: 'Razorpay environment variables are set to placeholder values.' };
+  if (isDeprecatedKey(trimmedKey) || isDeprecatedKey(trimmedSecret)) {
+    return { configured: false, reason: 'Razorpay environment variables are set to placeholder or deprecated values.' };
   }
 
   const isValid = trimmedKey.length > 5 && trimmedSecret.length > 5;

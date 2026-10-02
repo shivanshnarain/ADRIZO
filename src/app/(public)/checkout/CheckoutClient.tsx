@@ -22,13 +22,9 @@ import {
   Truck, 
   Sparkles, 
   RefreshCw, 
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Zap,
   Percent,
-  Package,
-  Wallet,
   X,
   Check
 } from 'lucide-react';
@@ -329,6 +325,45 @@ export default function CheckoutClient() {
         theme: {
           color: '#09090b',
         },
+        handler: async function (response: any) {
+          try {
+            const verifyRes = await fetch('/api/checkout/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: data.orderId,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              clearCart();
+              if (isCod) {
+                setConfirmedOrder({
+                  orderNumber: data.orderNumber,
+                  total: data.total,
+                  codConfirmationPaid: 99,
+                  codRemaining: data.codRemainingAmount || (data.total - 99),
+                  address: verifyData.shippingAddress || 'Confirmed via Razorpay Checkout',
+                  paymentMethod: 'COD',
+                });
+              } else {
+                router.push(`/order-success?orderId=${data.orderId}&orderNumber=${data.orderNumber}`);
+              }
+            } else {
+              setOrderError(verifyData.error || 'Payment verification failed. If money was deducted, it will be refunded.');
+              isSubmittingRef.current = false;
+              setProcessing(false);
+            }
+          } catch (err: any) {
+            setOrderError(err.message || 'Payment verification failed.');
+            isSubmittingRef.current = false;
+            setProcessing(false);
+          }
+        },
         modal: {
           confirm_close: true,
           ondismiss: function () {
@@ -342,8 +377,8 @@ export default function CheckoutClient() {
       rzp.on('payment.failed', function (response: any) {
         isSubmittingRef.current = false;
         setProcessing(false);
-        const reason = response.error?.description || response.error?.reason || 'Payment failed.';
-        router.push(`/order-failure?orderId=${data.orderId}&orderNumber=${data.orderNumber}&reason=${encodeURIComponent(reason)}`);
+        const reason = response.error?.description || response.error?.reason || 'Payment was declined or cancelled.';
+        setOrderError(`Payment failed: ${reason}`);
       });
 
       rzp.open();
@@ -392,10 +427,10 @@ export default function CheckoutClient() {
   }
 
   return (
-    <div style={{ width: '100%', maxWidth: '780px', margin: '0 auto', padding: '1.5rem 1rem 4rem', boxSizing: 'border-box' }}>
+    <div style={{ width: '100%', maxWidth: '780px', margin: '0 auto', padding: '1.5rem 1rem 1.25rem', boxSizing: 'border-box' }}>
       
       {/* Sleek Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '1.25rem', borderBottom: '1px solid #e4e4e7', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '1rem', borderBottom: '1px solid #e4e4e7', marginBottom: '1.25rem' }}>
         <Link 
           href={isBuyNowMode ? '/' : '#'} 
           onClick={(e) => {
@@ -409,11 +444,6 @@ export default function CheckoutClient() {
           <ArrowLeft size={16} />
           <span>{isBuyNowMode ? 'Return to Shop' : 'Return to Cart'}</span>
         </Link>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#16a34a', fontSize: '0.8rem', fontWeight: 800, background: '#f0fdf4', padding: '0.3rem 0.75rem', borderRadius: '9999px', border: '1px solid #bbf7d0' }}>
-          <ShieldCheck size={16} />
-          <span>Secure Razorpay Checkout</span>
-        </div>
       </div>
 
       {/* Error alert if any */}
@@ -1156,28 +1186,11 @@ export default function CheckoutClient() {
         </button>
       </div>
 
-      {/* 6. TRUST FOOTER BADGES */}
-      <div style={{ textAlign: 'center', marginTop: '0.75rem', marginBottom: '1.5rem' }}>
+      {/* 6. ENCRYPTION NOTE */}
+      <div style={{ textAlign: 'center', marginTop: '0.85rem', marginBottom: '0.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: '#64748b', fontSize: '0.75rem', fontWeight: 500 }}>
           <Lock size={12} color="#64748b" />
           <span>All transactions are 256-bit encrypted & verified directly with Razorpay</span>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.65rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '4px 10px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 800, color: '#065f46' }}>
-            <CheckCircle2 size={13} color="#059669" />
-            <span>PCI DSS COMPLIANT</span>
-          </div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '4px 10px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 800, color: '#065f46' }}>
-            <Lock size={12} color="#059669" />
-            <span>SSL SECURED</span>
-          </div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '4px 10px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 800, color: '#1e40af' }}>
-            <span style={{ fontSize: '0.625rem', color: '#64748b', fontWeight: 600 }}>POWERED BY</span>
-            <span style={{ color: '#0c2340', fontWeight: 900, fontStyle: 'italic', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-              <Zap size={11} fill="#3399cc" color="#3399cc" /> Razorpay
-            </span>
-          </div>
         </div>
       </div>
 
