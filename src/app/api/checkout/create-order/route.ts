@@ -19,6 +19,7 @@ import { validateAndPriceOrderItems, getActivePromotionOffers } from '@/lib/prom
 import { validateAndCalculateCouponDiscount } from '@/lib/coupon-engine';
 import { calculateCheckoutTotals, PaymentMode } from '@/lib/checkout-engine';
 import { createAdminNotification } from '@/lib/admin-notifications';
+import { getStoreSettings } from '@/lib/store-settings';
 
 /**
  * Atomically saves an order and its items to Supabase.
@@ -348,9 +349,10 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Authoritative MongoDB Product, Promotion & Inventory Verification (parallelized for latency optimization)
-    const [promoResult, activeOffers] = await Promise.all([
+    const [promoResult, activeOffers, storeSettings] = await Promise.all([
       validateAndPriceOrderItems(items),
       getActivePromotionOffers(),
+      getStoreSettings(),
     ]);
     if (!promoResult.success) {
       return NextResponse.json({
@@ -415,8 +417,8 @@ export async function POST(req: NextRequest) {
       offers: activeOffers,
       paymentMode: paymentModeEnum,
       couponDiscount,
-      shippingThreshold: POLICY_CONFIG.shipping.freeShippingThreshold,
-      standardShippingFee: POLICY_CONFIG.shipping.standardFee,
+      shippingThreshold: storeSettings.freeShippingThreshold,
+      standardShippingFee: storeSettings.standardShippingFee,
     });
 
     subtotal = checkoutTotals.subtotalAfterBundles;
@@ -482,6 +484,13 @@ export async function POST(req: NextRequest) {
 
     // 8. Handle CASH ON DELIVERY (COD) with MANDATORY ₹99 INSTANT CONFIRMATION PAYMENT
     if (paymentMethod === 'COD') {
+      if (finalTotal < storeSettings.codMinOrder || finalTotal > storeSettings.codMaxOrder) {
+        return NextResponse.json({
+          success: false,
+          error: `Cash on Delivery is available for orders between ₹${storeSettings.codMinOrder} and ₹${storeSettings.codMaxOrder}. Please select Pay Online.`
+        }, { status: 400 });
+      }
+
       const codConfigStatus = getRazorpayConfigStatus();
       if (!codConfigStatus.configured) {
         console.error('[Razorpay COD Server Config Issue]', codConfigStatus.reason);

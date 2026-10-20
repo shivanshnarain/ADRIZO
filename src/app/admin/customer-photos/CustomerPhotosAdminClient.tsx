@@ -26,13 +26,17 @@ interface PreviewItem {
   url: string;
 }
 
-export default function CustomerPhotosAdminClient() {
-  const [photos, setPhotos] = useState<CustomerPhotoItem[]>([]);
+interface CustomerPhotosAdminClientProps {
+  initialPhotos?: CustomerPhotoItem[];
+}
+
+export default function CustomerPhotosAdminClient({ initialPhotos = [] }: CustomerPhotosAdminClientProps) {
+  const [photos, setPhotos] = useState<CustomerPhotoItem[]>(initialPhotos);
   const [selectedRow, setSelectedRow] = useState<1 | 2>(1);
   const [selectedFiles, setSelectedFiles] = useState<PreviewItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialPhotos.length === 0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [photoToDelete, setPhotoToDelete] = useState<CustomerPhotoItem | null>(null);
@@ -85,8 +89,10 @@ export default function CustomerPhotosAdminClient() {
   }, [isRefreshing]);
 
   useEffect(() => {
-    fetchPhotos(false);
-  }, [fetchPhotos]);
+    if (!initialPhotos || initialPhotos.length === 0) {
+      fetchPhotos(false);
+    }
+  }, [fetchPhotos, initialPhotos]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;

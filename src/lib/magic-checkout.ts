@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { getAdminClient } from '@/lib/supabase/admin';
 import { POLICY_CONFIG } from '@/config/policies';
 import { checkPinDeliverability } from '@/data/indiaLocations';
+import { getStoreSettings } from '@/lib/store-settings';
 
 export interface MagicShippingAddressInput {
   id?: string | number;
@@ -95,8 +96,9 @@ export async function calculateMagicShippingInfo(payload: MagicShippingInfoPaylo
   const effectiveSubtotal = orderDetails ? orderDetails.subtotal : 0;
   const isCodAdvanceOrder = orderDetails ? orderDetails.isCodOrder : false;
 
-  const freeShippingThreshold = POLICY_CONFIG.shipping.freeShippingThreshold; // ₹599
-  const standardFeeRupees = POLICY_CONFIG.shipping.standardFee; // ₹39
+  const storeSettings = await getStoreSettings().catch(() => null);
+  const freeShippingThreshold = storeSettings ? storeSettings.freeShippingThreshold : POLICY_CONFIG.shipping.freeShippingThreshold;
+  const standardFeeRupees = storeSettings ? storeSettings.standardShippingFee : POLICY_CONFIG.shipping.standardFee;
   const codFeeRupees = POLICY_CONFIG.shipping.codHandlingFee; // ₹0 extra handling fee
 
   // In paise:

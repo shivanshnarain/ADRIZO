@@ -81,6 +81,23 @@ export default async function CustomersPage() {
     }
 
     if (profileData && profileData.length > 0) {
+      // Filter out verified test customer accounts while preserving legitimate customer accounts
+      const isTestAccount = (email?: string, name?: string) => {
+        const e = (email || '').toLowerCase().trim();
+        const n = (name || '').toLowerCase().trim();
+        return (
+          e.endsWith('@example.com') ||
+          e.startsWith('testcustomer') ||
+          e.includes('testcustomer') ||
+          e === 'testuser@example.com' ||
+          e === 'aarav.sharma.test99@gmail.com' ||
+          n.startsWith('testcustomer') ||
+          n === 'test user'
+        );
+      };
+
+      const validProfiles = profileData.filter((p: any) => !isTestAccount(p.email, p.full_name || p.name));
+
       // 2. Fetch customer order summaries with strict column selection
       const { data: supaOrders } = await supabase
         .from('orders')
@@ -111,7 +128,7 @@ export default async function CustomersPage() {
         `)
         .order('created_at', { ascending: false });
 
-      customers = profileData.map((p: any) => {
+      customers = validProfiles.map((p: any) => {
         const userOrders = (supaOrders || []).filter((o: any) => 
           (o.customer_id && o.customer_id === p.id) ||
           (p.email && o.customer_email && o.customer_email.trim().toLowerCase() === p.email.trim().toLowerCase()) ||

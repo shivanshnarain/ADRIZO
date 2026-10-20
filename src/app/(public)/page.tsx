@@ -6,6 +6,8 @@ import { prisma } from '../../lib/prisma';
 import HomeProductSection from '../../components/HomeProductSection';
 import CustomerPhotoShowcase from '@/components/CustomerPhotoShowcase';
 import { getCustomerPhotos } from '@/lib/customer-photos-service';
+import { getResponsiveHeroConfig } from '@/actions/cms';
+import { getDeterministicHeroImage } from '@/lib/hero-config';
 import type { Metadata } from 'next';
 
 export const revalidate = 60;
@@ -64,6 +66,34 @@ export default async function Home() {
     console.warn("Prisma/Firestore customer photos load notice:", photoErr);
   }
 
+  // Fetch responsive hero configuration
+  let mobileHeroUrl = '/hero-mobile-bg.jpg';
+  let tabletHeroUrl = '/hero-bg.png';
+  let desktopHeroUrl = '/hero-bg.png';
+  let mobileHeroAlt = 'ADRIZO — Good Outfits Better Days';
+  let desktopHeroAlt = 'ADRIZO — Buy 1 Get 2 Free';
+
+  try {
+    const { config: heroConfig } = await getResponsiveHeroConfig();
+    const mHero = getDeterministicHeroImage(heroConfig.mobile);
+    const tHero = getDeterministicHeroImage(heroConfig.tablet);
+    const dHero = getDeterministicHeroImage(heroConfig.desktop);
+
+    if (mHero?.url) {
+      mobileHeroUrl = mHero.url;
+      if (mHero.altText) mobileHeroAlt = mHero.altText;
+    }
+    if (tHero?.url) {
+      tabletHeroUrl = tHero.url;
+    }
+    if (dHero?.url) {
+      desktopHeroUrl = dHero.url;
+      if (dHero.altText) desktopHeroAlt = dHero.altText;
+    }
+  } catch (heroErr) {
+    console.warn('[Hero Config Load Notice]:', heroErr);
+  }
+
   // Exact category images from project assets with guaranteed fallbacks
   const categoryImages: Record<string, string> = { ...DEFAULT_CATEGORY_IMAGES };
 
@@ -76,8 +106,8 @@ export default async function Home() {
         {/* Background photo */}
         <div className={styles.heroBg}>
           <Image
-            src="/hero-mobile-bg.jpg"
-            alt="ADRIZO — Good Outfits Better Days"
+            src={mobileHeroUrl}
+            alt={mobileHeroAlt}
             fill
             priority
             sizes="100vw"
@@ -113,8 +143,28 @@ export default async function Home() {
         {/* Semantic H1 for Desktop Crawlers & Accessibility */}
         <h1 className="sr-only">ADRIZO — Premium Indian Men&apos;s Clothing &amp; Essentials</h1>
 
-        {/* Layer 1: Fixed Grayscale Background */}
-        <div className={styles.bgGrayscale}></div>
+        {/* Layer 1: Responsive Background Hero Picture with Aspect Ratio Stability */}
+        <div className={styles.bgGrayscale}>
+          <picture style={{ width: '100%', height: '100%', display: 'block' }}>
+            {tabletHeroUrl && (
+              <source media="(max-width: 1023px)" srcSet={tabletHeroUrl} />
+            )}
+            <source media="(min-width: 1024px)" srcSet={desktopHeroUrl} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={desktopHeroUrl}
+              alt={desktopHeroAlt}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'top center',
+                display: 'block'
+              }}
+              fetchPriority="high"
+            />
+          </picture>
+        </div>
 
         {/* Hero Content Group */}
         <div className={styles.desktopHeroContent}>

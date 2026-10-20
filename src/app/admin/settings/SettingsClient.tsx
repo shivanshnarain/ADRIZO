@@ -42,6 +42,7 @@ import {
   updateStoreSetting,
   saveAdminPromotionOffers
 } from '@/actions/config';
+import { saveStoreIdentityAction, saveShippingThresholdsAction } from '@/actions/settings';
 
 import { 
   INITIAL_PREDEFINED_COLORS,
@@ -93,6 +94,84 @@ export default function SettingsClient({
     setErrorMessage(msg);
     setSuccessMessage('');
     setTimeout(() => setErrorMessage(''), 4000);
+  };
+
+  // ==========================================================================
+  // TAB 8: STORE IDENTITY & SHIPPING THRESHOLDS EDITABLE STATE
+  // ==========================================================================
+  const [storeIdentity, setStoreIdentity] = useState({
+    storeBrandName: initialSettings['store_brand_name'] || 'ADRIZO Luxury Menswear',
+    supportEmail: initialSettings['support_email'] || 'Care.adrizo@gmail.com',
+    supportPhone: initialSettings['support_phone'] || '+91 9773777410',
+    baseCurrency: initialSettings['base_currency'] || 'Indian Rupee (INR ₹)'
+  });
+  const [isEditingIdentity, setIsEditingIdentity] = useState(false);
+  const [identityForm, setIdentityForm] = useState(storeIdentity);
+  const [identitySaving, setIdentitySaving] = useState(false);
+  const [identityError, setIdentityError] = useState('');
+  const [identitySuccess, setIdentitySuccess] = useState('');
+
+  const [shippingThresholds, setShippingThresholds] = useState({
+    freeShippingThreshold: Number(initialSettings['free_shipping_threshold']) || 599,
+    standardShippingFee: Number(initialSettings['standard_shipping_fee']) || 39,
+    codMinOrder: Number(initialSettings['cod_min_order']) || 699,
+    codMaxOrder: Number(initialSettings['cod_max_order']) || 2999,
+    deliveryServiceability: initialSettings['delivery_serviceability'] || 'Active nationwide coverage'
+  });
+  const [isEditingShipping, setIsEditingShipping] = useState(false);
+  const [shippingForm, setShippingForm] = useState(shippingThresholds);
+  const [shippingSaving, setShippingSaving] = useState(false);
+  const [shippingError, setShippingError] = useState('');
+  const [shippingSuccess, setShippingSuccess] = useState('');
+
+  const handleSaveIdentity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIdentitySaving(true);
+    setIdentityError('');
+    setIdentitySuccess('');
+
+    try {
+      const res = await saveStoreIdentityAction(identityForm);
+      if (res.success) {
+        setStoreIdentity(identityForm);
+        setIdentitySuccess('Store identity saved successfully!');
+        setTimeout(() => {
+          setIsEditingIdentity(false);
+          setIdentitySuccess('');
+        }, 1200);
+      } else {
+        setIdentityError(res.error || 'Failed to save store identity.');
+      }
+    } catch (err: any) {
+      setIdentityError(err.message || 'Error saving store identity.');
+    } finally {
+      setIdentitySaving(false);
+    }
+  };
+
+  const handleSaveShipping = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setShippingSaving(true);
+    setShippingError('');
+    setShippingSuccess('');
+
+    try {
+      const res = await saveShippingThresholdsAction(shippingForm);
+      if (res.success) {
+        setShippingThresholds(shippingForm);
+        setShippingSuccess('Shipping & fulfillment thresholds saved successfully!');
+        setTimeout(() => {
+          setIsEditingShipping(false);
+          setShippingSuccess('');
+        }, 1200);
+      } else {
+        setShippingError(res.error || 'Failed to save shipping thresholds.');
+      }
+    } catch (err: any) {
+      setShippingError(err.message || 'Error saving shipping thresholds.');
+    } finally {
+      setShippingSaving(false);
+    }
   };
 
   // ==========================================================================
@@ -1841,29 +1920,91 @@ export default function SettingsClient({
             General Store &amp; Infrastructure Settings
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
-            <div style={{ background: '#f8fafc', padding: '1.15rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Store Identity</div>
-              <div style={{ fontSize: '0.875rem', color: '#09090b' }}>
-                <div><strong>Store Brand:</strong> ADRIZO Luxury Menswear</div>
-                <div style={{ marginTop: '4px' }}><strong>Support Email:</strong> support@adrizo.com</div>
-                <div style={{ marginTop: '4px' }}><strong>Support Phone:</strong> <a href="tel:+919773777410" style={{ color: 'inherit', textDecoration: 'none' }}>+91 9773777410</a></div>
-                <div style={{ marginTop: '4px' }}><strong>Base Currency:</strong> Indian Rupee (INR ₹)</div>
+            
+            {/* Card 1: Store Identity */}
+            <div style={{ background: '#f8fafc', padding: '1.15rem', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Store Identity</div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIdentityForm(storeIdentity);
+                      setIdentityError('');
+                      setIdentitySuccess('');
+                      setIsEditingIdentity(true);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 10px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #d4d4d8',
+                      borderRadius: '5px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: '#09090b',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Edit size={12} />
+                    <span>Edit</span>
+                  </button>
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#09090b', lineHeight: 1.6 }}>
+                  <div><strong>Store Brand:</strong> {storeIdentity.storeBrandName}</div>
+                  <div style={{ marginTop: '4px' }}><strong>Support Email:</strong> <a href={`mailto:${storeIdentity.supportEmail}`} style={{ color: 'inherit', textDecoration: 'none' }}>{storeIdentity.supportEmail}</a></div>
+                  <div style={{ marginTop: '4px' }}><strong>Support Phone:</strong> <a href={`tel:${storeIdentity.supportPhone.replace(/\s+/g, '')}`} style={{ color: 'inherit', textDecoration: 'none' }}>{storeIdentity.supportPhone}</a></div>
+                  <div style={{ marginTop: '4px' }}><strong>Base Currency:</strong> {storeIdentity.baseCurrency}</div>
+                </div>
               </div>
             </div>
 
-            <div style={{ background: '#f8fafc', padding: '1.15rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Shipping &amp; Fulfillment Thresholds</div>
-              <div style={{ fontSize: '0.875rem', color: '#09090b' }}>
-                <div><strong>Free Shipping Threshold:</strong> ₹599 and above</div>
-                <div style={{ marginTop: '4px' }}><strong>Standard Shipping Fee:</strong> ₹39 for orders under ₹599</div>
-                <div style={{ marginTop: '4px' }}><strong>Cash on Delivery Limits:</strong> ₹699 to ₹2,999</div>
-                <div style={{ marginTop: '4px' }}><strong>Delivery Serviceability:</strong> Active nationwide coverage</div>
+            {/* Card 2: Shipping & Fulfillment Thresholds */}
+            <div style={{ background: '#f8fafc', padding: '1.15rem', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Shipping &amp; Fulfillment Thresholds</div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShippingForm(shippingThresholds);
+                      setShippingError('');
+                      setShippingSuccess('');
+                      setIsEditingShipping(true);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 10px',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #d4d4d8',
+                      borderRadius: '5px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: '#09090b',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Edit size={12} />
+                    <span>Edit</span>
+                  </button>
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#09090b', lineHeight: 1.6 }}>
+                  <div><strong>Free Shipping Threshold:</strong> ₹{shippingThresholds.freeShippingThreshold} and above</div>
+                  <div style={{ marginTop: '4px' }}><strong>Standard Shipping Fee:</strong> ₹{shippingThresholds.standardShippingFee} for orders under ₹{shippingThresholds.freeShippingThreshold}</div>
+                  <div style={{ marginTop: '4px' }}><strong>Cash on Delivery Limits:</strong> ₹{shippingThresholds.codMinOrder} to ₹{shippingThresholds.codMaxOrder}</div>
+                  <div style={{ marginTop: '4px' }}><strong>Delivery Serviceability:</strong> {shippingThresholds.deliveryServiceability}</div>
+                </div>
               </div>
             </div>
 
-            <div style={{ background: '#f8fafc', padding: '1.15rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Database &amp; Storage Architecture</div>
-              <div style={{ fontSize: '0.875rem', color: '#09090b' }}>
+            {/* Card 3: Database & Storage Architecture (Read-Only) */}
+            <div style={{ background: '#f8fafc', padding: '1.15rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.65rem' }}>Database &amp; Storage Architecture</div>
+              <div style={{ fontSize: '0.875rem', color: '#09090b', lineHeight: 1.6 }}>
                 <div><strong>Customer &amp; Orders:</strong> Supabase PostgreSQL (Single Source of Truth)</div>
                 <div style={{ marginTop: '4px' }}><strong>Products &amp; Catalogue:</strong> MongoDB Atlas Cluster</div>
                 <div style={{ marginTop: '4px' }}><strong>Garment Media:</strong> Cloudinary Global CDN</div>
@@ -1871,6 +2012,268 @@ export default function SettingsClient({
               </div>
             </div>
           </div>
+
+          {/* EDIT MODAL: Store Identity */}
+          {isEditingIdentity && (
+            <Portal>
+              <div style={{
+                position: 'fixed',
+                inset: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 99999,
+                padding: '1rem'
+              }}>
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '12px',
+                  width: '100%',
+                  maxWidth: '460px',
+                  padding: '1.5rem',
+                  boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#09090b' }}>
+                      Edit Store Identity
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingIdentity(false)}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#71717a' }}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {identityError && (
+                    <div style={{ padding: '8px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', color: '#991b1b', fontSize: '0.8125rem', marginBottom: '1rem' }}>
+                      {identityError}
+                    </div>
+                  )}
+
+                  {identitySuccess && (
+                    <div style={{ padding: '8px 12px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', color: '#166534', fontSize: '0.8125rem', marginBottom: '1rem' }}>
+                      {identitySuccess}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSaveIdentity}>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#3f3f46', marginBottom: '4px' }}>
+                        Store Brand Name
+                      </label>
+                      <input
+                        type="text"
+                        value={identityForm.storeBrandName}
+                        onChange={e => setIdentityForm({ ...identityForm, storeBrandName: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.875rem' }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#3f3f46', marginBottom: '4px' }}>
+                        Support Email
+                      </label>
+                      <input
+                        type="email"
+                        value={identityForm.supportEmail}
+                        onChange={e => setIdentityForm({ ...identityForm, supportEmail: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.875rem' }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#3f3f46', marginBottom: '4px' }}>
+                        Support Phone Number
+                      </label>
+                      <input
+                        type="text"
+                        value={identityForm.supportPhone}
+                        onChange={e => setIdentityForm({ ...identityForm, supportPhone: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.875rem' }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#71717a', marginBottom: '4px' }}>
+                        Base Currency (Architecture Standard)
+                      </label>
+                      <input
+                        type="text"
+                        value={identityForm.baseCurrency}
+                        disabled
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e4e4e7', backgroundColor: '#f4f4f5', fontSize: '0.875rem', color: '#71717a' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingIdentity(false)}
+                        disabled={identitySaving}
+                        style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #d4d4d8', backgroundColor: '#ffffff', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={identitySaving}
+                        style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#000000', color: '#FFC800', fontWeight: 700, fontSize: '0.8125rem', cursor: identitySaving ? 'not-allowed' : 'pointer' }}
+                      >
+                        {identitySaving ? 'Saving...' : 'Save Identity'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </Portal>
+          )}
+
+          {/* EDIT MODAL: Shipping & Fulfillment Thresholds */}
+          {isEditingShipping && (
+            <Portal>
+              <div style={{
+                position: 'fixed',
+                inset: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 99999,
+                padding: '1rem'
+              }}>
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '12px',
+                  width: '100%',
+                  maxWidth: '500px',
+                  padding: '1.5rem',
+                  boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#09090b' }}>
+                      Edit Shipping &amp; Fulfillment Thresholds
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingShipping(false)}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#71717a' }}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {shippingError && (
+                    <div style={{ padding: '8px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', color: '#991b1b', fontSize: '0.8125rem', marginBottom: '1rem' }}>
+                      {shippingError}
+                    </div>
+                  )}
+
+                  {shippingSuccess && (
+                    <div style={{ padding: '8px 12px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', color: '#166534', fontSize: '0.8125rem', marginBottom: '1rem' }}>
+                      {shippingSuccess}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSaveShipping}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#3f3f46', marginBottom: '4px' }}>
+                          Free Shipping Threshold (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={shippingForm.freeShippingThreshold}
+                          onChange={e => setShippingForm({ ...shippingForm, freeShippingThreshold: Number(e.target.value) })}
+                          required
+                          style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.875rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#3f3f46', marginBottom: '4px' }}>
+                          Standard Shipping Fee (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={shippingForm.standardShippingFee}
+                          onChange={e => setShippingForm({ ...shippingForm, standardShippingFee: Number(e.target.value) })}
+                          required
+                          style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.875rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#3f3f46', marginBottom: '4px' }}>
+                          COD Minimum Amount (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={shippingForm.codMinOrder}
+                          onChange={e => setShippingForm({ ...shippingForm, codMinOrder: Number(e.target.value) })}
+                          required
+                          style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.875rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#3f3f46', marginBottom: '4px' }}>
+                          COD Maximum Amount (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={shippingForm.codMaxOrder}
+                          onChange={e => setShippingForm({ ...shippingForm, codMaxOrder: Number(e.target.value) })}
+                          required
+                          style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.875rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#3f3f46', marginBottom: '4px' }}>
+                        Delivery Serviceability Setting
+                      </label>
+                      <input
+                        type="text"
+                        value={shippingForm.deliveryServiceability}
+                        onChange={e => setShippingForm({ ...shippingForm, deliveryServiceability: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #d4d4d8', fontSize: '0.875rem' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingShipping(false)}
+                        disabled={shippingSaving}
+                        style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #d4d4d8', backgroundColor: '#ffffff', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={shippingSaving}
+                        style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#000000', color: '#FFC800', fontWeight: 700, fontSize: '0.8125rem', cursor: shippingSaving ? 'not-allowed' : 'pointer' }}
+                      >
+                        {shippingSaving ? 'Saving...' : 'Save Thresholds'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </Portal>
+          )}
         </div>
       )}
     </div>

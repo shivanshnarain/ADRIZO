@@ -4,43 +4,125 @@ import { prisma } from '../lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { verifyAdminSession } from '../lib/auth';
 
-export interface HeroSlide {
-  id: string;
-  imageUrl: string;
-  badge?: string;
-  heading: string;
-  subheading: string;
-  buttonText: string;
-  buttonLink: string;
-  isActive: boolean;
-  sortOrder: number;
+import { 
+  HeroImageItem, 
+  DeviceHeroConfig, 
+  ResponsiveHeroConfig, 
+  HeroSlide,
+  DEFAULT_MOBILE_HERO,
+  DEFAULT_TABLET_HERO,
+  DEFAULT_DESKTOP_HERO,
+  DEFAULT_RESPONSIVE_HERO 
+} from '../lib/hero-config';
+
+export type {
+  HeroImageItem,
+  DeviceHeroConfig,
+  ResponsiveHeroConfig,
+  HeroSlide,
+};
+
+/**
+ * Fetch responsive hero configuration from database
+ */
+export async function getResponsiveHeroConfig(): Promise<{
+  success: boolean;
+  config: ResponsiveHeroConfig;
+  error?: string;
+}> {
+  try {
+    const setting = await prisma.storeSetting.findUnique({
+      where: { key: 'responsive_hero_config' }
+    });
+
+    if (setting && setting.value) {
+      try {
+        const parsed = JSON.parse(setting.value);
+        if (parsed && (parsed.mobile || parsed.tablet || parsed.desktop)) {
+          return {
+            success: true,
+            config: {
+              mobile: parsed.mobile || DEFAULT_MOBILE_HERO,
+              tablet: parsed.tablet || DEFAULT_TABLET_HERO,
+              desktop: parsed.desktop || DEFAULT_DESKTOP_HERO,
+            }
+          };
+        }
+      } catch (parseErr) {
+        console.warn('[getResponsiveHeroConfig Parse Error, using defaults]:', parseErr);
+      }
+    }
+
+    return { success: true, config: DEFAULT_RESPONSIVE_HERO };
+  } catch (error: any) {
+    console.error('[getResponsiveHeroConfig DB Error]:', error);
+    return { success: false, config: DEFAULT_RESPONSIVE_HERO, error: error.message };
+  }
 }
 
-const DEFAULT_HERO_SLIDES: HeroSlide[] = [
-  {
-    id: 'hero-slide-1',
-    imageUrl: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?auto=format&fit=crop&q=80&w=1200',
-    badge: 'NEW SEASON ARRIVAL',
-    heading: 'ELEVATE YOUR EVERYDAY ESSENTIALS',
-    subheading: 'Premium Lycra & Heavyweight Cotton Polos engineered for the modern aesthetic.',
-    buttonText: 'SHOP THE COLLECTION',
-    buttonLink: '/shop',
-    isActive: true,
-    sortOrder: 0
-  },
-  {
-    id: 'hero-slide-2',
-    imageUrl: 'https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?auto=format&fit=crop&q=80&w=1200',
-    badge: 'EXCLUSIVE POLO EDIT',
-    heading: 'SIGNATURE ZIPPER & BUTTON POLOS',
-    subheading: 'Tailored silhouettes with refined zipper detailing and enduring comfort.',
-    buttonText: 'EXPLORE POLOS',
-    buttonLink: '/shop?category=polo-t-shirts',
-    isActive: true,
-    sortOrder: 1
-  }
-];
+/**
+ * Save responsive hero configuration to database
+ */
+export async function saveResponsiveHeroConfig(config: ResponsiveHeroConfig) {
+  try {
+    const session = await verifyAdminSession();
+    if (!session.authorized) {
+      return { success: false, error: 'Unauthorized: Admin access required' };
+    }
 
+    // Ensure valid structure
+    const safeConfig: ResponsiveHeroConfig = {
+      mobile: {
+        rotationEnabled: Boolean(config.mobile?.rotationEnabled),
+        rotationIntervalSec: Math.max(2, Number(config.mobile?.rotationIntervalSec) || 5),
+        dailyMode: Boolean(config.mobile?.dailyMode),
+        selectedImageId: config.mobile?.selectedImageId || undefined,
+        images: (config.mobile?.images || []).map((img, i) => ({
+          ...img,
+          sortOrder: i,
+          isActive: img.isActive !== false,
+        }))
+      },
+      tablet: {
+        rotationEnabled: Boolean(config.tablet?.rotationEnabled),
+        rotationIntervalSec: Math.max(2, Number(config.tablet?.rotationIntervalSec) || 5),
+        dailyMode: Boolean(config.tablet?.dailyMode),
+        selectedImageId: config.tablet?.selectedImageId || undefined,
+        images: (config.tablet?.images || []).map((img, i) => ({
+          ...img,
+          sortOrder: i,
+          isActive: img.isActive !== false,
+        }))
+      },
+      desktop: {
+        rotationEnabled: Boolean(config.desktop?.rotationEnabled),
+        rotationIntervalSec: Math.max(2, Number(config.desktop?.rotationIntervalSec) || 5),
+        dailyMode: Boolean(config.desktop?.dailyMode),
+        selectedImageId: config.desktop?.selectedImageId || undefined,
+        images: (config.desktop?.images || []).map((img, i) => ({
+          ...img,
+          sortOrder: i,
+          isActive: img.isActive !== false,
+        }))
+      }
+    };
+
+    await prisma.storeSetting.upsert({
+      where: { key: 'responsive_hero_config' },
+      update: { value: JSON.stringify(safeConfig) },
+      create: { key: 'responsive_hero_config', value: JSON.stringify(safeConfig) }
+    });
+
+    revalidatePath('/');
+    revalidatePath('/admin/banners');
+    return { success: true };
+  } catch (error: any) {
+    console.error('[saveResponsiveHeroConfig Error]:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Backward-compatible methods
 export async function getHeroBanners(): Promise<{ success: boolean; slides: HeroSlide[]; error?: string }> {
   try {
     const setting = await prisma.storeSetting.findUnique({
@@ -58,9 +140,23 @@ export async function getHeroBanners(): Promise<{ success: boolean; slides: Hero
       }
     }
 
-    return { success: true, slides: DEFAULT_HERO_SLIDES };
+    return {
+      success: true,
+      slides: [
+        {
+          id: 'hero-slide-1',
+          imageUrl: '/hero-bg.png',
+          heading: 'ELEVATE YOUR EVERYDAY ESSENTIALS',
+          subheading: 'Premium Lycra & Heavyweight Cotton Polos',
+          buttonText: 'SHOP THE COLLECTION',
+          buttonLink: '/shop',
+          isActive: true,
+          sortOrder: 0
+        }
+      ]
+    };
   } catch (error: any) {
-    return { success: false, slides: DEFAULT_HERO_SLIDES, error: error.message };
+    return { success: false, slides: [], error: error.message };
   }
 }
 

@@ -18,7 +18,6 @@ import {
   Bell,
   Mail,
   Menu,
-  HelpCircle,
   Sliders,
   Star,
   Camera
@@ -207,7 +206,7 @@ export default function AdminLayout({
     { label: 'Customers Directory', href: '/admin/customers', category: 'Customers' },
     { label: 'Customer Photos', href: '/admin/customer-photos', category: 'CMS' },
     { label: 'Customer Reviews', href: '/admin/reviews', category: 'CMS' },
-    { label: 'Hero Banners', href: '/admin/banners', category: 'CMS' },
+    { label: 'Hero Section Manager', href: '/admin/banners', category: 'CMS' },
     { label: 'Store Settings', href: '/admin/settings?tab=general', category: 'Settings' },
   ];
 
@@ -312,13 +311,13 @@ export default function AdminLayout({
             <span>Customers</span>
           </Link>
 
-          {/* 5. CMS / Hero Banners */}
+          {/* 5. Hero Section Manager */}
           <Link 
             href="/admin/banners" 
             className={`${styles.navItem} ${pathname.includes('/admin/banners') ? styles.navItemActive : ''}`}
           >
             <Globe size={18} />
-            <span>CMS / Hero Banners</span>
+            <span>Hero Section Manager</span>
           </Link>
 
           {/* 6. Customer Photos */}
@@ -339,7 +338,7 @@ export default function AdminLayout({
             <span>Customer Reviews</span>
           </Link>
 
-          {/* 7. Settings */}
+          {/* 8. Settings */}
           <Link 
             href="/admin/settings?tab=general" 
             className={`${styles.navItem} ${pathname.includes('tab=general') ? styles.navItemActive : ''}`}
@@ -348,24 +347,6 @@ export default function AdminLayout({
             <span>Settings</span>
           </Link>
         </nav>
-
-        {/* Bottom Help Card */}
-        <div className={styles.helpBox}>
-          <div className={styles.helpBoxHeader}>
-            <HelpCircle size={22} className={styles.helpIcon} />
-            <div>
-              <div className={styles.helpTitle}>Need Help?</div>
-              <div className={styles.helpSubtitle}>Contact our support</div>
-            </div>
-          </div>
-          <button 
-            type="button" 
-            className={styles.contactSupportBtn}
-            onClick={() => window.open('mailto:support@adrizo.com')}
-          >
-            Contact Support
-          </button>
-        </div>
 
         {/* Logout */}
         <button 
