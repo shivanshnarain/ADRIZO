@@ -301,7 +301,11 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
   };
 
   const handleResetBreakerAndTest = async () => {
-    if (!confirm('This will reset the circuit breaker cooldown. Only proceed if you have verified the correct Shiprocket API User credentials and the 2-hour external lockout has elapsed. Proceed?')) {
+    if (breakerStatus?.failureType === 'ACCOUNT_LOCKED' && (breakerStatus?.remainingMinutes ?? 0) > 0) {
+      alert(`Shiprocket external account lockout is currently active (~${breakerStatus.remainingMinutes} mins remaining). Probing while the account is locked by Shiprocket will fail and prolong the lockout. Please wait for the lockout window to elapse or reset your API User password in Shiprocket Console.`);
+      return;
+    }
+    if (!confirm('This will perform a single controlled authentication probe to verify Shiprocket API credentials and connectivity. A successful probe will not create a live shipment or trigger courier pickup. Proceed?')) {
       return;
     }
     setResettingBreaker(true);
@@ -1584,71 +1588,126 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                     </div>
                   </div>
 
-                  {viewingOrder.shiprocketShipmentId ? (
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 10px',
-                      borderRadius: '9999px',
-                      fontSize: '0.7rem',
-                      fontWeight: 800,
-                      background: '#ecfdf5',
-                      color: '#059669',
-                      border: '1px solid #a7f3d0'
-                    }}>
-                      <ShieldCheck size={13} />
-                      SHIPROCKET SYNCED
-                    </span>
-                  ) : (breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH' || viewingOrder.shiprocketStatus === 'AUTH_BLOCKED') ? (
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 10px',
-                      borderRadius: '9999px',
-                      fontSize: '0.7rem',
-                      fontWeight: 800,
-                      background: '#fff1f2',
-                      color: '#e11d48',
-                      border: '1px solid #fecdd3'
-                    }}>
-                      <AlertCircle size={13} />
-                      TEMPORARILY BLOCKED
-                    </span>
-                  ) : viewingOrder.shiprocketSyncStatus === 'FAILED' ? (
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 10px',
-                      borderRadius: '9999px',
-                      fontSize: '0.7rem',
-                      fontWeight: 800,
-                      background: '#fef2f2',
-                      color: '#dc2626',
-                      border: '1px solid #fecaca'
-                    }}>
-                      <AlertCircle size={13} />
-                      AUTHENTICATION FAILED
-                    </span>
-                  ) : (
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 10px',
-                      borderRadius: '9999px',
-                      fontSize: '0.7rem',
-                      fontWeight: 800,
-                      background: '#fef3c7',
-                      color: '#d97706',
-                      border: '1px solid #fde68a'
-                    }}>
-                      <Clock size={13} />
-                      SYNC PENDING
-                    </span>
-                  )}
+                  {(() => {
+                    const hasShipment = Boolean(viewingOrder.shiprocketShipmentId);
+                    const isConfigMissing = breakerStatus?.failureType === 'CONFIG_MISSING' || viewingOrder.shiprocketSyncStatus === 'CONFIG_MISSING';
+                    const isBlocked = Boolean(breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH' || viewingOrder.shiprocketStatus === 'AUTH_BLOCKED');
+                    const isAuthFailed = Boolean(breakerStatus?.failureType === 'INVALID_CREDENTIALS' || (viewingOrder.shiprocketSyncStatus === 'FAILED' && (viewingOrder.shiprocketSyncError || '').toLowerCase().includes('auth')));
+                    const isCreationFailed = viewingOrder.shiprocketSyncStatus === 'FAILED';
+
+                    if (hasShipment) {
+                      return (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 10px',
+                          borderRadius: '9999px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          background: '#ecfdf5',
+                          color: '#059669',
+                          border: '1px solid #a7f3d0'
+                        }}>
+                          <ShieldCheck size={13} />
+                          CONNECTED
+                        </span>
+                      );
+                    }
+                    if (isConfigMissing) {
+                      return (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 10px',
+                          borderRadius: '9999px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          background: '#fffbeb',
+                          color: '#b45309',
+                          border: '1px solid #fde68a'
+                        }}>
+                          <AlertCircle size={13} />
+                          CONFIGURATION MISSING
+                        </span>
+                      );
+                    }
+                    if (isBlocked) {
+                      return (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 10px',
+                          borderRadius: '9999px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          background: '#fff1f2',
+                          color: '#e11d48',
+                          border: '1px solid #fecdd3'
+                        }}>
+                          <AlertCircle size={13} />
+                          TEMPORARILY BLOCKED
+                        </span>
+                      );
+                    }
+                    if (isAuthFailed) {
+                      return (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 10px',
+                          borderRadius: '9999px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          background: '#fef2f2',
+                          color: '#dc2626',
+                          border: '1px solid #fecaca'
+                        }}>
+                          <AlertCircle size={13} />
+                          AUTHENTICATION FAILED
+                        </span>
+                      );
+                    }
+                    if (isCreationFailed) {
+                      return (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '4px 10px',
+                          borderRadius: '9999px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          background: '#fff7ed',
+                          color: '#c2410c',
+                          border: '1px solid #ffedd5'
+                        }}>
+                          <AlertCircle size={13} />
+                          SHIPMENT CREATION FAILED
+                        </span>
+                      );
+                    }
+                    return (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '4px 10px',
+                        borderRadius: '9999px',
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        background: '#f8fafc',
+                        color: '#64748b',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        <Clock size={13} />
+                        PENDING
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div style={{ padding: '1.15rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -1668,25 +1727,33 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                       <strong style={{
                         color: viewingOrder.shiprocketShipmentId
                           ? '#059669'
+                          : (breakerStatus?.failureType === 'CONFIG_MISSING' || viewingOrder.shiprocketSyncStatus === 'CONFIG_MISSING')
+                          ? '#b45309'
                           : (breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH')
                           ? '#e11d48'
-                          : viewingOrder.shiprocketSyncStatus === 'FAILED'
+                          : (breakerStatus?.failureType === 'INVALID_CREDENTIALS' || (viewingOrder.shiprocketSyncStatus === 'FAILED' && (viewingOrder.shiprocketSyncError || '').toLowerCase().includes('auth')))
                           ? '#dc2626'
-                          : '#d97706',
+                          : viewingOrder.shiprocketSyncStatus === 'FAILED'
+                          ? '#c2410c'
+                          : '#64748b',
                         fontSize: '0.75rem'
                       }}>
                         {viewingOrder.shiprocketShipmentId
                           ? 'Connected'
+                          : (breakerStatus?.failureType === 'CONFIG_MISSING' || viewingOrder.shiprocketSyncStatus === 'CONFIG_MISSING')
+                          ? 'Configuration Missing'
                           : (breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH')
                           ? 'Temporarily Blocked'
-                          : viewingOrder.shiprocketSyncStatus === 'FAILED'
+                          : (breakerStatus?.failureType === 'INVALID_CREDENTIALS' || (viewingOrder.shiprocketSyncStatus === 'FAILED' && (viewingOrder.shiprocketSyncError || '').toLowerCase().includes('auth')))
                           ? 'Authentication Failed'
+                          : viewingOrder.shiprocketSyncStatus === 'FAILED'
+                          ? 'Shipment Creation Failed'
                           : 'Pending'}
                       </strong>
                     </div>
 
                     <div>
-                      <span style={{ color: '#64748b', fontSize: '0.675rem', display: 'block', fontWeight: 600 }}>Last Sync Attempt</span>
+                      <span style={{ color: '#64748b', fontSize: '0.675rem', display: 'block', fontWeight: 600 }}>Last Attempt</span>
                       <span style={{ color: '#09090b', fontWeight: 600 }}>
                         {viewingOrder.updatedAt ? new Date(viewingOrder.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
                       </span>
@@ -1703,14 +1770,27 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                       <span style={{ color: '#64748b', fontSize: '0.675rem', display: 'block', fontWeight: 600 }}>Retry Allowed</span>
                       <span style={{
                         fontWeight: 700,
-                        color: (breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH') ? '#dc2626' : '#059669'
+                        color: (breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH') ? '#dc2626' : (breakerStatus?.failureType === 'CONFIG_MISSING' || viewingOrder.shiprocketSyncStatus === 'CONFIG_MISSING') ? '#b45309' : '#059669'
                       }}>
-                        {(breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH') ? 'No (Account Cooldown)' : 'Yes (Eligible)'}
+                        {(breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH')
+                          ? `No (${breakerStatus?.remainingMinutes ?? 0}m Cooldown)`
+                          : (breakerStatus?.failureType === 'CONFIG_MISSING' || viewingOrder.shiprocketSyncStatus === 'CONFIG_MISSING')
+                          ? 'No (Missing Credentials)'
+                          : 'Yes (Eligible)'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span style={{ color: '#64748b', fontSize: '0.675rem', display: 'block', fontWeight: 600 }}>Next Eligible Retry</span>
+                      <span style={{ color: '#09090b', fontWeight: 600 }}>
+                        {breakerStatus?.lockoutUntil && Date.now() < breakerStatus.lockoutUntil
+                          ? `${new Date(breakerStatus.lockoutUntil).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
+                          : 'Immediate'}
                       </span>
                     </div>
                   </div>
 
-                  {/* Account Lockout Safety Notice */}
+                  {/* Account Lockout / Cooldown Notice */}
                   {(breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH') && (
                     <div style={{
                       background: '#fff1f2',
@@ -1723,40 +1803,47 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                         <span>Shiprocket Authentication Temporarily Blocked</span>
                       </div>
                       <p style={{ margin: '0 0 6px 0', fontSize: '0.75rem', color: '#9f1239', lineHeight: 1.45 }}>
-                        Shiprocket access is temporarily locked after repeated failed login attempts. Automatic retries have been paused. Verify the API User credentials and wait until access is restored before retrying.
+                        {breakerStatus?.failureType === 'ACCOUNT_LOCKED'
+                          ? 'Shiprocket access is temporarily locked externally after repeated failed login attempts. Automatic retries are paused to protect your account. Verify API credentials and wait until external lockout expires.'
+                          : 'Shiprocket authentication is paused in controlled cooldown after failed login. Verify API User credentials before probing.'}
                       </p>
                       {breakerStatus?.lockoutUntil && (
                         <div style={{ fontSize: '0.725rem', color: '#881337', marginTop: '4px', fontWeight: 600 }}>
                           Cooldown until: <strong>{new Date(breakerStatus.lockoutUntil).toLocaleTimeString('en-IN')}</strong> ({breakerStatus.remainingMinutes ?? '~'} mins remaining)
                         </div>
                       )}
-                      {breakerStatus?.lastError && (
+                      {(breakerStatus?.lastError || viewingOrder.shiprocketSyncError) && (
                         <div style={{ fontSize: '0.7rem', color: '#4c0519', marginTop: '6px', fontFamily: 'monospace', background: '#ffe4e6', padding: '4px 8px', borderRadius: '4px', wordBreak: 'break-word' }}>
-                          Reason: {breakerStatus.lastError}
+                          Reason: {breakerStatus?.lastError || viewingOrder.shiprocketSyncError}
                         </div>
                       )}
                       <div style={{ marginTop: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
                         <button
                           type="button"
                           onClick={handleResetBreakerAndTest}
-                          disabled={resettingBreaker}
+                          disabled={resettingBreaker || (breakerStatus?.failureType === 'ACCOUNT_LOCKED' && (breakerStatus?.remainingMinutes ?? 0) > 0)}
                           style={{
-                            background: '#e11d48',
+                            background: (breakerStatus?.failureType === 'ACCOUNT_LOCKED' && (breakerStatus?.remainingMinutes ?? 0) > 0) ? '#cbd5e1' : '#e11d48',
                             color: '#ffffff',
                             border: 'none',
                             borderRadius: '5px',
                             padding: '5px 11px',
                             fontSize: '0.725rem',
                             fontWeight: 700,
-                            cursor: resettingBreaker ? 'not-allowed' : 'pointer',
+                            cursor: (resettingBreaker || (breakerStatus?.failureType === 'ACCOUNT_LOCKED' && (breakerStatus?.remainingMinutes ?? 0) > 0)) ? 'not-allowed' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px'
                           }}
                         >
                           <RotateCw size={12} className={resettingBreaker ? styles.spin : ''} />
-                          <span>{resettingBreaker ? 'Testing...' : 'Reset Cooldown & Probe Connection'}</span>
+                          <span>{resettingBreaker ? 'Testing...' : (breakerStatus?.failureType === 'ACCOUNT_LOCKED' && (breakerStatus?.remainingMinutes ?? 0) > 0) ? 'Probe Paused (Account Locked)' : 'Reset Cooldown & Probe Connection'}</span>
                         </button>
+                        {(breakerStatus?.failureType === 'ACCOUNT_LOCKED' && (breakerStatus?.remainingMinutes ?? 0) > 0) && (
+                          <span style={{ fontSize: '0.7rem', color: '#9f1239' }}>
+                            Probing disabled during external account lockout.
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
@@ -1865,7 +1952,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                         </p>
                       )}
 
-                      {(breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH') ? (
+                      {(breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH' || (breakerStatus?.remainingMinutes ?? 0) > 0) ? (
                         <button
                           type="button"
                           disabled={true}
@@ -1885,10 +1972,10 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                             gap: '0.5rem',
                             opacity: 0.85
                           }}
-                          title="Shiprocket authentication is temporarily blocked. Automatic retries are paused to protect your account. Verify API credentials and retry after access is restored."
+                          title="Shiprocket authentication is in cooldown. Automatic retries are paused to protect your account. Verify API credentials and retry after access is restored."
                         >
                           <Clock size={14} />
-                          <span>Retries Paused (Account Cooldown Active)</span>
+                          <span>Retries Paused (Account Cooldown Active - {breakerStatus?.remainingMinutes ?? 0}m remaining)</span>
                         </button>
                       ) : (
                         <button

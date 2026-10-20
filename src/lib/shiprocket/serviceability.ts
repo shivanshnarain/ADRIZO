@@ -3,6 +3,8 @@ import {
   ShiprocketAvailableCourier,
   ShiprocketServiceabilityResult,
 } from './types';
+import { isShiprocketConfigured } from './config';
+import { getCircuitBreakerStatus } from './circuit-breaker';
 
 export interface CheckCourierServiceabilityParams {
   pickupPincode?: string;
@@ -36,6 +38,28 @@ export async function checkCourierServiceability(
       deliveryPincode,
       availableCouriers: [],
       error: 'Invalid delivery PIN code. 6-digit Indian PIN code required.',
+    };
+  }
+
+  // 1. Guard against serviceability calls when credentials missing or blocked
+  if (!isShiprocketConfigured()) {
+    return {
+      success: false,
+      pickupPincode,
+      deliveryPincode,
+      availableCouriers: [],
+      error: 'Shiprocket is not configured.',
+    };
+  }
+
+  const breaker = await getCircuitBreakerStatus();
+  if (breaker.isBlocked) {
+    return {
+      success: false,
+      pickupPincode,
+      deliveryPincode,
+      availableCouriers: [],
+      error: breaker.message || 'Courier serviceability checks are paused during cooldown.',
     };
   }
 

@@ -62,7 +62,17 @@ export async function POST(req: Request) {
     }
 
     if (body.resetBreaker) {
-      await resetCircuitBreaker();
+      const resetRes = await resetCircuitBreaker('Admin test route reset', { force: Boolean(body.force) });
+      if (!resetRes.success) {
+        return NextResponse.json({
+          success: false,
+          configured: true,
+          authenticated: false,
+          isBlocked: true,
+          message: resetRes.message,
+          error: resetRes.message,
+        }, { status: 400 });
+      }
     }
 
     const allowProbe = Boolean(body.allowProbe);

@@ -344,6 +344,16 @@ export async function createShiprocketShipmentAction(orderId: string) {
       return { success: false, error: 'Unauthorized: Admin access required' };
     }
 
+    const { getCircuitBreakerStatus } = await import('../lib/shiprocket/circuit-breaker');
+    const breaker = await getCircuitBreakerStatus();
+    if (breaker.isBlocked) {
+      return {
+        success: false,
+        error: breaker.message || 'Shiprocket authentication is currently in cooldown. Retries are paused to protect your account.',
+        status: 'AUTH_BLOCKED',
+      };
+    }
+
     const result = await autoSyncOrderToShiprocket(orderId);
     revalidatePath('/admin/orders');
     revalidatePath('/admin/dashboard');
@@ -386,16 +396,19 @@ export async function getShiprocketBreakerStatusAction() {
   }
 }
 
-export async function resetShiprocketBreakerAction() {
+export async function resetShiprocketBreakerAction(force = false) {
   try {
     const session = await verifyAdminSession();
     if (!session.authorized) {
       return { success: false, error: 'Unauthorized: Admin access required' };
     }
     const { resetCircuitBreaker } = await import('../lib/shiprocket/circuit-breaker');
-    await resetCircuitBreaker();
+    const result = await resetCircuitBreaker('Admin manual reset', { force });
+    if (!result.success) {
+      return { success: false, error: result.message, blocked: result.blocked };
+    }
     revalidatePath('/admin/orders');
-    return { success: true, message: 'Circuit breaker cooldown reset. You may now perform a controlled connection test.' };
+    return { success: true, message: result.message };
   } catch (err: unknown) {
     const error = err as { message?: string };
     return { success: false, error: error.message || 'Failed to reset circuit breaker' };

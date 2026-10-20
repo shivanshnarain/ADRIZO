@@ -95,17 +95,17 @@ export async function createShiprocketOrder(
   const orderRef = order.orderNumber || order.id;
 
   // 1. Idempotency Check: Prevent duplicate Shiprocket orders
-  if (order.shiprocketOrderId && order.shiprocketShipmentId) {
+  if (order.shiprocketOrderId || order.shiprocketShipmentId) {
     console.log(
-      `[Shiprocket Order] Order #${orderRef} is already synced with Shiprocket (Order ID: ${order.shiprocketOrderId}, Shipment ID: ${order.shiprocketShipmentId}). Skipping creation.`
+      `[Shiprocket Order] Order #${orderRef} already has Shiprocket records (Order ID: ${order.shiprocketOrderId || 'N/A'}, Shipment ID: ${order.shiprocketShipmentId || 'N/A'}). Skipping creation.`
     );
     return {
       success: true,
       alreadySynced: true,
-      orderId: Number(order.shiprocketOrderId),
-      shipmentId: Number(order.shiprocketShipmentId),
+      orderId: order.shiprocketOrderId ? Number(order.shiprocketOrderId) : 0,
+      shipmentId: order.shiprocketShipmentId ? Number(order.shiprocketShipmentId) : 0,
       status: order.shiprocketStatus || 'NEW',
-      message: `Order #${orderRef} is already synced with Shiprocket.`,
+      message: `Order #${orderRef} is already registered with Shiprocket.`,
     };
   }
 

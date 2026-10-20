@@ -4,6 +4,7 @@ import {
   SHIPROCKET_DEFAULT_TIMEOUT_MS,
   SHIPROCKET_TOKEN_CACHE_TTL_MS,
   getShiprocketCredentials,
+  getRawShiprocketEmail,
   isShiprocketConfigured,
   maskEmail,
 } from './config';
@@ -130,7 +131,7 @@ export async function invalidateShiprocketToken(): Promise<void> {
  * 4. Lockout Prevention: Catches 403 / "User blocked" and trips circuit breaker for 2 hours.
  * 5. Structured Sanitized Logging: NEVER prints passwords, secrets, or raw bearer tokens.
  */
-export async function getShiprocketToken(forceRefresh = false): Promise<string> {
+export async function getShiprocketToken(forceRefresh = false, allowProbe = false): Promise<string> {
   // 1. Check cached token if refresh is not forced
   if (!forceRefresh) {
     const cached = await getCachedToken();
@@ -141,10 +142,17 @@ export async function getShiprocketToken(forceRefresh = false): Promise<string> 
 
   // 2. Check Circuit Breaker before making ANY external network call
   const breaker = await getCircuitBreakerStatus();
-  if (breaker.isBlocked) {
+  if (breaker.isBlocked && !allowProbe) {
     const blockMsg = breaker.message || 
       `Shiprocket authentication is temporarily blocked. Automatic retries are paused to protect your account. Verify API credentials and retry after access is restored (${breaker.remainingMinutes}m remaining).`;
     console.warn(`[Shiprocket Auth Guard] Request blocked by circuit breaker: ${blockMsg}`);
+    throw new Error(blockMsg);
+  }
+
+  // Refuse probe if external Shiprocket account is confirmed locked out
+  if (breaker.isBlocked && breaker.failureType === 'ACCOUNT_LOCKED') {
+    const blockMsg = `Shiprocket external account lockout is currently active (${breaker.remainingMinutes}m remaining). Probing while locked is unsafe and will trigger further lockout.`;
+    console.warn(`[Shiprocket Auth Guard] Request blocked: ${blockMsg}`);
     throw new Error(blockMsg);
   }
 
@@ -266,6 +274,7 @@ export async function testShiprocketAuth(allowProbe = false): Promise<Shiprocket
       success: false,
       configured: false,
       authenticated: false,
+      failureType: 'CONFIG_MISSING',
       message: 'Shiprocket API credentials are not configured in server environment variables.',
       error: 'Missing SHIPROCKET_API_EMAIL or SHIPROCKET_API_PASSWORD',
     };
@@ -279,17 +288,34 @@ export async function testShiprocketAuth(allowProbe = false): Promise<Shiprocket
       configured: true,
       authenticated: false,
       isBlocked: true,
+      failureType: breaker.failureType,
       lockoutUntil: breaker.lockoutUntil,
       remainingMinutes: breaker.remainingMinutes,
       message: breaker.message || 'Shiprocket authentication is temporarily blocked to protect your account.',
-      apiUser: maskEmail(process.env.SHIPROCKET_API_EMAIL),
+      apiUser: maskEmail(getRawShiprocketEmail()),
       error: breaker.lastError || 'Account locked or cooling down due to previous failed attempts.',
     };
   }
 
+  // If probe is requested but account is confirmed locked out externally, refuse probe
+  if (breaker.isBlocked && breaker.failureType === 'ACCOUNT_LOCKED') {
+    return {
+      success: false,
+      configured: true,
+      authenticated: false,
+      isBlocked: true,
+      failureType: 'ACCOUNT_LOCKED',
+      lockoutUntil: breaker.lockoutUntil,
+      remainingMinutes: breaker.remainingMinutes,
+      message: `External Shiprocket account lockout is currently active (~${breaker.remainingMinutes}m remaining). Probing before the cooldown expires is unsafe and will trigger further lockout.`,
+      apiUser: maskEmail(getRawShiprocketEmail()),
+      error: breaker.lastError || 'External Shiprocket account locked.',
+    };
+  }
+
   try {
-    // Attempt authentication (forceRefresh = true to ensure live endpoint test)
-    await getShiprocketToken(true);
+    // Attempt authentication (forceRefresh = true, allowProbe = true)
+    await getShiprocketToken(true, true);
     const cached = await getCachedToken();
 
     return {
@@ -298,7 +324,7 @@ export async function testShiprocketAuth(allowProbe = false): Promise<Shiprocket
       authenticated: true,
       isBlocked: false,
       message: 'Shiprocket API authentication verified successfully. Token acquired and cached safely.',
-      apiUser: maskEmail(process.env.SHIPROCKET_API_EMAIL),
+      apiUser: maskEmail(getRawShiprocketEmail()),
       expiresAt: cached ? new Date(cached.expiresAt).toISOString() : undefined,
     };
   } catch (err: unknown) {
@@ -310,10 +336,11 @@ export async function testShiprocketAuth(allowProbe = false): Promise<Shiprocket
       configured: true,
       authenticated: false,
       isBlocked: latestBreaker.isBlocked,
+      failureType: latestBreaker.failureType,
       lockoutUntil: latestBreaker.lockoutUntil,
       remainingMinutes: latestBreaker.remainingMinutes,
       message: latestBreaker.message || 'Shiprocket API authentication test failed.',
-      apiUser: maskEmail(process.env.SHIPROCKET_API_EMAIL),
+      apiUser: maskEmail(getRawShiprocketEmail()),
       error: errorObj.message || 'Unknown authentication error',
     };
   }

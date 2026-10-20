@@ -2,6 +2,8 @@ import { resolveOrderFromSupabase, ResolvedOrder } from '../order-resolver';
 import { getAdminClient } from '../supabase/admin';
 import { shiprocketRequest } from './client';
 import { ShiprocketTrackingActivity, ShiprocketTrackingSummary } from './types';
+import { isShiprocketConfigured } from './config';
+import { getCircuitBreakerStatus } from './circuit-breaker';
 
 /**
  * Maps Shiprocket fulfillment & tracking status strings to ADRIZO's internal status conventions.
@@ -95,6 +97,28 @@ export async function trackShipmentByAwb(awbCode: string): Promise<ShiprocketTra
       currentStatus: 'UNKNOWN',
       activities: [],
       error: 'AWB code is required for tracking.',
+    };
+  }
+
+  // 1. Guard against tracking requests when Shiprocket is unconfigured or blocked
+  if (!isShiprocketConfigured()) {
+    return {
+      success: false,
+      awbCode: cleanAwb,
+      currentStatus: 'UNKNOWN',
+      activities: [],
+      error: 'Shiprocket is not configured.',
+    };
+  }
+
+  const breaker = await getCircuitBreakerStatus();
+  if (breaker.isBlocked) {
+    return {
+      success: false,
+      awbCode: cleanAwb,
+      currentStatus: 'UNKNOWN',
+      activities: [],
+      error: breaker.message || 'Shiprocket tracking is paused during cooldown.',
     };
   }
 

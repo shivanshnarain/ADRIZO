@@ -2,7 +2,8 @@ import { resolveOrderFromSupabase } from './order-resolver';
 import { createShiprocketOrder, CreateShiprocketOrderResult } from './shiprocket/orders';
 import { getAdminClient } from './supabase/admin';
 import { createAdminNotification } from './admin-notifications';
-import { getCircuitBreakerStatus } from './shiprocket/circuit-breaker';
+import { getCircuitBreakerStatus, isAutomatedSyncAllowed } from './shiprocket/circuit-breaker';
+import { isShiprocketConfigured } from './shiprocket/config';
 
 export interface AutoSyncResult {
   success: boolean;
@@ -21,7 +22,7 @@ export interface AutoSyncResult {
  * 
  * Safety & Production Protections:
  * 1. Circuit Breaker Guard: Respects 2-hour account lockout and cooldowns; never makes login calls if blocked.
- * 2. Strict Idempotency: If the order already has Shiprocket Order ID & Shipment ID,
+ * 2. Strict Idempotency: If the order already has Shiprocket Order ID or Shipment ID,
  *    it will never create a duplicate order on Shiprocket.
  * 3. Partial Failure Resilience: If Shiprocket API is temporarily down, the ADRIZO
  *    order remains safe in Supabase. Marked as 'BLOCKED_AUTH' or 'FAILED' sync status so Admin can safely retry.
@@ -39,11 +40,23 @@ export async function autoSyncOrderToShiprocket(
   const supabase = getAdminClient();
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
 
-  // 1. Circuit Breaker Guard: Stop immediately if account is locked or cooling down
+  // 1. Configuration Guard: Check if Shiprocket credentials exist in environment
+  if (!isShiprocketConfigured()) {
+    console.warn(`[Auto-Shiprocket Sync] Shiprocket credentials not configured. Skipping auto-sync for Order #${cleanId}.`);
+    return {
+      success: false,
+      status: 'CONFIG_MISSING',
+      error: 'Shiprocket API credentials are not configured in server environment variables.',
+      message: 'Shiprocket API credentials are not configured.',
+    };
+  }
+
+  // 2. Circuit Breaker Guard: Stop immediately if account is locked, cooling down, or awaiting manual verification
   const breaker = await getCircuitBreakerStatus();
-  if (breaker.isBlocked) {
+  if (breaker.isBlocked || !isAutomatedSyncAllowed(breaker)) {
+    const pauseReason = breaker.message || 'Shiprocket authentication is cooling down or paused to protect account.';
     console.warn(
-      `[Auto-Shiprocket Sync] Circuit breaker is active (${breaker.state}). Pausing auto-sync for Order #${cleanId}: ${breaker.message}`
+      `[Auto-Shiprocket Sync] Circuit breaker is not closed (State: ${breaker.state}, isBlocked: ${breaker.isBlocked}). Pausing auto-sync for Order #${cleanId}: ${pauseReason}`
     );
 
     // Persist BLOCKED_AUTH status so Admin Panel displays exact lockout state
@@ -52,7 +65,7 @@ export async function autoSyncOrderToShiprocket(
         .from('orders')
         .update({
           shiprocket_sync_status: 'BLOCKED_AUTH',
-          shiprocket_sync_error: breaker.message,
+          shiprocket_sync_error: pauseReason,
           shiprocket_status: 'AUTH_BLOCKED',
           updated_at: new Date().toISOString(),
         });
@@ -69,13 +82,13 @@ export async function autoSyncOrderToShiprocket(
     return {
       success: false,
       status: 'AUTH_BLOCKED',
-      error: breaker.message,
-      message: breaker.message,
+      error: pauseReason,
+      message: pauseReason,
     };
   }
 
   try {
-    // 2. Resolve fresh order from Supabase
+    // 3. Resolve fresh order from Supabase
     const order = await resolveOrderFromSupabase(cleanId);
     if (!order) {
       console.warn(`[Auto-Shiprocket Sync] Order #${cleanId} not found in database.`);
@@ -84,18 +97,18 @@ export async function autoSyncOrderToShiprocket(
 
     const orderRef = order.orderNumber || order.id;
 
-    // 3. Idempotency Guard: Never duplicate if already registered with Shiprocket
-    if (order.shiprocketOrderId && order.shiprocketShipmentId) {
+    // 4. Idempotency Guard: Never duplicate if already registered with Shiprocket
+    if (order.shiprocketOrderId || order.shiprocketShipmentId) {
       console.log(
-        `[Auto-Shiprocket Sync] Order #${orderRef} is already synced (Shiprocket Order: ${order.shiprocketOrderId}, Shipment: ${order.shiprocketShipmentId}). Skipping.`
+        `[Auto-Shiprocket Sync] Order #${orderRef} is already registered (Shiprocket Order: ${order.shiprocketOrderId || 'N/A'}, Shipment: ${order.shiprocketShipmentId || 'N/A'}). Skipping duplicate creation.`
       );
       return {
         success: true,
         alreadySynced: true,
-        orderId: Number(order.shiprocketOrderId),
-        shipmentId: Number(order.shiprocketShipmentId),
-        shiprocketOrderId: Number(order.shiprocketOrderId),
-        shiprocketShipmentId: Number(order.shiprocketShipmentId),
+        orderId: order.shiprocketOrderId ? Number(order.shiprocketOrderId) : undefined,
+        shipmentId: order.shiprocketShipmentId ? Number(order.shiprocketShipmentId) : undefined,
+        shiprocketOrderId: order.shiprocketOrderId ? Number(order.shiprocketOrderId) : undefined,
+        shiprocketShipmentId: order.shiprocketShipmentId ? Number(order.shiprocketShipmentId) : undefined,
         status: order.shiprocketStatus || 'NEW',
         message: 'Order is already registered with Shiprocket.',
       };

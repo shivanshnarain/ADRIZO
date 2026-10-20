@@ -52,7 +52,7 @@ function getDefaultBreakerData(): ShiprocketCircuitBreakerData {
     lockoutUntil: 0,
     lastError: '',
     failureType: 'NONE',
-    apiUserMasked: maskEmail(process.env.SHIPROCKET_API_EMAIL),
+    apiUserMasked: maskEmail(process.env.SHIPROCKET_API_EMAIL || process.env.SHIPROCKET_EMAIL),
     updatedAt: new Date().toISOString(),
   };
 }
@@ -98,7 +98,7 @@ export async function getCircuitBreakerStatus(): Promise<CircuitBreakerStatus> {
       isBlocked = true;
       remainingSeconds = Math.max(1, Math.ceil((data.lockoutUntil - now) / 1000));
     } else {
-      // Cooldown expired -> automatically transition to HALF_OPEN for 1 probe attempt
+      // Cooldown expired -> automatically transition to HALF_OPEN for 1 controlled probe attempt
       state = 'HALF_OPEN';
     }
   }
@@ -130,9 +130,18 @@ export async function getCircuitBreakerStatus(): Promise<CircuitBreakerStatus> {
     lastError: data.lastError,
     failureType: data.failureType,
     lastFailureTime: data.lastFailureTime,
-    apiUserMasked: data.apiUserMasked || maskEmail(process.env.SHIPROCKET_API_EMAIL),
+    apiUserMasked: data.apiUserMasked || maskEmail(process.env.SHIPROCKET_API_EMAIL || process.env.SHIPROCKET_EMAIL),
     message,
   };
+}
+
+/**
+ * Checks whether automated background sync, webhooks, or scheduled jobs
+ * are allowed to attempt Shiprocket synchronization.
+ * Strictly requires the circuit breaker to be fully CLOSED (healthy).
+ */
+export function isAutomatedSyncAllowed(status: CircuitBreakerStatus): boolean {
+  return !status.isBlocked && status.state === 'CLOSED';
 }
 
 /**
@@ -158,12 +167,22 @@ export async function recordCircuitBreakerFailure(
     lowerErr.includes('too many failed') || 
     lowerErr.includes('account access was temporarily locked') ||
     lowerErr.includes('locked for') ||
+    lowerErr.includes('temporarily locked') ||
+    lowerErr.includes('try again after') ||
+    lowerErr.includes('user is inactive') ||
+    lowerErr.includes('user blocked') ||
     statusCode === 429;
 
   if (isLockout) {
     failureType = 'ACCOUNT_LOCKED';
     cooldownMs = retryAfterSeconds ? (retryAfterSeconds * 1000) : SHIPROCKET_LOCKOUT_2HR_MS;
-  } else if (statusCode === 403 || lowerErr.includes('invalid email and password')) {
+  } else if (
+    statusCode === 403 || 
+    statusCode === 401 || 
+    lowerErr.includes('invalid email and password') ||
+    lowerErr.includes('invalid credentials') ||
+    lowerErr.includes('unauthorized')
+  ) {
     failureType = 'INVALID_CREDENTIALS';
     // Exponential backoff to avoid reaching Shiprocket's hard lockout limit
     if (consecutiveFailures === 1) {
@@ -171,7 +190,7 @@ export async function recordCircuitBreakerFailure(
     } else if (consecutiveFailures === 2) {
       cooldownMs = SHIPROCKET_CREDENTIAL_BACKOFF_2_MS; // 15 min
     } else {
-      cooldownMs = SHIPROCKET_CREDENTIAL_BACKOFF_3_MS; // 1 hr proactive protective lock
+      cooldownMs = SHIPROCKET_CREDENTIAL_BACKOFF_3_MS; // 1 hr proactive pause
     }
   } else {
     failureType = 'NETWORK_ERROR';
@@ -186,7 +205,7 @@ export async function recordCircuitBreakerFailure(
     lockoutUntil,
     lastError: errorMessage,
     failureType,
-    apiUserMasked: maskEmail(process.env.SHIPROCKET_API_EMAIL),
+    apiUserMasked: maskEmail(process.env.SHIPROCKET_API_EMAIL || process.env.SHIPROCKET_EMAIL),
     updatedAt: new Date(now).toISOString(),
   };
 
@@ -232,7 +251,7 @@ export async function recordCircuitBreakerSuccess(): Promise<void> {
     lockoutUntil: 0,
     lastError: '',
     failureType: 'NONE',
-    apiUserMasked: maskEmail(process.env.SHIPROCKET_API_EMAIL),
+    apiUserMasked: maskEmail(process.env.SHIPROCKET_API_EMAIL || process.env.SHIPROCKET_EMAIL),
     updatedAt: new Date(now).toISOString(),
   };
 
@@ -263,9 +282,29 @@ export async function recordCircuitBreakerSuccess(): Promise<void> {
 /**
  * Manually resets or clears the circuit breaker (e.g. admin has verified credentials
  * or external lock period has elapsed). Allows 1 probe attempt (HALF_OPEN).
+ * 
+ * Safety:
+ * Rejects reset if external Shiprocket account is actively locked, unless force is explicitly set.
  */
-export async function resetCircuitBreaker(reason = 'Admin manual reset'): Promise<void> {
+export async function resetCircuitBreaker(
+  reason = 'Admin manual reset',
+  options: { force?: boolean } = {}
+): Promise<{ success: boolean; message: string; blocked?: boolean }> {
+  const current = await getCircuitBreakerStatus();
   const now = Date.now();
+
+  // If external account lockout is active and not forced, refuse bypass
+  if (current.isBlocked && current.failureType === 'ACCOUNT_LOCKED' && !options.force) {
+    const remainingMins = current.remainingMinutes || 1;
+    const msg = `Shiprocket external account lockout is currently active (~${remainingMins}m remaining). Resetting the circuit breaker locally cannot bypass external Shiprocket lockout and will result in further failed attempts. Please wait until the cooldown window expires.`;
+    console.warn(`[Shiprocket Circuit Breaker] Reset rejected: ${msg}`);
+    return {
+      success: false,
+      blocked: true,
+      message: msg,
+    };
+  }
+
   const breakerData: ShiprocketCircuitBreakerData = {
     state: 'HALF_OPEN',
     lastFailureTime: 0,
@@ -273,7 +312,7 @@ export async function resetCircuitBreaker(reason = 'Admin manual reset'): Promis
     lockoutUntil: 0,
     lastError: '',
     failureType: 'NONE',
-    apiUserMasked: maskEmail(process.env.SHIPROCKET_API_EMAIL),
+    apiUserMasked: maskEmail(process.env.SHIPROCKET_API_EMAIL || process.env.SHIPROCKET_EMAIL),
     updatedAt: new Date(now).toISOString(),
   };
 
@@ -299,4 +338,8 @@ export async function resetCircuitBreaker(reason = 'Admin manual reset'): Promis
   }
 
   console.log(`[Shiprocket Circuit Breaker] Reset to HALF_OPEN (${reason}). Ready for 1 controlled attempt.`);
+  return {
+    success: true,
+    message: 'Circuit breaker reset to HALF_OPEN. You may perform 1 controlled authentication probe.',
+  };
 }

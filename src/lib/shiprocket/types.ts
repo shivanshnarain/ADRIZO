@@ -45,6 +45,8 @@ export interface ShiprocketAuthTestResult {
   isBlocked?: boolean;
   lockoutUntil?: number;
   remainingMinutes?: number;
+  failureType?: string;
+  canAttemptAutomatedSync?: boolean;
 }
 
 export interface ShiprocketRequestOptions extends Omit<RequestInit, 'headers'> {
