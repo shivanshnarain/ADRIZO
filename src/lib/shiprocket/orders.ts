@@ -80,12 +80,12 @@ function formatShiprocketDate(dateInput?: string | Date | null): string {
 }
 
 /**
- * Creates an adhoc Order & Shipment in Shiprocket from an existing AD(R)IZO order.
+ * Creates an adhoc Order & Shipment in Shiprocket from an existing ADRIZO order.
  * 
  * Features:
  * - Strict Idempotency: If the order already has a Shiprocket Order ID or Shipment ID, skips creation.
  * - Robust Validation: Ensures required address, pincode, phone, and item details.
- * - Zero Data Loss: Failures never delete or corrupt the AD(R)IZO order.
+ * - Zero Data Loss: Failures never delete or corrupt the ADRIZO order.
  * - Structured Persistence: Updates existing Supabase order with returned identifiers.
  */
 export async function createShiprocketOrder(
@@ -173,7 +173,7 @@ export async function createShiprocketOrder(
     order_id: order.orderNumber,
     order_date: formatShiprocketDate(order.createdAt),
     pickup_location: pickupLocation,
-    comment: `AD(R)IZO Order #${order.orderNumber}`,
+    comment: `ADRIZO Order #${order.orderNumber}`,
     billing_customer_name: firstName,
     billing_last_name: lastName,
     billing_address: address,

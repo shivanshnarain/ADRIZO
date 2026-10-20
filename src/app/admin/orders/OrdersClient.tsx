@@ -1502,7 +1502,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                     <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#09090b', marginBottom: '4px' }}>Delivery Partner:</label>
                     <input
                       type="text"
-                      placeholder="Blue Dart Delivery"
+                      placeholder="Awaiting courier assignment"
                       value={editDeliveryPartner}
                       onChange={e => setEditDeliveryPartner(e.target.value)}
                       style={{ width: '100%', height: '36px', padding: '0 0.65rem', border: '1px solid #d4d4d8', borderRadius: '6px', fontSize: '0.8125rem' }}
@@ -1513,7 +1513,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                     <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#09090b', marginBottom: '4px' }}>Tracking / AWB #:</label>
                     <input
                       type="text"
-                      placeholder="e.g. 143289123849"
+                      placeholder="e.g. Assigned AWB from courier"
                       value={editTrackingId}
                       onChange={e => setEditTrackingId(e.target.value)}
                       style={{ width: '100%', height: '36px', padding: '0 0.65rem', border: '1px solid #d4d4d8', borderRadius: '6px', fontSize: '0.8125rem' }}
@@ -1799,17 +1799,27 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                         <div>
                           <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem', fontWeight: 600 }}>Courier Partner</span>
                           <strong style={{ color: '#0284c7', marginTop: '2px', display: 'inline-block' }}>
-                            {viewingOrder.deliveryPartner || 'Not Assigned Yet'}
+                            {viewingOrder.deliveryPartner && viewingOrder.deliveryPartner !== 'Blue Dart Delivery' && viewingOrder.deliveryPartner !== 'Awaiting courier assignment'
+                              ? viewingOrder.deliveryPartner
+                              : (viewingOrder.trackingId && viewingOrder.trackingId !== 'AWB123456789' && viewingOrder.deliveryPartner)
+                                ? viewingOrder.deliveryPartner
+                                : 'Awaiting courier assignment'}
                           </strong>
                         </div>
 
                         <div>
                           <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem', fontWeight: 600 }}>AWB / Tracking #</span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                            <strong style={{ color: viewingOrder.trackingId ? '#0f172a' : '#94a3b8' }}>
-                              {viewingOrder.trackingId || 'Unassigned'}
-                            </strong>
-                            {viewingOrder.trackingId && (
+                            {viewingOrder.trackingId === 'AWB123456789' ? (
+                              <span style={{ color: '#d97706', fontSize: '0.75rem', fontWeight: 700, background: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
+                                Unverified Placeholder
+                              </span>
+                            ) : (
+                              <strong style={{ color: viewingOrder.trackingId ? '#0f172a' : '#94a3b8' }}>
+                                {viewingOrder.trackingId || 'Unassigned'}
+                              </strong>
+                            )}
+                            {viewingOrder.trackingId && viewingOrder.trackingId !== 'AWB123456789' && (
                               <button
                                 type="button"
                                 onClick={() => copyToClipboard(String(viewingOrder.trackingId), 'AWB Tracking #')}
@@ -2978,7 +2988,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                       Live Shipment Tracking
                     </h3>
                     <p style={{ margin: '2px 0 0 0', fontSize: '0.725rem', color: '#64748b' }}>
-                      AWB #{viewingOrder?.trackingId || '—'} • {viewingOrder?.deliveryPartner || 'Courier'}
+                      AWB #{viewingOrder?.trackingId === 'AWB123456789' ? 'Unverified' : (viewingOrder?.trackingId || '—')} • {(viewingOrder?.deliveryPartner !== 'Blue Dart Delivery' && viewingOrder?.deliveryPartner) || 'Awaiting courier assignment'}
                     </p>
                   </div>
                 </div>
@@ -3018,7 +3028,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                         <div>
                           <span style={{ color: '#64748b', display: 'block', fontSize: '0.7rem' }}>Courier Partner</span>
                           <span style={{ color: '#0f172a', fontWeight: 600 }}>
-                            {trackingData?.courierName || viewingOrder?.deliveryPartner || 'Standard Courier'}
+                            {trackingData?.courierName || (viewingOrder?.deliveryPartner !== 'Blue Dart Delivery' && viewingOrder?.deliveryPartner) || 'Awaiting courier assignment'}
                           </span>
                         </div>
                         <div>

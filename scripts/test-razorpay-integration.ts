@@ -31,7 +31,7 @@ function assert(condition: boolean, message: string) {
 
 async function runTests() {
   console.log('================================================================');
-  console.log('AD(R)IZO — RAZORPAY ONLINE PAYMENT INTEGRATION TEST SUITE');
+  console.log('ADRIZO — RAZORPAY ONLINE PAYMENT INTEGRATION TEST SUITE');
   console.log('================================================================\n');
 
   // TEST 1: Currency & Order Number Generation

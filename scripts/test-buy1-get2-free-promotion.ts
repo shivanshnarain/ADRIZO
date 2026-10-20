@@ -12,7 +12,7 @@ import { POLICY_CONFIG } from '../src/config/policies';
 
 async function runBuy1Get2FreePromotionTests() {
   console.log('================================================================');
-  console.log('AD(R)IZO — BUY 1 GET 2 FREE PROMOTION VERIFICATION SUITE');
+  console.log('ADRIZO — BUY 1 GET 2 FREE PROMOTION VERIFICATION SUITE');
   console.log('================================================================\n');
 
   let passed = 0;

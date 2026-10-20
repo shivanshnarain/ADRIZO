@@ -504,7 +504,7 @@ function AccountContent() {
         <p style={{ color: '#71717a', fontSize: '0.9rem', marginBottom: '1.75rem', lineHeight: '1.5' }}>
           {trackParam
             ? 'Please sign in to view real-time courier tracking, estimated delivery dates, and shipment milestones for your order.'
-            : 'Sign in to access your verified AD(R)IZO orders, manage saved delivery addresses, and track active shipments.'}
+            : 'Sign in to access your verified ADRIZO orders, manage saved delivery addresses, and track active shipments.'}
         </p>
         <button
           type="button"
@@ -1016,7 +1016,7 @@ function AccountContent() {
           {loadingOrders ? (
             <div style={{ padding: '2.5rem', textAlign: 'center', color: '#71717a', background: '#fff', border: '1px solid #e4e4e7', borderRadius: '10px' }}>
               <RotateCw size={24} className="animate-spin" style={{ margin: '0 auto 0.75rem', color: '#09090b' }} />
-              <div>Loading your verified AD(R)IZO orders...</div>
+              <div>Loading your verified ADRIZO orders...</div>
             </div>
           ) : orders.length === 0 ? (
             <div style={{ padding: '3rem 1.5rem', border: '1px dashed #d4d4d8', borderRadius: '10px', textAlign: 'center', background: '#fafafa' }}>
@@ -1351,7 +1351,7 @@ function AccountContent() {
                         )}
                         {isPaid && (
                           <div style={{ marginTop: '6px', padding: '6px 8px', background: 'rgba(255, 255, 255, 0.8)', borderRadius: '4px', color: '#7f1d1d', fontSize: '0.74rem', border: '1px solid #fecaca' }}>
-                            Prepaid refund will be processed to your original payment method within 5–7 business days per the AD(R)IZO Refund Policy.
+                            Prepaid refund will be processed to your original payment method within 5–7 business days per the ADRIZO Refund Policy.
                           </div>
                         )}
                       </div>
@@ -2187,7 +2187,7 @@ function AccountContent() {
             {/* Refund Policy Note for Prepaid Orders */}
             {(cancellingOrder.payment_status === 'PAID' || cancellingOrder.paymentStatus === 'PAID') && (
               <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '0.75rem 0.9rem', marginBottom: '1.25rem', fontSize: '0.78rem', color: '#166534' }}>
-                <strong>Refund Note:</strong> For this prepaid order, your payment will be refunded to your original payment method within 5–7 business days according to the AD(R)IZO Refund Policy.
+                <strong>Refund Note:</strong> For this prepaid order, your payment will be refunded to your original payment method within 5–7 business days according to the ADRIZO Refund Policy.
               </div>
             )}
 

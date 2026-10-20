@@ -21,7 +21,7 @@ export interface RetentionCleanupResult {
 
 /**
  * Defensively cleans up any order-specific files in Supabase Storage.
- * Note: AD(R)IZO generates tax invoice PDFs dynamically in-memory without persistent storage.
+ * Note: ADRIZO generates order invoice PDFs dynamically in-memory without persistent storage.
  * This function ensures that if any future bucket (e.g., invoices/orders) stores order files,
  * they are cleaned up permanently to prevent storage leakage on the free tier.
  */

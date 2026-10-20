@@ -4,7 +4,7 @@ import { shiprocketRequest } from './client';
 import { ShiprocketTrackingActivity, ShiprocketTrackingSummary } from './types';
 
 /**
- * Maps Shiprocket fulfillment & tracking status strings to AD(R)IZO's internal status conventions.
+ * Maps Shiprocket fulfillment & tracking status strings to ADRIZO's internal status conventions.
  */
 export function mapShiprocketStatusToAdrizo(srStatus?: string): {
   trackingStatus: string;

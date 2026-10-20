@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveOrderFromSupabase } from '@/lib/order-resolver';
 import { generateInvoicePdf } from '@/lib/invoice-pdf';
+import { verifyInvoiceToken } from '@/lib/invoice-token';
+import { verifyAdminSession } from '@/lib/auth';
+import { getAuthenticatedCustomer, isOrderOwnedByCustomer } from '@/lib/customer-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,12 +16,50 @@ export async function GET(
     const url = new URL(req.url);
     const format = url.searchParams.get('format');
     const autoPrint = url.searchParams.get('print') === 'true';
+    const token = url.searchParams.get('token');
 
     // 1. Resolve order safely from Supabase by UUID or ADR-XXXXXX
     const order = await resolveOrderFromSupabase(id);
 
     if (!order) {
       return new NextResponse('Order not found', { status: 404 });
+    }
+
+    // 1b. Scoped Authorization Guard
+    const adminCheck = await verifyAdminSession().catch(() => ({ authorized: false }));
+    let isAuthorized = adminCheck.authorized;
+
+    if (!isAuthorized) {
+      const customer = await getAuthenticatedCustomer().catch(() => null);
+      if (customer && isOrderOwnedByCustomer(order, customer)) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized && token) {
+      if (verifyInvoiceToken(token, order.id, order.orderNumber)) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      return new NextResponse(
+        `<!DOCTYPE html>
+<html>
+<head><title>Access Required - ADRIZO</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:4rem 1rem;background:#09090b;color:#fff;">
+  <h2 style="margin-bottom:1rem;color:#f43f5e;">Order Invoice Access Required</h2>
+  <p style="color:#a1a1aa;max-width:480px;margin:0 auto 1.5rem auto;line-height:1.5;">
+    To protect customer privacy, please sign in to your ADRIZO account or use the direct verified invoice link sent to your registered email or WhatsApp.
+  </p>
+  <a href="/login" style="display:inline-block;padding:0.65rem 1.5rem;background:#FFC800;color:#000;border-radius:6px;text-decoration:none;font-weight:700;">Sign In to ADRIZO</a>
+</body>
+</html>`,
+        {
+          status: 401,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        }
+      );
     }
 
     // 2. Direct PDF Stream if requested via ?format=pdf
@@ -321,7 +362,7 @@ export async function GET(
 <body>
   <div class="no-print-bar">
     <div>
-      <span style="font-weight: 800; color: #FFC800;">AD(R)IZO</span> Invoice — #${order.orderNumber}
+      <span style="font-weight: 800; color: #FFC800;">ADRIZO</span> Invoice — #${order.orderNumber}
     </div>
     <div style="display: flex; gap: 0.5rem;">
       <button class="btn btn-gold" onclick="window.print()">
@@ -338,14 +379,14 @@ export async function GET(
   <div class="invoice-container">
     <div class="header-row">
       <div>
-        <div class="brand-title">A D ( R ) I Z O</div>
+        <div class="brand-title">ADRIZO</div>
         <div class="brand-sub">Premium Garments &amp; Apparel</div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 6px;">
           Email: care.adrizo@gmail.com | Web: www.adrizo.com
         </div>
       </div>
       <div class="invoice-badge">
-        <div class="invoice-title">TAX INVOICE</div>
+        <div class="invoice-title">ORDER INVOICE</div>
         <div class="invoice-number">#${order.orderNumber}</div>
         <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
           Date: ${orderDate}
@@ -365,10 +406,15 @@ export async function GET(
         <p><strong>Order ID:</strong> <code style="font-size: 0.75rem; font-family: monospace;">${order.id}</code></p>
       </div>
       <div class="meta-col">
-        <h4>Delivery Address</h4>
+        <h4>Delivery &amp; Fulfillment</h4>
         <p style="white-space: pre-line;">${fullAddress}</p>
         <p><strong>Destination:</strong> ${order.city || '—'}, ${order.state || '—'} - ${order.pincode || '—'}</p>
-        <p><strong>Country:</strong> India</p>
+        ${order.deliveryPartner && order.deliveryPartner !== 'Blue Dart Delivery' && order.deliveryPartner !== 'Awaiting courier assignment' ? `
+        <p><strong>Courier:</strong> ${order.deliveryPartner}</p>
+        ` : ''}
+        ${order.trackingId && order.trackingId !== 'AWB123456789' ? `
+        <p><strong>Verified AWB:</strong> <code style="font-family: monospace; font-size: 0.8rem; background: #e2e8f0; padding: 2px 4px; border-radius: 4px;">${order.trackingId}</code></p>
+        ` : ''}
       </div>
     </div>
 
@@ -460,7 +506,7 @@ export async function GET(
     </div>
 
     <div class="footer-note">
-      <p>Thank you for choosing AD(R)IZO Luxury Apparel. This is a computer-generated tax invoice and requires no physical signature.</p>
+      <p>Thank you for choosing ADRIZO Luxury Apparel. This is a computer-generated order invoice and requires no physical signature.</p>
       <p>For any queries or assistance regarding your order, please write to <strong>care.adrizo@gmail.com</strong>.</p>
     </div>
   </div>

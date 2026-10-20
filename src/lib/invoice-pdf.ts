@@ -1,4 +1,6 @@
 import PDFDocument from 'pdfkit';
+import path from 'path';
+import fs from 'fs';
 import { ResolvedOrder } from './order-resolver';
 
 /**
@@ -13,7 +15,7 @@ function formatCurrency(amount: number): string {
 }
 
 /**
- * Generates a luxury, production-grade PDF invoice for an AD(R)IZO order.
+ * Generates a luxury, production-grade PDF invoice for an ADRIZO order.
  * Returns a Promise that resolves with a Buffer containing the complete PDF binary.
  */
 export async function generateInvoicePdf(order: ResolvedOrder): Promise<Buffer> {
@@ -22,10 +24,11 @@ export async function generateInvoicePdf(order: ResolvedOrder): Promise<Buffer> 
       const doc = new PDFDocument({
         size: 'A4',
         margin: 40,
+        compress: false,
         info: {
-          Title: `AD(R)IZO Invoice - #${order.orderNumber}`,
-          Author: 'AD(R)IZO Luxury Apparel',
-          Subject: `Tax Invoice for Order #${order.orderNumber}`,
+          Title: `ADRIZO Invoice - #${order.orderNumber}`,
+          Author: 'ADRIZO Luxury Apparel',
+          Subject: `Order Invoice for Order #${order.orderNumber}`,
           Keywords: 'Invoice, ADRIZO, Apparel, Receipt',
         },
       });
@@ -48,37 +51,50 @@ export async function generateInvoicePdf(order: ResolvedOrder): Promise<Buffer> 
       const contentWidth = pageWidth - margin * 2; // 515.28
 
       // ==========================================
-      // 1. BRAND HEADER & TAX INVOICE BADGE
+      // 1. BRAND HEADER & ORDER INVOICE BADGE
       // ==========================================
       let currentY = 40;
 
-      // Brand Title
-      doc
-        .font('Helvetica-Bold')
-        .fontSize(22)
-        .fillColor('#09090B')
-        .text('AD(R)IZO', margin, currentY, { characterSpacing: 2 });
+      // Official Logo or Brand Title
+      const logoPath = path.join(process.cwd(), 'public', 'adrizo-logo-dark.png');
+      if (fs.existsSync(logoPath)) {
+        try {
+          doc.image(logoPath, margin, currentY, { height: 26 });
+        } catch {
+          doc
+            .font('Helvetica-Bold')
+            .fontSize(22)
+            .fillColor('#09090B')
+            .text('ADRIZO', margin, currentY, { characterSpacing: 2 });
+        }
+      } else {
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(22)
+          .fillColor('#09090B')
+          .text('ADRIZO', margin, currentY, { characterSpacing: 2 });
+      }
 
       // Brand Subtitle
       doc
         .font('Helvetica-Bold')
         .fontSize(8)
         .fillColor('#71717A')
-        .text('PREMIUM GARMENTS & APPAREL', margin, currentY + 26, { characterSpacing: 1 });
+        .text('PREMIUM GARMENTS & APPAREL', margin, currentY + 30, { characterSpacing: 1 });
 
       doc
         .font('Helvetica')
         .fontSize(8)
         .fillColor('#A1A1AA')
-        .text('Email: care.adrizo@gmail.com  |  Web: www.adrizo.com', margin, currentY + 38);
+        .text('Email: care.adrizo@gmail.com  |  Web: www.adrizo.com', margin, currentY + 42);
 
-      // Top Right: Tax Invoice Metadata
+      // Top Right: Order Invoice Metadata
       const rightX = margin + 300;
       doc
         .font('Helvetica-Bold')
         .fontSize(16)
         .fillColor('#09090B')
-        .text('TAX INVOICE', rightX, currentY, { align: 'right', width: contentWidth - 300 });
+        .text('ORDER INVOICE', rightX, currentY, { align: 'right', width: contentWidth - 300 });
 
       doc
         .font('Helvetica-Bold')
@@ -495,17 +511,33 @@ export async function generateInvoicePdf(order: ResolvedOrder): Promise<Buffer> 
         .fillColor(isPaid ? '#166534' : '#DC2626')
         .text(order.paymentStatus, paymentBoxX + 100, currentY + 46);
 
+      const isVerifiedAwb = Boolean(order.trackingId && order.trackingId !== 'AWB123456789');
+      let detailsOffset = 60;
       if (order.razorpayPaymentId) {
         doc
           .font('Helvetica-Bold')
           .fontSize(8)
           .fillColor('#09090B')
-          .text('Payment Ref ID:', paymentBoxX + 12, currentY + 62);
+          .text('Payment Ref ID:', paymentBoxX + 12, currentY + detailsOffset);
         doc
           .font('Helvetica')
           .fontSize(7.5)
           .fillColor('#475569')
-          .text(order.razorpayPaymentId, paymentBoxX + 100, currentY + 62);
+          .text(order.razorpayPaymentId, paymentBoxX + 100, currentY + detailsOffset);
+        detailsOffset += 12;
+      }
+
+      if (order.deliveryPartner || isVerifiedAwb) {
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(8)
+          .fillColor('#09090B')
+          .text('Fulfillment / AWB:', paymentBoxX + 12, currentY + detailsOffset);
+        doc
+          .font('Helvetica')
+          .fontSize(7.5)
+          .fillColor('#475569')
+          .text(`${order.deliveryPartner || 'Courier'}${isVerifiedAwb ? ` (AWB: ${order.trackingId})` : ''}`, paymentBoxX + 100, currentY + detailsOffset);
       }
 
       // Notice line at bottom of payment card
@@ -544,7 +576,7 @@ export async function generateInvoicePdf(order: ResolvedOrder): Promise<Buffer> 
         .fontSize(7.5)
         .fillColor('#71717A')
         .text(
-          'Thank you for shopping with AD(R)IZO Luxury Apparel. This is a computer-generated tax invoice and requires no physical signature.',
+          'Thank you for shopping with ADRIZO Luxury Apparel. This is a computer-generated order invoice and requires no physical signature.',
           margin,
           currentY,
           { align: 'center', width: contentWidth }

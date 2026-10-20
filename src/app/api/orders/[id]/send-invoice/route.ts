@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveOrderFromSupabase } from '@/lib/order-resolver';
 import { sendInvoiceEmail } from '@/lib/order-email';
+import { generateInvoiceToken } from '@/lib/invoice-token';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,8 +74,18 @@ export async function POST(
         ? `91${customerPhone}`
         : customerPhone;
 
-      const invoiceUrl = `${appUrl}/api/orders/${encodeURIComponent(orderNumber)}/invoice`;
-      const whatsappMsg = `Hello ${order.customerName}, thank you for your order with AD(R)IZO!\n\nOrder Number: #${orderNumber}\nTotal Amount: ₹${order.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\nPayment Method: ${isCod ? 'Cash on Delivery' : 'Online Payment'}\n\nYou can view and download your official tax invoice here:\n${invoiceUrl}\n\nWarm regards,\nAD(R)IZO Team`;
+      const secureToken = generateInvoiceToken(order.id, orderNumber);
+      const invoiceUrl = `${appUrl}/api/orders/${encodeURIComponent(orderNumber)}/invoice?token=${secureToken}`;
+      const paymentMethodStr = isCod
+        ? 'Cash on Delivery'
+        : (order.paymentStatus === 'PAID' ? 'Online Payment (Verified)' : 'Online Payment');
+
+      const isVerifiedAwb = Boolean(order.trackingId && order.trackingId !== 'AWB123456789');
+      const trackingLine = isVerifiedAwb
+        ? `\nCourier: ${order.deliveryPartner || 'Carrier Partner'}\nAWB / Tracking Number: ${order.trackingId}`
+        : '\nShipment tracking will be available after dispatch.';
+
+      const whatsappMsg = `Hello ${order.customerName}, thank you for your order with ADRIZO!\n\nOrder Number: #${orderNumber}\nTotal Amount: ₹${Number(order.total).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\nPayment Method: ${paymentMethodStr}\n\nDownload your order invoice: ${invoiceUrl}\n${trackingLine}\n\nWarm regards,\nADRIZO Team`;
 
       const whatsappDirectUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsappMsg)}`;
 

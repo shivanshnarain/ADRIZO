@@ -17,13 +17,13 @@ export interface AutoSyncResult {
 }
 
 /**
- * Automatically synchronizes an AD(R)IZO order to Shiprocket server-side.
+ * Automatically synchronizes an ADRIZO order to Shiprocket server-side.
  * 
  * Safety & Production Protections:
  * 1. Circuit Breaker Guard: Respects 2-hour account lockout and cooldowns; never makes login calls if blocked.
  * 2. Strict Idempotency: If the order already has Shiprocket Order ID & Shipment ID,
  *    it will never create a duplicate order on Shiprocket.
- * 3. Partial Failure Resilience: If Shiprocket API is temporarily down, the AD(R)IZO
+ * 3. Partial Failure Resilience: If Shiprocket API is temporarily down, the ADRIZO
  *    order remains safe in Supabase. Marked as 'BLOCKED_AUTH' or 'FAILED' sync status so Admin can safely retry.
  * 4. Never leaks Shiprocket credentials, tokens, or internal errors to customer.
  * 5. Reuses authoritative createShiprocketOrder service.

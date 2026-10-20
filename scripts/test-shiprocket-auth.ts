@@ -16,7 +16,7 @@ import {
 
 async function runShiprocketVerification() {
   console.log('====================================================');
-  console.log('AD(R)IZO Shiprocket API Authentication Verification');
+  console.log('ADRIZO Shiprocket API Authentication Verification');
   console.log('====================================================\n');
 
   // Step 1: Configuration check

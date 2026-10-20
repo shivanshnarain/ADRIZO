@@ -16,7 +16,7 @@ import {
 
 async function runShiprocketOrderTests() {
   console.log('====================================================');
-  console.log('AD(R)IZO Phase 2: Shiprocket Order & Shipment Verification');
+  console.log('ADRIZO Phase 2: Shiprocket Order & Shipment Verification');
   console.log('====================================================\n');
 
   // Step 0: Check configuration
@@ -58,7 +58,7 @@ async function runShiprocketOrderTests() {
   }
 
   // Step 2: Create a Test Order in Supabase
-  console.log('--- TEST 2: CREATE REAL AD(R)IZO ORDER IN DATABASE ---');
+  console.log('--- TEST 2: CREATE REAL ADRIZO ORDER IN DATABASE ---');
   const supabase = getAdminClient();
   const testOrderNumber = `ADR-TEST-${Date.now().toString().slice(-6)}`;
 
@@ -166,7 +166,7 @@ async function runShiprocketOrderTests() {
     verifiedOrder.shiprocket_order_id === String(result.orderId) &&
     verifiedOrder.shiprocket_shipment_id === String(result.shipmentId)
   ) {
-    console.log('[PASS] Shiprocket identifiers correctly saved in AD(R)IZO Supabase database!\n');
+    console.log('[PASS] Shiprocket identifiers correctly saved in ADRIZO Supabase database!\n');
   } else {
     console.error('[FAIL] Database identifiers do not match Shiprocket response!');
     process.exit(1);

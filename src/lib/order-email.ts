@@ -28,7 +28,7 @@ function getTransporter() {
       auth: { user, pass },
     }),
     configured: Boolean(user && pass),
-    sender: process.env.MAIL_FROM || `AD(R)IZO <${user}>`,
+    sender: process.env.MAIL_FROM || `ADRIZO <${user}>`,
     user,
   };
 }
@@ -107,7 +107,7 @@ function buildOrderEmailHtml(order: ResolvedOrder, isConfirmation = true): strin
           <tr>
             <td>
               <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 900; letter-spacing: 2px;">
-                AD<span style="color: #c9a86a;">(R)</span>IZO
+                ADRIZO
               </h1>
               <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;">
                 Luxury Atelier &amp; Couture
@@ -126,13 +126,13 @@ function buildOrderEmailHtml(order: ResolvedOrder, isConfirmation = true): strin
       <div style="padding: 32px 28px;">
         
         <h2 style="margin: 0 0 8px 0; color: #0f172a; font-size: 20px; font-weight: 800;">
-          ${isConfirmation ? 'Thank you for your order!' : `Tax Invoice #${order.orderNumber}`}
+          ${isConfirmation ? 'Thank you for your order with ADRIZO!' : `Order Invoice #${order.orderNumber}`}
         </h2>
         <p style="margin: 0 0 24px 0; color: #475569; font-size: 14px; line-height: 1.6;">
-          Dear <strong>${order.customerName || 'Valued Client'}</strong>,<br>
+          Hello <strong>${order.customerName || 'Valued Client'}</strong>, thank you for your order with ADRIZO!<br>
           ${isConfirmation 
             ? `Your order <strong>#${order.orderNumber}</strong> has been successfully placed on <strong>${orderDate}</strong>. We are preparing it for dispatch.`
-            : `Please find attached the official Tax Invoice for Order <strong>#${order.orderNumber}</strong>.`}
+            : `Please find attached the official Order Invoice for Order <strong>#${order.orderNumber}</strong>.`}
         </p>
 
         <!-- Order Snapshot Card -->
@@ -243,7 +243,8 @@ function buildOrderEmailHtml(order: ResolvedOrder, isConfirmation = true): strin
         <!-- Footer -->
         <div style="text-align: center; border-top: 1px solid #e2e8f0; padding-top: 24px; color: #94a3b8; font-size: 12px; line-height: 1.6;">
           <p style="margin: 0 0 6px 0; font-weight: 600; color: #475569;">
-            AD(R)IZO Luxury Couture &amp; Atelier
+            Warm regards,<br>
+            ADRIZO Team
           </p>
           <p style="margin: 0 0 6px 0;">
             Support: <a href="mailto:care.adrizo@gmail.com" style="color: #0f172a; text-decoration: none; font-weight: 600;">care.adrizo@gmail.com</a> | Visit: <a href="https://www.adrizo.com" style="color: #0f172a; text-decoration: none; font-weight: 600;">www.adrizo.com</a>
@@ -294,11 +295,11 @@ export async function sendOrderConfirmationEmail(order: ResolvedOrder): Promise<
     const info = await transporter.sendMail({
       from: sender,
       to: customerEmail,
-      subject: `Order Confirmation #${order.orderNumber} - AD(R)IZO`,
+      subject: `Order Confirmation #${order.orderNumber} - ADRIZO`,
       html: buildOrderEmailHtml(order, true),
       attachments: [
         {
-          filename: `AD(R)IZO_Invoice_${order.orderNumber}.pdf`,
+          filename: `ADRIZO_Invoice_${order.orderNumber}.pdf`,
           content: pdfBuffer,
           contentType: 'application/pdf',
         },
@@ -346,11 +347,11 @@ export async function sendInvoiceEmail(order: ResolvedOrder, customSubject?: str
     const info = await transporter.sendMail({
       from: sender,
       to: customerEmail,
-      subject: customSubject || `Tax Invoice for Order #${order.orderNumber} - AD(R)IZO`,
+      subject: customSubject || `Order Invoice for Order #${order.orderNumber} - ADRIZO`,
       html: buildOrderEmailHtml(order, false),
       attachments: [
         {
-          filename: `AD(R)IZO_Invoice_${order.orderNumber}.pdf`,
+          filename: `ADRIZO_Invoice_${order.orderNumber}.pdf`,
           content: pdfBuffer,
           contentType: 'application/pdf',
         },

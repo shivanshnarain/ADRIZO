@@ -16,7 +16,7 @@ import {
 
 async function runTests() {
   console.log('================================================================');
-  console.log('AD(R)IZO — BUY X GET Y PROMOTIONS & CRITICAL PRICING TEST SUITE');
+  console.log('ADRIZO — BUY X GET Y PROMOTIONS & CRITICAL PRICING TEST SUITE');
   console.log('================================================================\n');
 
   let passed = 0;

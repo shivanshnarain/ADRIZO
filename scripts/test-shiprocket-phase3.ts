@@ -23,7 +23,7 @@ import { shiprocketRequest } from '../src/lib/shiprocket/client';
 
 async function runPhase3Verification() {
   console.log('====================================================');
-  console.log('AD(R)IZO Phase 3: Complete Fulfillment & Tracking Verification');
+  console.log('ADRIZO Phase 3: Complete Fulfillment & Tracking Verification');
   console.log('====================================================\n');
 
   // STEP 0: Configuration Check
@@ -343,7 +343,7 @@ async function runPhase3Verification() {
   testMappings.forEach(({ sr, expectedTracking }) => {
     const mapped = mapShiprocketStatusToAdrizo(sr);
     const pass = mapped.trackingStatus === expectedTracking;
-    console.log(`  Shiprocket: "${sr}" -> AD(R)IZO Tracking: "${mapped.trackingStatus}" [${pass ? 'OK' : 'MISMATCH'}]`);
+    console.log(`  Shiprocket: "${sr}" -> ADRIZO Tracking: "${mapped.trackingStatus}" [${pass ? 'OK' : 'MISMATCH'}]`);
     if (!pass) {
       console.error(`[FAIL] Mismatch for status "${sr}": expected "${expectedTracking}", got "${mapped.trackingStatus}"`);
       process.exit(1);

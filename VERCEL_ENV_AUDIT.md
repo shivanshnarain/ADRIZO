@@ -34,7 +34,7 @@ The following **16 values** were discovered in `.env` and `.env.local` and popul
 | `RAZORPAY_KEY_SECRET` | `.env` | `[SECURE_SERVER_SECRET]` | Live Razorpay Secret for order creation & HMAC verification |
 | `NEXT_PUBLIC_SUPABASE_URL` | `.env` | `https://inaekhxynubttednivvp.supabase.co` | Supabase Project URL for customer accounts & order management |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `.env` | `eyJhbGciOiJIUzI1Ni...` | Supabase client anon public key for frontend/SSR auth |
-| `MAIL_FROM` | `.env` | `AD(R)IZO <care.adrizo@gmail.com>` | Sender header format for transactional emails and invoices |
+| `MAIL_FROM` | `.env` | `ADRIZO <care.adrizo@gmail.com>` | Sender header format for transactional emails and invoices |
 | `SMTP_USER` | `.env` | `care.adrizo@gmail.com` | Google Workspace / Gmail account email for SMTP |
 | `SHIPROCKET_API_EMAIL` | `.env.local` | `Care.adrizo@gmail.com` | Dedicated Shiprocket API login email for logistics |
 | `SHIPROCKET_API_PASSWORD` | `.env.local` | `TeyH%wV4vMGGs%5d5lqtbHk2mkA7L52$` | Dedicated Shiprocket API login password for logistics |

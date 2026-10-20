@@ -17,7 +17,7 @@ import {
 
 async function runCategoryBogoOfferTests() {
   console.log('================================================================');
-  console.log('AD(R)IZO — CATEGORY-BASED BUY X GET Y OFFER SYSTEM VERIFICATION');
+  console.log('ADRIZO — CATEGORY-BASED BUY X GET Y OFFER SYSTEM VERIFICATION');
   console.log('================================================================\n');
 
   let passed = 0;

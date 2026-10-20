@@ -14,7 +14,7 @@ import { trackShipmentByAwb } from '../src/lib/shiprocket/tracking';
 
 async function runAutomaticOrderLifecycleTests() {
   console.log('================================================================');
-  console.log('AD(R)IZO — COMPLETE AUTOMATIC ORDER LIFECYCLE VERIFICATION SUITE');
+  console.log('ADRIZO — COMPLETE AUTOMATIC ORDER LIFECYCLE VERIFICATION SUITE');
   console.log('================================================================\n');
 
   const supabase = getAdminClient();
@@ -163,7 +163,7 @@ async function runAutomaticOrderLifecycleTests() {
     );
     assert(
       verifiedCodOrder?.order_status === 'CONFIRMED',
-      'AD(R)IZO order remains authoritative and CONFIRMED'
+      'ADRIZO order remains authoritative and CONFIRMED'
     );
 
     // -------------------------------------------------------------------------
@@ -305,7 +305,7 @@ async function runAutomaticOrderLifecycleTests() {
     );
     assert(
       recordedFailOrder?.order_status === 'CONFIRMED',
-      'AD(R)IZO customer order was NOT deleted and remains intact'
+      'ADRIZO customer order was NOT deleted and remains intact'
     );
 
     // Now test retry with corrected fields and order item
@@ -384,7 +384,7 @@ async function runAutomaticOrderLifecycleTests() {
 
     assert(
       cancelledCodOrder?.order_status === 'CANCELLED',
-      'Local AD(R)IZO order status is CANCELLED'
+      'Local ADRIZO order status is CANCELLED'
     );
     assert(
       cancelledCodOrder?.cancellation_source === 'CUSTOMER',

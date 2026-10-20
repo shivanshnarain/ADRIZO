@@ -8,7 +8,7 @@ const supabase = getAdminClient();
 
 async function runCheckoutEditingTestSuite() {
   console.log('================================================================');
-  console.log('AD(R)IZO — CHECKOUT EDITING & ADDRESS MANAGEMENT TEST SUITE');
+  console.log('ADRIZO — CHECKOUT EDITING & ADDRESS MANAGEMENT TEST SUITE');
   console.log('================================================================\n');
 
   let passedTests = 0;

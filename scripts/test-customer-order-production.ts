@@ -11,7 +11,7 @@ import { isOrderOwnedByCustomer, AuthenticatedCustomer } from '../src/lib/custom
 
 async function runTests() {
   console.log('====================================================');
-  console.log('AD(R)IZO CUSTOMER ORDER & TRACKING VERIFICATION SUITE');
+  console.log('ADRIZO CUSTOMER ORDER & TRACKING VERIFICATION SUITE');
   console.log('====================================================\n');
 
   const supabase = getAdminClient();

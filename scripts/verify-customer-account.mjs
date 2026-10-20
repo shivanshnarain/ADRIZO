@@ -28,7 +28,7 @@ function isOrderOwnedByCustomer(order, customer) {
 
 async function runTests() {
   console.log('====================================================');
-  console.log('AD(R)IZO CUSTOMER ACCOUNT & NAVIGATION VERIFICATION');
+  console.log('ADRIZO CUSTOMER ACCOUNT & NAVIGATION VERIFICATION');
   console.log('====================================================\n');
 
   let passed = 0;

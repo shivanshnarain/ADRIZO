@@ -44,7 +44,9 @@ export async function GET(
       );
     }
 
-    if (!order.trackingId) {
+    const isVerifiedAwb = Boolean(order.trackingId && order.trackingId !== 'AWB123456789');
+
+    if (!isVerifiedAwb) {
       const hasShipment = !!order.shiprocketShipmentId;
       const displayStatus = hasShipment ? 'Shipment is being prepared' : 'Shipment not created yet';
       const displayMsg = hasShipment
@@ -57,7 +59,7 @@ export async function GET(
         status: order.orderStatus,
         currentStatus: displayStatus,
         trackingStatus: order.trackingStatus || 'ORDER_CONFIRMED',
-        deliveryPartner: order.deliveryPartner || null,
+        deliveryPartner: (order.deliveryPartner && order.deliveryPartner !== 'Blue Dart Delivery') ? order.deliveryPartner : null,
         trackingId: null,
         hasShipment,
         message: displayMsg,
@@ -66,21 +68,21 @@ export async function GET(
             date: order.createdAt,
             status: 'ORDER_CONFIRMED',
             activity: displayMsg,
-            location: order.city || 'AD(R)IZO Fulfillment Center',
+            location: order.city || 'ADRIZO Fulfillment Center',
           },
         ],
       });
     }
 
     // Live query Shiprocket tracking
-    const trackingRes = await trackShipmentByAwb(order.trackingId);
+    const trackingRes = await trackShipmentByAwb(order.trackingId!);
 
     return NextResponse.json({
       success: true,
       orderNumber: order.orderNumber,
       orderStatus: order.orderStatus,
       trackingStatus: order.trackingStatus || 'ORDER_RECEIVED',
-      deliveryPartner: order.deliveryPartner || trackingRes.courierName || 'Courier Partner',
+      deliveryPartner: trackingRes.courierName || (order.deliveryPartner && order.deliveryPartner !== 'Blue Dart Delivery' ? order.deliveryPartner : null) || 'Courier Partner',
       trackingId: order.trackingId,
       etd: trackingRes.etd || null,
       origin: trackingRes.origin || null,
@@ -97,7 +99,7 @@ export async function GET(
           date: order.createdAt,
           status: 'ORDER_PLACED',
           activity: 'Order placed successfully.',
-          location: order.city || 'AD(R)IZO Fulfillment Center',
+          location: order.city || 'ADRIZO Fulfillment Center',
         }
       ],
     });

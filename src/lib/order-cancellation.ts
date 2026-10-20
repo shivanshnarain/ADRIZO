@@ -187,7 +187,7 @@ export async function cancelCustomerOrder(params: {
     refundNote = 'Your Cash on Delivery order has been cancelled. No payment was collected.';
   } else if (order.paymentStatus === 'PAID') {
     // Preserve payment_status as PAID until real payment gateway refund occurs
-    refundNote = `Your prepaid refund of ₹${order.total.toFixed(2)} will be processed to your original payment method within 5–7 business days according to the AD(R)IZO Refund Policy.`;
+    refundNote = `Your prepaid refund of ₹${order.total.toFixed(2)} will be processed to your original payment method within 5–7 business days according to the ADRIZO Refund Policy.`;
   } else {
     updates.payment_status = 'CANCELLED';
     refundNote = 'Order has been cancelled.';
