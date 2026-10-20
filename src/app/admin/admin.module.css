@@ -577,16 +577,54 @@
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
-  width: 300px;
+  width: 380px;
+  max-height: 520px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.16);
   z-index: var(--z-dropdown, 1100);
-  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.notificationsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+.notificationsList {
+  overflow-y: auto;
+  max-height: 420px;
   display: flex;
   flex-direction: column;
 }
+
+.notificationCard {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.notificationCard:hover {
+  background: #f8fafc;
+}
+
+.notificationCardUnread {
+  background: #fffdf5;
+  border-left: 3px solid #FFC800;
+}
+
 
 
 .pageContent {

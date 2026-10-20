@@ -18,6 +18,7 @@ import { autoSyncOrderToShiprocket } from '@/lib/shiprocket-auto-sync';
 import { validateAndPriceOrderItems, getActivePromotionOffers } from '@/lib/promotions';
 import { validateAndCalculateCouponDiscount } from '@/lib/coupon-engine';
 import { calculateCheckoutTotals, PaymentMode } from '@/lib/checkout-engine';
+import { createAdminNotification } from '@/lib/admin-notifications';
 
 /**
  * Atomically saves an order and its items to Supabase.
@@ -607,6 +608,19 @@ export async function POST(req: NextRequest) {
         }, { status: 500 });
       }
 
+      // Dispatch durable admin notification for new order initiation
+      createAdminNotification({
+        type: 'NEW_ORDER',
+        title: `New COD Order: #${orderNumber}`,
+        message: `New COD order placed for ₹${finalTotal.toFixed(2)} (${authoritativeCustomerName}). Advance ₹99 confirmation pending.`,
+        orderNumber,
+        orderId: supaOrderId,
+        customerName: authoritativeCustomerName,
+        orderTotal: finalTotal,
+        paymentStatus: 'PENDING_COD_CONFIRMATION',
+        dedupKey: `NEW_ORDER_${orderNumber}`,
+      }).catch(err => console.warn('[Admin Notification Warning]', err?.message));
+
       // Important: Order is NOT yet confirmed! No confirmation email, no Shiprocket sync until ₹99 is verified.
       return NextResponse.json({
         success: true,
@@ -859,6 +873,19 @@ export async function POST(req: NextRequest) {
           error: saveResult.error || 'Unable to start payment. Please try again.'
         }, { status: 500 });
       }
+
+      // Dispatch durable admin notification for new online order
+      createAdminNotification({
+        type: 'NEW_ORDER',
+        title: `New Online Order: #${orderNumber}`,
+        message: `New Prepaid order for ₹${onlineAmountToPay.toFixed(2)} (${authoritativeCustomerName}) created, awaiting payment.`,
+        orderNumber,
+        orderId: supaOrderId,
+        customerName: authoritativeCustomerName,
+        orderTotal: onlineAmountToPay,
+        paymentStatus: 'PENDING',
+        dedupKey: `NEW_ORDER_${orderNumber}`,
+      }).catch(err => console.warn('[Admin Notification Warning]', err?.message));
 
       return NextResponse.json({
         success: true,

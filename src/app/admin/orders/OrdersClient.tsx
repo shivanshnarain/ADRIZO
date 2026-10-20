@@ -49,6 +49,8 @@ import {
   trackOrderAction,
   syncTrackingAction
 } from '../../../actions/orders';
+import { evaluateOrderSla } from '@/lib/order-sla-eval';
+
 
 export default function OrdersClient({ initialOrders }: { initialOrders: any[] }) {
   const router = useRouter();
@@ -773,6 +775,86 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
               <div style={{ marginTop: '3px' }}><strong>Updated:</strong> {new Date(viewingOrder.updatedAt || viewingOrder.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(viewingOrder.updatedAt || viewingOrder.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</div>
             </div>
           </div>
+
+          {/* SLA Targets & Fulfillment Timeline Card */}
+          {(() => {
+            const sla = evaluateOrderSla(viewingOrder);
+            return (
+              <div style={{
+                background: '#ffffff',
+                border: '1px solid #e4e4e7',
+                borderRadius: '10px',
+                padding: '1rem 1.25rem',
+                marginBottom: '1.25rem',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '1rem',
+                alignItems: 'center',
+              }}>
+                {/* 10-Hour Packing SLA */}
+                <div style={{
+                  border: '1px solid',
+                  borderColor: sla.packingSla.status === 'OVERDUE' ? '#fecaca' : sla.packingSla.status === 'APPROACHING' ? '#fde68a' : '#e2e8f0',
+                  background: sla.packingSla.status === 'OVERDUE' ? '#fef2f2' : sla.packingSla.status === 'APPROACHING' ? '#fffbeb' : '#f8fafc',
+                  borderRadius: '8px',
+                  padding: '0.85rem 1rem',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569' }}>
+                      10-Hour Packing Target
+                    </span>
+                    <span style={{
+                      fontSize: '0.675rem',
+                      fontWeight: 800,
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: sla.packingSla.status === 'OVERDUE' ? '#dc2626' : sla.packingSla.status === 'APPROACHING' ? '#b45309' : sla.packingSla.status === 'COMPLETED' ? '#16a34a' : '#0284c7',
+                      color: '#ffffff'
+                    }}>
+                      {sla.packingSla.status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: sla.packingSla.status === 'OVERDUE' ? '#991b1b' : '#0f172a' }}>
+                    {sla.packingSla.label}
+                  </div>
+                  <div style={{ fontSize: '0.725rem', color: '#64748b', marginTop: '4px' }}>
+                    Deadline: <strong>{sla.packingSla.deadlineIst} (IST)</strong> • Elapsed: {sla.packingSla.hoursElapsed}h
+                  </div>
+                </div>
+
+                {/* 24-Hour Pickup SLA */}
+                <div style={{
+                  border: '1px solid',
+                  borderColor: sla.pickupSla.status === 'OVERDUE' ? '#fecaca' : sla.pickupSla.status === 'APPROACHING' ? '#fde68a' : '#e2e8f0',
+                  background: sla.pickupSla.status === 'OVERDUE' ? '#fef2f2' : sla.pickupSla.status === 'APPROACHING' ? '#fffbeb' : '#f8fafc',
+                  borderRadius: '8px',
+                  padding: '0.85rem 1rem',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#475569' }}>
+                      24-Hour Pickup Target
+                    </span>
+                    <span style={{
+                      fontSize: '0.675rem',
+                      fontWeight: 800,
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: sla.pickupSla.status === 'OVERDUE' ? '#dc2626' : sla.pickupSla.status === 'APPROACHING' ? '#b45309' : sla.pickupSla.status === 'COMPLETED' ? '#16a34a' : '#0284c7',
+                      color: '#ffffff'
+                    }}>
+                      {sla.pickupSla.status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: sla.pickupSla.status === 'OVERDUE' ? '#991b1b' : '#0f172a' }}>
+                    {sla.pickupSla.label}
+                  </div>
+                  <div style={{ fontSize: '0.725rem', color: '#64748b', marginTop: '4px' }}>
+                    Deadline: <strong>{sla.pickupSla.deadlineIst} (IST)</strong> • Elapsed: {sla.pickupSla.hoursElapsed}h
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Order Cancellation Banner if Cancelled */}
           {viewingOrder.orderStatus === 'CANCELLED' && (
@@ -2340,16 +2422,72 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                         </span>
                       </td>
                       <td style={{ padding: '0.85rem 1rem' }}>
-                        <span style={{
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '4px',
-                          fontSize: '0.725rem',
-                          fontWeight: 700,
-                          background: o.orderStatus === 'DELIVERED' ? '#f0fdf4' : o.orderStatus === 'CANCELLED' ? '#fef2f2' : '#fffbeb',
-                          color: o.orderStatus === 'DELIVERED' ? '#166534' : o.orderStatus === 'CANCELLED' ? '#991b1b' : '#b45309'
-                        }}>
-                          {o.orderStatus === 'CANCELLED' && o.cancellationSource === 'CUSTOMER' ? 'CANCELLED BY CUSTOMER' : o.orderStatus}
-                        </span>
+                        {(() => {
+                          const sla = evaluateOrderSla(o);
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                              <span style={{
+                                padding: '0.2rem 0.5rem',
+                                borderRadius: '4px',
+                                fontSize: '0.725rem',
+                                fontWeight: 700,
+                                background: o.orderStatus === 'DELIVERED' ? '#f0fdf4' : o.orderStatus === 'CANCELLED' ? '#fef2f2' : '#fffbeb',
+                                color: o.orderStatus === 'DELIVERED' ? '#166534' : o.orderStatus === 'CANCELLED' ? '#991b1b' : '#b45309'
+                              }}>
+                                {o.orderStatus === 'CANCELLED' && o.cancellationSource === 'CUSTOMER' ? 'CANCELLED BY CUSTOMER' : o.orderStatus}
+                              </span>
+
+                              {sla.packingSla.status === 'OVERDUE' && (
+                                <span style={{
+                                  padding: '1px 5px',
+                                  borderRadius: '3px',
+                                  fontSize: '0.65rem',
+                                  fontWeight: 800,
+                                  background: '#fef2f2',
+                                  color: '#dc2626',
+                                  border: '1px solid #fecaca',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px'
+                                }}>
+                                  <Clock size={10} /> 10h SLA Overdue
+                                </span>
+                              )}
+                              {sla.packingSla.status === 'APPROACHING' && (
+                                <span style={{
+                                  padding: '1px 5px',
+                                  borderRadius: '3px',
+                                  fontSize: '0.65rem',
+                                  fontWeight: 800,
+                                  background: '#fffbeb',
+                                  color: '#b45309',
+                                  border: '1px solid #fde68a',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px'
+                                }}>
+                                  <Clock size={10} /> Pack Due ({sla.packingSla.hoursRemaining}h)
+                                </span>
+                              )}
+                              {sla.pickupSla.status === 'OVERDUE' && (
+                                <span style={{
+                                  padding: '1px 5px',
+                                  borderRadius: '3px',
+                                  fontSize: '0.65rem',
+                                  fontWeight: 800,
+                                  background: '#fef2f2',
+                                  color: '#b91c1c',
+                                  border: '1px solid #fecaca',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px'
+                                }}>
+                                  <Truck size={10} /> 24h Pickup Overdue
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end' }}>

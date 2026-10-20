@@ -6,6 +6,7 @@ import { resolveOrderFromSupabase } from '@/lib/order-resolver';
 import { sendOrderConfirmationEmail } from '@/lib/order-email';
 import { autoSyncOrderToShiprocket } from '@/lib/shiprocket-auto-sync';
 import { recordCouponUsage } from '@/lib/coupon-engine';
+import { createAdminNotification } from '@/lib/admin-notifications';
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,6 +48,16 @@ export async function POST(req: NextRequest) {
         failQuery = failQuery.eq('razorpay_order_id', razorpay_order_id);
       }
       await failQuery;
+
+      createAdminNotification({
+        type: 'PAYMENT_FAILED',
+        title: `Payment Failed: #${orderId}`,
+        message: `Signature verification failed for payment ${razorpay_payment_id} on order #${orderId}.`,
+        orderNumber: orderId,
+        orderId,
+        paymentStatus: 'FAILED',
+        dedupKey: `PAYMENT_FAILED_${razorpay_order_id}`,
+      }).catch(err => console.warn('[Admin Notification Warning]', err?.message));
 
       return NextResponse.json({
         success: false,
@@ -143,6 +154,19 @@ export async function POST(req: NextRequest) {
       supaUpdate = supaUpdate.eq('razorpay_order_id', razorpay_order_id);
     }
     await supaUpdate;
+
+    // Dispatch durable admin notification for verified payment
+    createAdminNotification({
+      type: 'PAYMENT_SUCCESS',
+      title: `Payment Verified: #${supaOrder?.order_number || orderId}`,
+      message: `Payment of ₹${Number(supaOrder?.total_amount || 0).toFixed(2)} confirmed for Order #${supaOrder?.order_number || orderId} (${supaOrder?.customer_name || 'Customer'}).`,
+      orderNumber: supaOrder?.order_number || orderId,
+      orderId: supaOrder?.id || orderId,
+      customerName: supaOrder?.customer_name,
+      orderTotal: Number(supaOrder?.total_amount || 0),
+      paymentStatus: targetPaymentStatus,
+      dedupKey: `PAYMENT_SUCCESS_${supaOrder?.order_number || orderId}`,
+    }).catch(err => console.warn('[Admin Notification Warning]', err?.message));
 
     // 5. Trigger Automated Order Confirmation Email with PDF invoice attached
     resolveOrderFromSupabase(supaOrder?.id || orderId)

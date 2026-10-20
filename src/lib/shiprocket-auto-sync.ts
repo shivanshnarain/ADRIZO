@@ -1,6 +1,7 @@
 import { resolveOrderFromSupabase } from './order-resolver';
 import { createShiprocketOrder, CreateShiprocketOrderResult } from './shiprocket/orders';
 import { getAdminClient } from './supabase/admin';
+import { createAdminNotification } from './admin-notifications';
 
 export interface AutoSyncResult {
   success: boolean;
@@ -158,6 +159,16 @@ export async function autoSyncOrderToShiprocket(
     } catch (dbErr: any) {
       console.error('[Auto-Shiprocket Sync] Failed to record error state in DB:', dbErr.message);
     }
+
+    // 8. Dispatch durable admin notification for Shiprocket sync failure
+    const isAuth = errMsg.toLowerCase().includes('auth') || errMsg.toLowerCase().includes('password') || errMsg.toLowerCase().includes('403') || errMsg.toLowerCase().includes('401');
+    createAdminNotification({
+      type: isAuth ? 'SHIPROCKET_AUTH_FAILED' : 'SHIPMENT_CREATION_FAILED',
+      title: isAuth ? `Shiprocket Auth Failed: #${cleanId}` : `Shipment Creation Failed: #${cleanId}`,
+      message: `Failed to sync Order #${cleanId} with Shiprocket: ${errMsg}`,
+      orderNumber: cleanId,
+      dedupKey: `SHIPMENT_FAILED_${cleanId}_${isAuth ? 'AUTH' : 'CREATE'}`,
+    }).catch(notifyErr => console.warn('[Admin Notification Warning]', notifyErr?.message));
 
     return {
       success: false,

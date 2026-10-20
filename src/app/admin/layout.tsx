@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Package, 
@@ -25,6 +25,52 @@ import {
 } from 'lucide-react';
 import styles from './admin.module.css';
 
+function getNotificationBadge(type: string) {
+  switch (type) {
+    case 'NEW_ORDER':
+      return { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe', label: 'New Order' };
+    case 'PAYMENT_SUCCESS':
+      return { bg: '#ecfdf5', color: '#047857', border: '#a7f3d0', label: 'Paid' };
+    case 'PAYMENT_FAILED':
+      return { bg: '#fef2f2', color: '#b91c1c', border: '#fecaca', label: 'Payment Failed' };
+    case 'PACKING_OVERDUE':
+      return { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', label: '10h Pack Overdue' };
+    case 'PACKING_APPROACHING':
+      return { bg: '#fffbeb', color: '#b45309', border: '#fde68a', label: 'Pack Due Soon' };
+    case 'PICKUP_OVERDUE':
+      return { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', label: '24h Pickup Overdue' };
+    case 'SHIPROCKET_AUTH_FAILED':
+      return { bg: '#fef2f2', color: '#991b1b', border: '#fecaca', label: 'Shiprocket Auth' };
+    case 'SHIPMENT_CREATION_FAILED':
+      return { bg: '#fef2f2', color: '#b91c1c', border: '#fecaca', label: 'Sync Failed' };
+    case 'AWB_ASSIGNED':
+      return { bg: '#f5f3ff', color: '#6d28d9', border: '#ddd6fe', label: 'AWB Assigned' };
+    case 'PICKUP_CONFIRMED':
+      return { bg: '#eef2ff', color: '#4338ca', border: '#c7d2fe', label: 'Pickup Set' };
+    case 'DELIVERY_EXCEPTION':
+      return { bg: '#fef2f2', color: '#dc2626', border: '#fecaca', label: 'Delivery Issue' };
+    case 'DELIVERED':
+      return { bg: '#ecfdf5', color: '#059669', border: '#a7f3d0', label: 'Delivered' };
+    default:
+      return { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1', label: type.replace(/_/g, ' ') };
+  }
+}
+
+function formatRelativeTime(dateInput: string): string {
+  try {
+    const diffMs = Date.now() - new Date(dateInput).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  } catch {
+    return '';
+  }
+}
+
 export default function AdminLayout({
   children,
 }: {
@@ -33,7 +79,26 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [productsOpen, setProductsOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
   const [adminUser, setAdminUser] = useState<{ email?: string; role?: string } | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/notifications?limit=20');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setNotifications(data.notifications || []);
+          setUnreadCount(data.unreadCount || 0);
+        }
+      }
+    } catch (err) {
+      // Background poll silently fails on network switch
+    }
+  }, []);
 
   useEffect(() => {
     if (pathname === '/admin/login') return;
@@ -44,9 +109,7 @@ export default function AdminLayout({
           window.location.href = `/admin/login?from=${encodeURIComponent(pathname)}`;
           return null;
         }
-        if (!res.ok) {
-          return null;
-        }
+        if (!res.ok) return null;
         return res.json();
       })
       .then((data) => {
@@ -57,7 +120,43 @@ export default function AdminLayout({
         }
       })
       .catch(() => {});
-  }, [pathname]);
+
+    fetchNotifications();
+    const timer = setInterval(fetchNotifications, 25000);
+    return () => clearInterval(timer);
+  }, [pathname, fetchNotifications]);
+
+  const handleMarkAllRead = async () => {
+    try {
+      const res = await fetch('/api/admin/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAll: true }),
+      });
+      if (res.ok) {
+        setUnreadCount(0);
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      }
+    } catch (err) {
+      console.error('Failed to mark notifications read', err);
+    }
+  };
+
+  const handleNotificationClick = async (n: any) => {
+    if (!n.isRead) {
+      fetch('/api/admin/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationId: n.id }),
+      }).catch(() => {});
+      setUnreadCount((c) => Math.max(0, c - 1));
+      setNotifications((prev) => prev.map((item) => (item.id === n.id ? { ...item, isRead: true } : item)));
+    }
+    setNotificationsOpen(false);
+    if (n.orderNumber) {
+      router.push(`/admin/orders?search=${encodeURIComponent(n.orderNumber)}`);
+    }
+  };
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -346,18 +445,91 @@ export default function AdminLayout({
               id="admin-notifications-btn"
             >
               <Bell size={18} />
-              <span className={styles.yellowBadge}>2</span>
+              {unreadCount > 0 && (
+                <span className={styles.yellowBadge}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </button>
             {notificationsOpen && (
               <div className={styles.notificationsDropdown} id="admin-notifications-dropdown">
-                <div style={{ fontSize: '0.8125rem', fontWeight: 700, paddingBottom: '0.5rem', borderBottom: '1px solid #f1f5f9', marginBottom: '0.5rem' }}>
-                  Notifications (2)
+                <div className={styles.notificationsHeader}>
+                  <div style={{ fontSize: '0.8125rem', fontWeight: 800, color: '#0f172a' }}>
+                    Notifications {unreadCount > 0 && `(${unreadCount} unread)`}
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleMarkAllRead}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#6366f1',
+                        fontSize: '0.725rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                    >
+                      Mark all as read
+                    </button>
+                  )}
                 </div>
-                <div style={{ fontSize: '0.75rem', padding: '0.4rem 0', color: '#334155' }}>
-                  • <strong>Customer Photos:</strong> Showcase updated with latest active photos.
-                </div>
-                <div style={{ fontSize: '0.75rem', padding: '0.4rem 0', color: '#334155' }}>
-                  • <strong>Orders:</strong> 2 new orders awaiting dispatch sync.
+
+                <div className={styles.notificationsList}>
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
+                      No notifications yet.
+                    </div>
+                  ) : (
+                    notifications.map((n) => {
+                      const badge = getNotificationBadge(n.type);
+                      const isUnread = !n.isRead;
+
+                      return (
+                        <div
+                          key={n.id}
+                          className={`${styles.notificationCard} ${isUnread ? styles.notificationCardUnread : ''}`}
+                          onClick={() => handleNotificationClick(n)}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                            <span
+                              style={{
+                                background: badge.bg,
+                                color: badge.color,
+                                border: `1px solid ${badge.border}`,
+                                borderRadius: '4px',
+                                padding: '1px 6px',
+                                fontSize: '0.675rem',
+                                fontWeight: 800,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.03em',
+                              }}
+                            >
+                              {badge.label}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>
+                              {formatRelativeTime(n.createdAt)}
+                            </span>
+                          </div>
+
+                          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a', marginTop: '2px' }}>
+                            {n.title}
+                          </div>
+
+                          <div style={{ fontSize: '0.75rem', color: '#475569', lineHeight: 1.35 }}>
+                            {n.message}
+                          </div>
+
+                          {n.orderNumber && (
+                            <div style={{ fontSize: '0.7rem', color: '#6366f1', fontWeight: 600, marginTop: '2px' }}>
+                              Order #{n.orderNumber} →
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             )}

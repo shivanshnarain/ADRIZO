@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminClient } from '@/lib/supabase/admin';
 import { mapShiprocketStatusToAdrizo } from '@/lib/shiprocket/tracking';
+import { createAdminNotification } from '@/lib/admin-notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,9 +75,7 @@ export async function POST(req: NextRequest) {
     if (mapped.orderStatus && targetOrder.order_status !== 'DELIVERED') {
       updates.order_status = mapped.orderStatus;
     }
-    if (mapped.paymentStatus && targetOrder.payment_status !== 'PAID') {
-      updates.payment_status = mapped.paymentStatus;
-    }
+    // Note: Tracking webhooks must never mutate payment_status (secured per specification)
 
     const { error: updateErr } = await supabase
       .from('orders')
@@ -91,6 +90,28 @@ export async function POST(req: NextRequest) {
     console.log(
       `[Shiprocket Webhook] Order #${targetOrder.order_number} successfully updated to: ${mapped.trackingStatus}`
     );
+
+    // Dispatch durable admin notifications on key delivery events
+    const upperStatus = String(currentStatus || '').toUpperCase();
+    if (mapped.trackingStatus === 'DELIVERED') {
+      createAdminNotification({
+        type: 'DELIVERED',
+        title: `Order Delivered: #${targetOrder.order_number}`,
+        message: `Shiprocket confirmed order #${targetOrder.order_number} has been delivered.`,
+        orderNumber: targetOrder.order_number,
+        orderId: targetOrder.id,
+        dedupKey: `DELIVERED_${targetOrder.order_number}`,
+      }).catch(err => console.warn('[Admin Notification Warning]', err?.message));
+    } else if (upperStatus.includes('UNDELIVERED') || upperStatus.includes('EXCEPTION') || upperStatus.includes('DELAYED') || upperStatus.includes('RTO')) {
+      createAdminNotification({
+        type: 'DELIVERY_EXCEPTION',
+        title: `Delivery Exception: #${targetOrder.order_number}`,
+        message: `Courier reported status: "${currentStatus}" for Order #${targetOrder.order_number}.`,
+        orderNumber: targetOrder.order_number,
+        orderId: targetOrder.id,
+        dedupKey: `EXCEPTION_${targetOrder.order_number}_${upperStatus}`,
+      }).catch(err => console.warn('[Admin Notification Warning]', err?.message));
+    }
 
     return NextResponse.json({
       success: true,

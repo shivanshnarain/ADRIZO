@@ -8,6 +8,8 @@ import {
   ShiprocketGeneratePickupResponse,
   ShiprocketGenerateManifestResponse,
 } from './types';
+import { createAdminNotification } from '../admin-notifications';
+
 
 /**
  * Helper to update order fields in Supabase by UUID or order_number.
@@ -125,6 +127,20 @@ export async function assignShiprocketAwb(params: {
       tracking_status: 'PACKED',
       shiprocket_synced_at: new Date().toISOString(),
     });
+
+    // Durable Admin Alert for AWB Assignment
+    createAdminNotification({
+      type: 'AWB_ASSIGNED',
+      title: `AWB Assigned: #${order.orderNumber}`,
+      message: `AWB ${awbCode} assigned via ${courierName}. Ready for packing and label generation.`,
+      orderNumber: order.orderNumber,
+      orderId: order.id,
+      customerName: order.customerName,
+      orderTotal: order.total,
+      paymentStatus: order.paymentStatus,
+      dedupKey: `AWB_ASSIGNED_${order.orderNumber}_${awbCode}`,
+      metadata: { awbCode, courierName, courierCompanyId },
+    }).catch((notifErr) => console.error('[Notification AWB]', notifErr.message));
 
     return {
       success: true,
@@ -345,6 +361,20 @@ export async function requestShiprocketPickup(params: {
       tracking_status: 'PACKED',
       shiprocket_synced_at: new Date().toISOString(),
     });
+
+    // Durable Admin Alert for Pickup Confirmation
+    createAdminNotification({
+      type: 'PICKUP_CONFIRMED',
+      title: `Pickup Scheduled: #${order.orderNumber}`,
+      message: `Courier pickup scheduled for order #${order.orderNumber}. Pickup Token: ${pickupId}${scheduledDate ? ` for ${scheduledDate}` : ''}.`,
+      orderNumber: order.orderNumber,
+      orderId: order.id,
+      customerName: order.customerName,
+      orderTotal: order.total,
+      paymentStatus: order.paymentStatus,
+      dedupKey: `PICKUP_CONFIRMED_${order.orderNumber}_${pickupId}`,
+      metadata: { pickupId, scheduledDate },
+    }).catch((notifErr) => console.error('[Notification Pickup]', notifErr.message));
 
     return {
       success: true,

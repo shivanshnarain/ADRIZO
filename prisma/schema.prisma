@@ -328,3 +328,24 @@ model AbandonedCheckout {
   @@index([customerPhone])
   @@index([customerEmail])
 }
+
+model AdminNotification {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  type          String    // NEW_ORDER, PAYMENT_SUCCESS, PAYMENT_FAILED, PACKING_OVERDUE, SHIPROCKET_AUTH_FAILED, SHIPMENT_CREATION_FAILED, AWB_ASSIGNED, PICKUP_OVERDUE, PICKUP_CONFIRMED, DELIVERY_EXCEPTION, DELIVERED
+  title         String
+  message       String
+  orderNumber   String?
+  orderId       String?
+  customerName  String?
+  orderTotal    Float?
+  paymentStatus String?
+  isRead        Boolean   @default(false)
+  dedupKey      String    @unique
+  metadata      String?   // JSON stringified additional data
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([isRead, createdAt])
+  @@index([orderNumber])
+}
+
