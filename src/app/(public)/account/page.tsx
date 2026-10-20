@@ -1849,24 +1849,37 @@ function AccountContent() {
 
                     {/* Information Banner if AWB is not yet assigned */}
                     {!hasAwb && (
-                      <div
-                        style={{
-                          background: '#f0fdf4',
-                          border: '1px solid #bbf7d0',
-                          borderRadius: '8px',
-                          padding: '0.85rem 1rem',
-                          marginBottom: '1.5rem',
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: '0.65rem',
-                        }}
-                      >
-                        <AlertCircle size={18} color="#16a34a" style={{ marginTop: '2px', flexShrink: 0 }} />
-                        <div style={{ fontSize: '0.82rem', color: '#166534', lineHeight: 1.45 }}>
-                          <strong style={{ display: 'block', marginBottom: '2px', color: '#15803d' }}>Shipment is being prepared</strong>
-                          Your order has been confirmed and registered for shipment. Live courier tracking will become available once a courier partner and AWB are assigned.
-                        </div>
-                      </div>
+                      (() => {
+                        const hasShipment = Boolean(
+                          customerTrackingData.hasShipment || 
+                          activeTrackingOrder?.shiprocket_shipment_id || 
+                          activeTrackingOrder?.shiprocketShipmentId
+                        );
+                        return (
+                          <div
+                            style={{
+                              background: hasShipment ? '#f0fdf4' : '#f8fafc',
+                              border: `1px solid ${hasShipment ? '#bbf7d0' : '#e2e8f0'}`,
+                              borderRadius: '8px',
+                              padding: '0.85rem 1rem',
+                              marginBottom: '1.5rem',
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '0.65rem',
+                            }}
+                          >
+                            <AlertCircle size={18} color={hasShipment ? '#16a34a' : '#64748b'} style={{ marginTop: '2px', flexShrink: 0 }} />
+                            <div style={{ fontSize: '0.82rem', color: hasShipment ? '#166534' : '#334155', lineHeight: 1.45 }}>
+                              <strong style={{ display: 'block', marginBottom: '2px', color: hasShipment ? '#15803d' : '#0f172a' }}>
+                                {hasShipment ? 'Shipment is being prepared' : 'Shipment not created yet'}
+                              </strong>
+                              {hasShipment
+                                ? 'Your order has been registered for shipment. Live courier tracking will become available once a courier partner and AWB are assigned.'
+                                : 'Shipment not created yet. Our fulfillment team is processing your order and preparing items for handover.'}
+                            </div>
+                          </div>
+                        );
+                      })()
                     )}
 
                     {/* 6-Milestone Progress Timeline */}

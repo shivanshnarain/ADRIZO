@@ -264,7 +264,11 @@ export async function createShiprocketShipmentAction(orderId: string) {
     revalidatePath('/admin/dashboard');
 
     if (!result.success) {
-      return { success: false, error: result.error || 'Failed to sync with Shiprocket' };
+      return {
+        success: false,
+        error: result.error || 'Failed to sync with Shiprocket',
+        status: result.status,
+      };
     }
 
     return {
@@ -279,6 +283,58 @@ export async function createShiprocketShipmentAction(orderId: string) {
     const err = error as { message?: string };
     console.error('[Admin Shiprocket Create Action Error]', err.message);
     return { success: false, error: err.message || 'Failed to create Shiprocket order' };
+  }
+}
+
+export async function getShiprocketBreakerStatusAction() {
+  try {
+    const session = await verifyAdminSession();
+    if (!session.authorized) {
+      return { success: false, error: 'Unauthorized: Admin access required' };
+    }
+    const { getCircuitBreakerStatus } = await import('../lib/shiprocket/circuit-breaker');
+    const status = await getCircuitBreakerStatus();
+    return { success: true, ...status };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { success: false, error: error.message || 'Failed to retrieve circuit breaker status' };
+  }
+}
+
+export async function resetShiprocketBreakerAction() {
+  try {
+    const session = await verifyAdminSession();
+    if (!session.authorized) {
+      return { success: false, error: 'Unauthorized: Admin access required' };
+    }
+    const { resetCircuitBreaker } = await import('../lib/shiprocket/circuit-breaker');
+    await resetCircuitBreaker();
+    revalidatePath('/admin/orders');
+    return { success: true, message: 'Circuit breaker cooldown reset. You may now perform a controlled connection test.' };
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return { success: false, error: error.message || 'Failed to reset circuit breaker' };
+  }
+}
+
+export async function testShiprocketConnectionAction(allowProbe = false) {
+  try {
+    const session = await verifyAdminSession();
+    if (!session.authorized) {
+      return { success: false, error: 'Unauthorized: Admin access required' };
+    }
+    const { testShiprocketAuth } = await import('../lib/shiprocket');
+    const result = await testShiprocketAuth(allowProbe);
+    return result;
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    return {
+      success: false,
+      configured: false,
+      authenticated: false,
+      error: error.message || 'Failed to test connection',
+      message: 'Shiprocket connection test failed',
+    };
   }
 }
 

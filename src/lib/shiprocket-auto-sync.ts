@@ -2,6 +2,7 @@ import { resolveOrderFromSupabase } from './order-resolver';
 import { createShiprocketOrder, CreateShiprocketOrderResult } from './shiprocket/orders';
 import { getAdminClient } from './supabase/admin';
 import { createAdminNotification } from './admin-notifications';
+import { getCircuitBreakerStatus } from './shiprocket/circuit-breaker';
 
 export interface AutoSyncResult {
   success: boolean;
@@ -19,12 +20,13 @@ export interface AutoSyncResult {
  * Automatically synchronizes an AD(R)IZO order to Shiprocket server-side.
  * 
  * Safety & Production Protections:
- * 1. Strict Idempotency: If the order already has Shiprocket Order ID & Shipment ID,
+ * 1. Circuit Breaker Guard: Respects 2-hour account lockout and cooldowns; never makes login calls if blocked.
+ * 2. Strict Idempotency: If the order already has Shiprocket Order ID & Shipment ID,
  *    it will never create a duplicate order on Shiprocket.
- * 2. Partial Failure Resilience: If Shiprocket API is temporarily down, the AD(R)IZO
- *    order remains safe in Supabase. Marked as 'FAILED' sync status so Admin can safely retry.
- * 3. Never leaks Shiprocket credentials, tokens, or internal errors to customer.
- * 4. Reuses authoritative createShiprocketOrder service.
+ * 3. Partial Failure Resilience: If Shiprocket API is temporarily down, the AD(R)IZO
+ *    order remains safe in Supabase. Marked as 'BLOCKED_AUTH' or 'FAILED' sync status so Admin can safely retry.
+ * 4. Never leaks Shiprocket credentials, tokens, or internal errors to customer.
+ * 5. Reuses authoritative createShiprocketOrder service.
  */
 export async function autoSyncOrderToShiprocket(
   orderIdentifier: string
@@ -37,8 +39,43 @@ export async function autoSyncOrderToShiprocket(
   const supabase = getAdminClient();
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
 
+  // 1. Circuit Breaker Guard: Stop immediately if account is locked or cooling down
+  const breaker = await getCircuitBreakerStatus();
+  if (breaker.isBlocked) {
+    console.warn(
+      `[Auto-Shiprocket Sync] Circuit breaker is active (${breaker.state}). Pausing auto-sync for Order #${cleanId}: ${breaker.message}`
+    );
+
+    // Persist BLOCKED_AUTH status so Admin Panel displays exact lockout state
+    try {
+      let blockedQuery = supabase
+        .from('orders')
+        .update({
+          shiprocket_sync_status: 'BLOCKED_AUTH',
+          shiprocket_sync_error: breaker.message,
+          shiprocket_status: 'AUTH_BLOCKED',
+          updated_at: new Date().toISOString(),
+        });
+      if (isUuid) {
+        blockedQuery = blockedQuery.eq('id', cleanId);
+      } else {
+        blockedQuery = blockedQuery.eq('order_number', cleanId);
+      }
+      await blockedQuery;
+    } catch {
+      // Non-critical if order doesn't exist
+    }
+
+    return {
+      success: false,
+      status: 'AUTH_BLOCKED',
+      error: breaker.message,
+      message: breaker.message,
+    };
+  }
+
   try {
-    // 1. Resolve fresh order from Supabase
+    // 2. Resolve fresh order from Supabase
     const order = await resolveOrderFromSupabase(cleanId);
     if (!order) {
       console.warn(`[Auto-Shiprocket Sync] Order #${cleanId} not found in database.`);
@@ -47,7 +84,7 @@ export async function autoSyncOrderToShiprocket(
 
     const orderRef = order.orderNumber || order.id;
 
-    // 2. Idempotency Guard: Never duplicate if already registered with Shiprocket
+    // 3. Idempotency Guard: Never duplicate if already registered with Shiprocket
     if (order.shiprocketOrderId && order.shiprocketShipmentId) {
       console.log(
         `[Auto-Shiprocket Sync] Order #${orderRef} is already synced (Shiprocket Order: ${order.shiprocketOrderId}, Shipment: ${order.shiprocketShipmentId}). Skipping.`
@@ -64,7 +101,7 @@ export async function autoSyncOrderToShiprocket(
       };
     }
 
-    // 3. State Guard: Do not sync cancelled orders or unpaid prepaid orders
+    // 4. State Guard: Do not sync cancelled orders or unpaid prepaid orders
     if (order.orderStatus === 'CANCELLED') {
       console.log(`[Auto-Shiprocket Sync] Order #${orderRef} is CANCELLED. Skipping Shiprocket creation.`);
       return { success: false, error: 'Order is cancelled.' };
@@ -78,7 +115,7 @@ export async function autoSyncOrderToShiprocket(
       return { success: false, error: 'Prepaid payment is pending confirmation.' };
     }
 
-    // 4. Update status to PENDING while processing
+    // 5. Update status to PENDING while processing
     let pendingQuery = supabase
       .from('orders')
       .update({
@@ -94,11 +131,11 @@ export async function autoSyncOrderToShiprocket(
 
     console.log(`[Auto-Shiprocket Sync] Initiating automatic creation for Order #${orderRef}...`);
 
-    // 5. Call authoritative createShiprocketOrder
+    // 6. Call authoritative createShiprocketOrder
     const result: CreateShiprocketOrderResult = await createShiprocketOrder(order);
 
     if (result.success && result.orderId && result.shipmentId) {
-      // 6. Persist SYNCED status
+      // 7. Persist SYNCED status
       let syncedQuery = supabase
         .from('orders')
         .update({
@@ -140,14 +177,24 @@ export async function autoSyncOrderToShiprocket(
 
     console.error(`[Auto-Shiprocket Sync] Failed for Order #${cleanId}:`, errMsg);
 
-    // 7. Defensive Failure Preservation: Mark as FAILED, save error reason for Admin
+    const isAuth = errMsg.toLowerCase().includes('auth') ||
+      errMsg.toLowerCase().includes('password') ||
+      errMsg.toLowerCase().includes('403') ||
+      errMsg.toLowerCase().includes('401') ||
+      errMsg.toLowerCase().includes('locked') ||
+      errMsg.toLowerCase().includes('blocked');
+
+    const syncStatus = isAuth ? 'BLOCKED_AUTH' : 'FAILED';
+    const shiprocketStatus = isAuth ? 'AUTH_BLOCKED' : 'SYNC_FAILED';
+
+    // 8. Defensive Failure Preservation: Mark as BLOCKED_AUTH or FAILED, save error reason for Admin
     try {
       let failQuery = supabase
         .from('orders')
         .update({
-          shiprocket_sync_status: 'FAILED',
+          shiprocket_sync_status: syncStatus,
           shiprocket_sync_error: errMsg,
-          shiprocket_status: 'SYNC_FAILED',
+          shiprocket_status: shiprocketStatus,
           updated_at: new Date().toISOString(),
         });
       if (isUuid) {
@@ -160,8 +207,7 @@ export async function autoSyncOrderToShiprocket(
       console.error('[Auto-Shiprocket Sync] Failed to record error state in DB:', dbErr.message);
     }
 
-    // 8. Dispatch durable admin notification for Shiprocket sync failure
-    const isAuth = errMsg.toLowerCase().includes('auth') || errMsg.toLowerCase().includes('password') || errMsg.toLowerCase().includes('403') || errMsg.toLowerCase().includes('401');
+    // 9. Dispatch durable admin notification for Shiprocket sync failure
     createAdminNotification({
       type: isAuth ? 'SHIPROCKET_AUTH_FAILED' : 'SHIPMENT_CREATION_FAILED',
       title: isAuth ? `Shiprocket Auth Failed: #${cleanId}` : `Shipment Creation Failed: #${cleanId}`,
@@ -172,6 +218,7 @@ export async function autoSyncOrderToShiprocket(
 
     return {
       success: false,
+      status: shiprocketStatus,
       error: errMsg,
     };
   }

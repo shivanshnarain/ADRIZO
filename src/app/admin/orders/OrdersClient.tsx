@@ -47,7 +47,10 @@ import {
   requestPickupAction,
   generateManifestAction,
   trackOrderAction,
-  syncTrackingAction
+  syncTrackingAction,
+  getShiprocketBreakerStatusAction,
+  resetShiprocketBreakerAction,
+  testShiprocketConnectionAction
 } from '../../../actions/orders';
 import { evaluateOrderSla } from '@/lib/order-sla-eval';
 
@@ -90,6 +93,9 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
   // Shiprocket Logistics State
   const [shiprocketLoading, setShiprocketLoading] = useState(false);
   const [shiprocketError, setShiprocketError] = useState('');
+  const [breakerStatus, setBreakerStatus] = useState<any>(null);
+  const [checkingBreaker, setCheckingBreaker] = useState(false);
+  const [resettingBreaker, setResettingBreaker] = useState(false);
   const [serviceabilityLoading, setServiceabilityLoading] = useState(false);
   const [availableCouriers, setAvailableCouriers] = useState<any[] | null>(null);
   const [serviceabilityError, setServiceabilityError] = useState('');
@@ -280,6 +286,47 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
     }
   };
 
+  const fetchBreakerStatus = async () => {
+    setCheckingBreaker(true);
+    try {
+      const res = await getShiprocketBreakerStatusAction();
+      if (res.success) {
+        setBreakerStatus(res);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch Shiprocket breaker status', e);
+    } finally {
+      setCheckingBreaker(false);
+    }
+  };
+
+  const handleResetBreakerAndTest = async () => {
+    if (!confirm('This will reset the circuit breaker cooldown. Only proceed if you have verified the correct Shiprocket API User credentials and the 2-hour external lockout has elapsed. Proceed?')) {
+      return;
+    }
+    setResettingBreaker(true);
+    try {
+      const res = await resetShiprocketBreakerAction();
+      if (res.success) {
+        showToast(res.message || 'Circuit breaker reset. Performing controlled check...');
+        const testRes = await testShiprocketConnectionAction(true);
+        if ('authenticated' in testRes && testRes.authenticated) {
+          showToast('Shiprocket API authenticated successfully!');
+        } else {
+          const msg = ('message' in testRes && testRes.message) || ('error' in testRes && testRes.error) || 'Test probe completed';
+          showToast(msg);
+        }
+        await fetchBreakerStatus();
+      } else {
+        alert(res.error || 'Failed to reset circuit breaker');
+      }
+    } catch (err: any) {
+      alert(err.message || 'An error occurred resetting the circuit breaker');
+    } finally {
+      setResettingBreaker(false);
+    }
+  };
+
   const handleOpenOrder = (order: any) => {
     setViewingOrder(order);
     setEditOrderStatus(order.orderStatus || 'PLACED');
@@ -292,6 +339,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
     setAvailableCouriers(null);
     setSelectedCourier(null);
     setTrackingData(null);
+    fetchBreakerStatus();
   };
 
   const handleSaveFulfillment = async () => {
@@ -327,6 +375,10 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
 
   const handleCreateShiprocketOrder = async () => {
     if (!viewingOrder) return;
+    if (breakerStatus?.isBlocked) {
+      setShiprocketError('Shiprocket authentication is temporarily blocked. Automatic retries are paused to protect your account.');
+      return;
+    }
     setShiprocketLoading(true);
     setShiprocketError('');
     try {
@@ -337,6 +389,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
           shiprocketOrderId: String(res.orderId),
           shiprocketShipmentId: String(res.shipmentId),
           shiprocketStatus: res.status || 'NEW',
+          shiprocketSyncStatus: 'SYNCED',
           shiprocketSyncedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -345,6 +398,9 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
         showToast(res.alreadySynced ? 'Order is already synced with Shiprocket' : 'Shiprocket order & shipment created successfully!');
       } else {
         setShiprocketError(res.error || 'Failed to create Shiprocket order');
+        if (res.status === 'AUTH_BLOCKED') {
+          await fetchBreakerStatus();
+        }
       }
     } catch (err: unknown) {
       const e = err as { message?: string };
@@ -1457,7 +1513,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                     <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#09090b', marginBottom: '4px' }}>Tracking / AWB #:</label>
                     <input
                       type="text"
-                      placeholder="AWB123456789"
+                      placeholder="e.g. 143289123849"
                       value={editTrackingId}
                       onChange={e => setEditTrackingId(e.target.value)}
                       style={{ width: '100%', height: '36px', padding: '0 0.65rem', border: '1px solid #d4d4d8', borderRadius: '6px', fontSize: '0.8125rem' }}
@@ -1543,6 +1599,22 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                       <ShieldCheck size={13} />
                       SHIPROCKET SYNCED
                     </span>
+                  ) : (breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH' || viewingOrder.shiprocketStatus === 'AUTH_BLOCKED') ? (
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 10px',
+                      borderRadius: '9999px',
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      background: '#fff1f2',
+                      color: '#e11d48',
+                      border: '1px solid #fecdd3'
+                    }}>
+                      <AlertCircle size={13} />
+                      TEMPORARILY BLOCKED
+                    </span>
                   ) : viewingOrder.shiprocketSyncStatus === 'FAILED' ? (
                     <span style={{
                       display: 'inline-flex',
@@ -1557,7 +1629,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                       border: '1px solid #fecaca'
                     }}>
                       <AlertCircle size={13} />
-                      SHIPROCKET SYNC FAILED
+                      AUTHENTICATION FAILED
                     </span>
                   ) : (
                     <span style={{
@@ -1573,12 +1645,121 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                       border: '1px solid #fde68a'
                     }}>
                       <Clock size={13} />
-                      SHIPROCKET SYNC PENDING
+                      SYNC PENDING
                     </span>
                   )}
                 </div>
 
                 <div style={{ padding: '1.15rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {/* Observability Details Bar */}
+                  <div style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '0.75rem 0.9rem',
+                    fontSize: '0.75rem',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                    gap: '0.5rem 0.75rem'
+                  }}>
+                    <div>
+                      <span style={{ color: '#64748b', fontSize: '0.675rem', display: 'block', fontWeight: 600 }}>Integration Status</span>
+                      <strong style={{
+                        color: viewingOrder.shiprocketShipmentId
+                          ? '#059669'
+                          : (breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH')
+                          ? '#e11d48'
+                          : viewingOrder.shiprocketSyncStatus === 'FAILED'
+                          ? '#dc2626'
+                          : '#d97706',
+                        fontSize: '0.75rem'
+                      }}>
+                        {viewingOrder.shiprocketShipmentId
+                          ? 'Connected'
+                          : (breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH')
+                          ? 'Temporarily Blocked'
+                          : viewingOrder.shiprocketSyncStatus === 'FAILED'
+                          ? 'Authentication Failed'
+                          : 'Pending'}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span style={{ color: '#64748b', fontSize: '0.675rem', display: 'block', fontWeight: 600 }}>Last Sync Attempt</span>
+                      <span style={{ color: '#09090b', fontWeight: 600 }}>
+                        {viewingOrder.updatedAt ? new Date(viewingOrder.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span style={{ color: '#64748b', fontSize: '0.675rem', display: 'block', fontWeight: 600 }}>Last Successful Sync</span>
+                      <span style={{ color: '#09090b', fontWeight: 600 }}>
+                        {viewingOrder.shiprocketSyncedAt ? new Date(viewingOrder.shiprocketSyncedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'None'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span style={{ color: '#64748b', fontSize: '0.675rem', display: 'block', fontWeight: 600 }}>Retry Allowed</span>
+                      <span style={{
+                        fontWeight: 700,
+                        color: (breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH') ? '#dc2626' : '#059669'
+                      }}>
+                        {(breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH') ? 'No (Account Cooldown)' : 'Yes (Eligible)'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Account Lockout Safety Notice */}
+                  {(breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH') && (
+                    <div style={{
+                      background: '#fff1f2',
+                      border: '1px solid #fecdd3',
+                      borderRadius: '8px',
+                      padding: '0.85rem 1rem'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#be123c', fontWeight: 800, fontSize: '0.8125rem', marginBottom: '4px' }}>
+                        <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                        <span>Shiprocket Authentication Temporarily Blocked</span>
+                      </div>
+                      <p style={{ margin: '0 0 6px 0', fontSize: '0.75rem', color: '#9f1239', lineHeight: 1.45 }}>
+                        Shiprocket access is temporarily locked after repeated failed login attempts. Automatic retries have been paused. Verify the API User credentials and wait until access is restored before retrying.
+                      </p>
+                      {breakerStatus?.lockoutUntil && (
+                        <div style={{ fontSize: '0.725rem', color: '#881337', marginTop: '4px', fontWeight: 600 }}>
+                          Cooldown until: <strong>{new Date(breakerStatus.lockoutUntil).toLocaleTimeString('en-IN')}</strong> ({breakerStatus.remainingMinutes ?? '~'} mins remaining)
+                        </div>
+                      )}
+                      {breakerStatus?.lastError && (
+                        <div style={{ fontSize: '0.7rem', color: '#4c0519', marginTop: '6px', fontFamily: 'monospace', background: '#ffe4e6', padding: '4px 8px', borderRadius: '4px', wordBreak: 'break-word' }}>
+                          Reason: {breakerStatus.lastError}
+                        </div>
+                      )}
+                      <div style={{ marginTop: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={handleResetBreakerAndTest}
+                          disabled={resettingBreaker}
+                          style={{
+                            background: '#e11d48',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '5px',
+                            padding: '5px 11px',
+                            fontSize: '0.725rem',
+                            fontWeight: 700,
+                            cursor: resettingBreaker ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          <RotateCw size={12} className={resettingBreaker ? styles.spin : ''} />
+                          <span>{resettingBreaker ? 'Testing...' : 'Reset Cooldown & Probe Connection'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Status Banner */}
                   {viewingOrder.shiprocketShipmentId ? (
                     <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.85rem' }}>
@@ -1673,30 +1854,57 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                         </p>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={handleCreateShiprocketOrder}
-                        disabled={shiprocketLoading}
-                        style={{
-                          width: '100%',
-                          height: '38px',
-                          background: '#6366f1',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontWeight: 700,
-                          fontSize: '0.8125rem',
-                          cursor: shiprocketLoading ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.5rem',
-                          transition: 'background 0.2s ease'
-                        }}
-                      >
-                        <RotateCw size={14} className={shiprocketLoading ? styles.spin : ''} />
-                        <span>{shiprocketLoading ? 'Synchronizing...' : 'Retry Shiprocket Sync'}</span>
-                      </button>
+                      {(breakerStatus?.isBlocked || viewingOrder.shiprocketSyncStatus === 'BLOCKED_AUTH') ? (
+                        <button
+                          type="button"
+                          disabled={true}
+                          style={{
+                            width: '100%',
+                            height: '38px',
+                            background: '#94a3b8',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            fontSize: '0.8125rem',
+                            cursor: 'not-allowed',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            opacity: 0.85
+                          }}
+                          title="Shiprocket authentication is temporarily blocked. Automatic retries are paused to protect your account. Verify API credentials and retry after access is restored."
+                        >
+                          <Clock size={14} />
+                          <span>Retries Paused (Account Cooldown Active)</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleCreateShiprocketOrder}
+                          disabled={shiprocketLoading}
+                          style={{
+                            width: '100%',
+                            height: '38px',
+                            background: '#6366f1',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            fontSize: '0.8125rem',
+                            cursor: shiprocketLoading ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            transition: 'background 0.2s ease'
+                          }}
+                        >
+                          <RotateCw size={14} className={shiprocketLoading ? styles.spin : ''} />
+                          <span>{shiprocketLoading ? 'Synchronizing...' : 'Retry Shiprocket Sync'}</span>
+                        </button>
+                      )}
                     </div>
                   )}
 

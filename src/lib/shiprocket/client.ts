@@ -81,7 +81,7 @@ export async function shiprocketRequest<T = unknown>(
       console.warn(
         `[Shiprocket Client] Received 401 Unauthorized for ${method} ${cleanEndpoint}. Invalidating cached token and retrying...`
       );
-      invalidateShiprocketToken();
+      await invalidateShiprocketToken();
 
       // Force refresh token on next attempt
       await getShiprocketToken(true);

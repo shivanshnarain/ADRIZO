@@ -45,21 +45,27 @@ export async function GET(
     }
 
     if (!order.trackingId) {
+      const hasShipment = !!order.shiprocketShipmentId;
+      const displayStatus = hasShipment ? 'Shipment is being prepared' : 'Shipment not created yet';
+      const displayMsg = hasShipment
+        ? 'Your order has been registered for shipment. Live courier tracking will become available once a courier partner and AWB are assigned.'
+        : 'Shipment not created yet. Our fulfillment team is preparing your order.';
+
       return NextResponse.json({
         success: true,
         orderNumber: order.orderNumber,
         status: order.orderStatus,
-        currentStatus: 'Shipment is being prepared',
+        currentStatus: displayStatus,
         trackingStatus: order.trackingStatus || 'ORDER_CONFIRMED',
         deliveryPartner: order.deliveryPartner || null,
         trackingId: null,
-        hasShipment: !!order.shiprocketShipmentId,
-        message: 'Your order has been confirmed and registered for shipment. Live courier tracking will become available once a courier partner and AWB are assigned.',
+        hasShipment,
+        message: displayMsg,
         activities: [
           {
             date: order.createdAt,
             status: 'ORDER_CONFIRMED',
-            activity: 'Your order has been confirmed and registered for shipment. Live courier tracking will become available once a courier partner and AWB are assigned.',
+            activity: displayMsg,
             location: order.city || 'AD(R)IZO Fulfillment Center',
           },
         ],

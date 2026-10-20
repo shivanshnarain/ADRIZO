@@ -42,6 +42,9 @@ export interface ShiprocketAuthTestResult {
   expiresAt?: string;
   apiUser?: string;
   error?: string;
+  isBlocked?: boolean;
+  lockoutUntil?: number;
+  remainingMinutes?: number;
 }
 
 export interface ShiprocketRequestOptions extends Omit<RequestInit, 'headers'> {
