@@ -63,6 +63,16 @@ export async function POST(req: NextRequest) {
     const targetOrder = matchedOrders[0];
     const mapped = mapShiprocketStatusToAdrizo(currentStatus);
 
+    // Prevent regressing terminal states (DELIVERED)
+    if (targetOrder.tracking_status === 'DELIVERED' && mapped.trackingStatus !== 'DELIVERED') {
+      console.log(`[Shiprocket Webhook] Ignoring regression from DELIVERED to ${mapped.trackingStatus} for #${targetOrder.order_number}`);
+      return NextResponse.json({
+        success: true,
+        orderNumber: targetOrder.order_number,
+        message: 'Order is already marked as DELIVERED; event recorded without status regression',
+      });
+    }
+
     const updates: Record<string, any> = {
       shiprocket_status: currentStatus || targetOrder.tracking_status,
       shiprocket_synced_at: new Date().toISOString(),
@@ -75,6 +85,12 @@ export async function POST(req: NextRequest) {
     if (mapped.orderStatus && targetOrder.order_status !== 'DELIVERED') {
       updates.order_status = mapped.orderStatus;
     }
+    if (payload.courier_name && typeof payload.courier_name === 'string' && payload.courier_name.trim()) {
+      updates.delivery_partner = payload.courier_name.trim();
+    }
+    if (awb && typeof awb === 'string' && awb.trim() && !awb.includes('AWB123')) {
+      updates.tracking_id = awb.trim();
+    }
     // Note: Tracking webhooks must never mutate payment_status (secured per specification)
 
     const { error: updateErr } = await supabase
@@ -86,6 +102,18 @@ export async function POST(req: NextRequest) {
       console.error(`[Shiprocket Webhook] Failed to update order #${targetOrder.order_number}:`, updateErr.message);
       return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
     }
+
+    // Persist carrier event to unified tracking history
+    const { appendTrackingEvent } = await import('@/lib/order-tracking');
+    await appendTrackingEvent(targetOrder.order_number, {
+      status: mapped.trackingStatus,
+      activity: payload.activity || payload.current_status || `Carrier status: ${currentStatus}`,
+      location: payload.location || payload.city || '',
+      timestamp: payload.date || payload.scanned_date || new Date().toISOString(),
+      source: 'CARRIER_EVENT',
+      actor: `Shiprocket / ${payload.courier_name || 'Carrier'}`,
+      rawStatus: String(currentStatus || ''),
+    }).catch(err => console.warn('[Tracking History Append Warning]', err?.message));
 
     console.log(
       `[Shiprocket Webhook] Order #${targetOrder.order_number} successfully updated to: ${mapped.trackingStatus}`

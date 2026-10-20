@@ -156,6 +156,13 @@ export async function getOrders() {
   }
 }
 
+import { 
+  validateStatusTransition, 
+  appendTrackingEvent, 
+  getTrackingStatusLabel, 
+  normalizeTrackingStatus 
+} from '../lib/order-tracking';
+
 export async function updateOrderStatus(
   id: string, 
   orderStatus: string, 
@@ -170,41 +177,119 @@ export async function updateOrderStatus(
       return { success: false, error: 'Unauthorized: Admin access required' };
     }
 
-    // Update in Supabase via SECURITY DEFINER admin_update_order RPC
     const supabase = getAdminClient();
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-    let targetOrderId = id;
-    if (!isUuid) {
-      const { data: foundOrder } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('order_number', id)
-        .maybeSingle();
-      if (foundOrder?.id) {
-        targetOrderId = foundOrder.id;
-      } else {
-        return { success: false, error: 'Order not found' };
-      }
+    // 1. Fetch current order to validate transition
+    let query = supabase.from('orders').select('id, order_number, order_status, tracking_status, delivery_partner, tracking_id');
+    if (isUuid) {
+      query = query.eq('id', id);
+    } else {
+      query = query.eq('order_number', id);
+    }
+    const { data: foundOrder, error: findErr } = await query.maybeSingle();
+
+    if (findErr || !foundOrder) {
+      return { success: false, error: 'Order not found in database' };
     }
 
-    const { data: rpcRes, error: rpcErr } = await supabase.rpc('admin_update_order', {
-      p_order_id: targetOrderId,
-      p_order_status: orderStatus,
-      p_payment_status: paymentStatus,
-      p_delivery_partner: deliveryPartner?.trim() || null,
-      p_tracking_id: trackingId?.trim() || null,
-      p_tracking_status: trackingStatus?.trim() || 'ORDER_RECEIVED',
+    const currentTrackingStatus = foundOrder.tracking_status || 'ORDER_RECEIVED';
+    const nextTrackingStatus = trackingStatus?.trim() || 'ORDER_RECEIVED';
+
+    // 2. Validate transition
+    const transitionCheck = validateStatusTransition(currentTrackingStatus, nextTrackingStatus);
+    if (!transitionCheck.allowed) {
+      return { success: false, error: transitionCheck.reason || 'Invalid status transition' };
+    }
+
+    const cleanDeliveryPartner = deliveryPartner?.trim() || null;
+    const cleanTrackingId = (trackingId?.trim() && trackingId.trim() !== 'AWB123456789') ? trackingId.trim() : null;
+
+    const updates: Record<string, any> = {
+      order_status: orderStatus,
+      payment_status: paymentStatus,
+      delivery_partner: cleanDeliveryPartner,
+      tracking_id: cleanTrackingId || foundOrder.tracking_id,
+      tracking_status: nextTrackingStatus,
+      updated_at: new Date().toISOString(),
+    };
+
+    // 3. Direct canonical persistence in Supabase
+    const { data: directUpdated, error: directErr } = await supabase
+      .from('orders')
+      .update(updates)
+      .eq('id', foundOrder.id)
+      .select()
+      .maybeSingle();
+
+    if (directErr) {
+      console.error('[Supabase direct order update error]', directErr);
+      return { success: false, error: directErr.message };
+    }
+
+    // 4. Also call RPC companion if configured (suppress error if direct update succeeded)
+    try {
+      await supabase.rpc('admin_update_order', {
+        p_order_id: foundOrder.id,
+        p_order_status: orderStatus,
+        p_payment_status: paymentStatus,
+        p_delivery_partner: cleanDeliveryPartner,
+        p_tracking_id: cleanTrackingId || foundOrder.tracking_id,
+        p_tracking_status: nextTrackingStatus,
+      });
+    } catch {
+      // Direct update already completed
+    }
+
+    // 5. Append tracking event to canonical history
+    const statusLabel = getTrackingStatusLabel(nextTrackingStatus);
+    let activityNote = `Order status updated to ${statusLabel} by ADRIZO fulfillment team.`;
+    if (normalizeTrackingStatus(nextTrackingStatus) === 'PACKED') {
+      activityNote = 'Order packed & verified at ADRIZO facility. Ready for courier handover.';
+    } else if (normalizeTrackingStatus(nextTrackingStatus) === 'SHIPPED') {
+      activityNote = `Handed over to ${cleanDeliveryPartner || 'courier partner'} for shipment.`;
+    } else if (normalizeTrackingStatus(nextTrackingStatus) === 'OUT_FOR_DELIVERY') {
+      activityNote = 'Package is out for delivery to destination address.';
+    } else if (normalizeTrackingStatus(nextTrackingStatus) === 'DELIVERED') {
+      activityNote = 'Order successfully delivered to customer.';
+    }
+
+    await appendTrackingEvent(foundOrder.order_number, {
+      status: nextTrackingStatus,
+      activity: activityNote,
+      source: 'ADMIN_MANUAL',
+      actor: 'ADRIZO Admin',
+      verified: true,
     });
 
-    if (rpcErr) {
-      console.error('[Supabase admin_update_order Error]', rpcErr);
-      return { success: false, error: rpcErr.message };
+    // 6. Synchronize MongoDB (Prisma) if record exists
+    try {
+      await prisma.order.updateMany({
+        where: { orderNumber: foundOrder.order_number },
+        data: {
+          orderStatus,
+          paymentStatus,
+          deliveryPartner: cleanDeliveryPartner,
+          trackingId: cleanTrackingId || foundOrder.tracking_id,
+          trackingStatus: nextTrackingStatus,
+          updatedAt: new Date(),
+        },
+      });
+    } catch {
+      // Prisma sync is secondary
     }
 
     revalidatePath('/admin/orders');
     revalidatePath('/admin/dashboard');
-    return { success: true, order: rpcRes?.order };
+    revalidatePath('/account');
+
+    return { 
+      success: true, 
+      order: directUpdated || {
+        ...foundOrder,
+        ...updates,
+      } 
+    };
   } catch (error: any) {
     console.error('[Admin Order Update Error]', error);
     return { success: false, error: error.message };

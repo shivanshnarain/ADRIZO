@@ -1530,6 +1530,7 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
                       <option value="ORDER_RECEIVED">Order Received</option>
                       <option value="PACKED">Packed &amp; Ready</option>
                       <option value="SHIPPED">Handed to Courier (Shipped)</option>
+                      <option value="IN_TRANSIT">In Transit</option>
                       <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
                       <option value="DELIVERED">Delivered</option>
                       <option value="RETURNED">Returned / RTO</option>

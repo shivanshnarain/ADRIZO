@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveOrderFromSupabase } from '@/lib/order-resolver';
 import { trackShipmentByAwb } from '@/lib/shiprocket/tracking';
 import { getAuthenticatedCustomer, isOrderOwnedByCustomer } from '@/lib/customer-auth';
+import { 
+  buildUnifiedTrackingActivities, 
+  getTrackingStatusLabel, 
+  normalizeTrackingStatus 
+} from '@/lib/order-tracking';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,63 +50,71 @@ export async function GET(
     }
 
     const isVerifiedAwb = Boolean(order.trackingId && order.trackingId !== 'AWB123456789');
+    const normStatus = normalizeTrackingStatus(order.trackingStatus);
+    const courierName = (order.deliveryPartner && order.deliveryPartner !== 'Blue Dart Delivery' && order.deliveryPartner !== 'Awaiting courier assignment') 
+      ? order.deliveryPartner 
+      : null;
 
     if (!isVerifiedAwb) {
       const hasShipment = !!order.shiprocketShipmentId;
-      const displayStatus = hasShipment ? 'Shipment is being prepared' : 'Shipment not created yet';
-      const displayMsg = hasShipment
-        ? 'Your order has been registered for shipment. Live courier tracking will become available once a courier partner and AWB are assigned.'
-        : 'Shipment not created yet. Our fulfillment team is preparing your order.';
+      let displayStatus = getTrackingStatusLabel(normStatus);
+      if (normStatus === 'ORDER_RECEIVED') {
+        displayStatus = hasShipment ? 'Shipment is being prepared' : 'Order Confirmed';
+      }
+
+      const activities = await buildUnifiedTrackingActivities({
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        city: order.city,
+        trackingStatus: normStatus,
+        deliveryPartner: courierName,
+        trackingId: null,
+      });
 
       return NextResponse.json({
         success: true,
         orderNumber: order.orderNumber,
+        orderStatus: order.orderStatus,
         status: order.orderStatus,
         currentStatus: displayStatus,
-        trackingStatus: order.trackingStatus || 'ORDER_CONFIRMED',
-        deliveryPartner: (order.deliveryPartner && order.deliveryPartner !== 'Blue Dart Delivery') ? order.deliveryPartner : null,
+        trackingStatus: normStatus,
+        deliveryPartner: courierName,
         trackingId: null,
         hasShipment,
-        message: displayMsg,
-        activities: [
-          {
-            date: order.createdAt,
-            status: 'ORDER_CONFIRMED',
-            activity: displayMsg,
-            location: order.city || 'ADRIZO Fulfillment Center',
-          },
-        ],
+        activities,
       });
     }
 
     // Live query Shiprocket tracking
     const trackingRes = await trackShipmentByAwb(order.trackingId!);
+    const displayStatus = trackingRes.currentStatus !== 'UNKNOWN' && trackingRes.currentStatus !== 'ERROR'
+      ? trackingRes.currentStatus
+      : getTrackingStatusLabel(normStatus);
+
+    const activities = await buildUnifiedTrackingActivities({
+      orderNumber: order.orderNumber,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      city: order.city,
+      trackingStatus: normStatus,
+      deliveryPartner: trackingRes.courierName || courierName,
+      trackingId: order.trackingId,
+    }, trackingRes.activities || []);
 
     return NextResponse.json({
       success: true,
       orderNumber: order.orderNumber,
       orderStatus: order.orderStatus,
-      trackingStatus: order.trackingStatus || 'ORDER_RECEIVED',
-      deliveryPartner: trackingRes.courierName || (order.deliveryPartner && order.deliveryPartner !== 'Blue Dart Delivery' ? order.deliveryPartner : null) || 'Courier Partner',
+      status: order.orderStatus,
+      trackingStatus: normStatus,
+      currentStatus: displayStatus,
+      deliveryPartner: trackingRes.courierName || courierName || 'Courier Partner',
       trackingId: order.trackingId,
       etd: trackingRes.etd || null,
       origin: trackingRes.origin || null,
       destination: trackingRes.destination || order.city || null,
-      currentStatus: trackingRes.currentStatus,
-      activities: trackingRes.activities.length > 0 ? trackingRes.activities : [
-        {
-          date: order.shiprocketSyncedAt || order.createdAt,
-          status: order.trackingStatus || 'PACKED',
-          activity: `AWB ${order.trackingId} generated. Package ready for courier handover.`,
-          location: 'Noida Warehouse',
-        },
-        {
-          date: order.createdAt,
-          status: 'ORDER_PLACED',
-          activity: 'Order placed successfully.',
-          location: order.city || 'ADRIZO Fulfillment Center',
-        }
-      ],
+      activities,
     });
   } catch (err: unknown) {
     const errorObj = err as { message?: string };

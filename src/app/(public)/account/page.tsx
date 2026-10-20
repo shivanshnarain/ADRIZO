@@ -1884,18 +1884,16 @@ function AccountContent() {
 
                     {/* 6-Milestone Progress Timeline */}
                     {(() => {
-                      const st = currentStatus.toLowerCase();
+                      const st = (customerTrackingData.trackingStatus || currentStatus || '').toLowerCase();
                       const isCancelled = st.includes('cancel');
                       const isDelivered = st.includes('deliver') && !st.includes('out for');
                       const isOFD = st.includes('out for delivery') || isDelivered;
-                      const isInTransit = st.includes('transit') || st.includes('shipped') || isOFD;
+                      const isInTransit = st.includes('transit') || st.includes('shipped') || st.includes('handed') || isOFD;
                       const isPickedUp = st.includes('pickup') || st.includes('picked') || isInTransit;
-                      const isPacked = st.includes('pack') || st.includes('awb') || st.includes('label') || st.includes('manifest') || isPickedUp;
+                      const isPacked = st.includes('pack') || st.includes('ready') || isPickedUp;
 
                       let activeIndex = 0;
-                      if (!hasAwb) {
-                        activeIndex = 0; // Order Confirmed
-                      } else if (isDelivered) activeIndex = 5;
+                      if (isDelivered) activeIndex = 5;
                       else if (isOFD) activeIndex = 4;
                       else if (isInTransit) activeIndex = 3;
                       else if (isPickedUp) activeIndex = 2;
@@ -1976,28 +1974,44 @@ function AccountContent() {
                       </div>
                       {activities.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderLeft: '2px solid #e2e8f0', marginLeft: '0.5rem', paddingLeft: '1rem' }}>
-                          {activities.map((act: any, aIdx: number) => (
-                            <div key={aIdx} style={{ position: 'relative' }}>
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  left: '-1.35rem',
-                                  top: '4px',
-                                  width: '8px',
-                                  height: '8px',
-                                  borderRadius: '50%',
-                                  background: aIdx === 0 ? '#16a34a' : '#94a3b8',
-                                  boxShadow: aIdx === 0 ? '0 0 0 3px rgba(255, 200, 0, 0.35)' : 'none',
-                                }}
-                              />
-                              <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#1e293b' }}>
-                                {act.activity || act['sr-status-label'] || 'Status update'}
+                          {activities.map((act: any, aIdx: number) => {
+                            const isManual = act.source === 'ADMIN_MANUAL' || act.actor === 'Admin' || act.actor === 'Operations Team';
+                            const isCarrier = act.source === 'CARRIER_EVENT' || act.source === 'CARRIER_LIVE';
+                            return (
+                              <div key={aIdx} style={{ position: 'relative' }}>
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    left: '-1.35rem',
+                                    top: '4px',
+                                    width: '8px',
+                                    height: '8px',
+                                    borderRadius: '50%',
+                                    background: aIdx === 0 ? '#16a34a' : '#94a3b8',
+                                    boxShadow: aIdx === 0 ? '0 0 0 3px rgba(255, 200, 0, 0.35)' : 'none',
+                                  }}
+                                />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#1e293b' }}>
+                                    {act.activity || act['sr-status-label'] || 'Status update'}
+                                  </div>
+                                  {isManual && (
+                                    <span style={{ fontSize: '0.65rem', padding: '1px 6px', background: '#e0f2fe', color: '#0369a1', borderRadius: '4px', fontWeight: 600 }}>
+                                      ADRIZO Update
+                                    </span>
+                                  )}
+                                  {isCarrier && (
+                                    <span style={{ fontSize: '0.65rem', padding: '1px 6px', background: '#f0fdf4', color: '#15803d', borderRadius: '4px', fontWeight: 600 }}>
+                                      Carrier Scan
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                                  {[act.location, act.date].filter(Boolean).join(' • ')}
+                                </div>
                               </div>
-                              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                                {[act.location, act.date].filter(Boolean).join(' • ')}
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '6px', fontSize: '0.8rem', color: '#64748b', textAlign: 'center' }}>
