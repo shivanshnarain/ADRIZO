@@ -574,8 +574,9 @@ export default function OrdersClient({ initialOrders }: { initialOrders: any[] }
     return orders.filter(o => {
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase().trim();
-        const matchesId = (o.id || '').toLowerCase().includes(q);
-        const matchesNumber = (o.orderNumber || '').toLowerCase().includes(q);
+        const cleanQ = q.replace(/^#/, '');
+        const matchesId = (o.id || '').toLowerCase().includes(q) || (o.id || '').toLowerCase().includes(cleanQ);
+        const matchesNumber = (o.orderNumber || '').toLowerCase().includes(q) || (o.orderNumber || '').toLowerCase().includes(cleanQ);
         const matchesName = (o.customerName || '').toLowerCase().includes(q);
         const matchesEmail = (o.customerEmail || '').toLowerCase().includes(q);
         const matchesPhone = (o.customerPhone || '').toLowerCase().includes(q);

@@ -12,7 +12,7 @@ export default async function CustomersPage() {
     let profileData: any[] = [];
     const { data: rpcData, error: profileErr } = await supabase.rpc('admin_get_customers', {
       p_admin_secret: 'adrizo_admin_secure_secret_2026',
-      p_limit: 100,
+      p_limit: 1000,
       p_offset: 0,
       p_search: null
     });
@@ -47,7 +47,7 @@ export default async function CustomersPage() {
             pincode: p.pincode,
             created_at: p.created_at,
             updated_at: p.updated_at,
-            email: null,
+            email: p.email || null,
             email_confirmed_at: null,
             last_sign_in_at: null,
           });
@@ -88,6 +88,8 @@ export default async function CustomersPage() {
           id,
           order_number,
           customer_id,
+          customer_email,
+          customer_phone,
           total_amount,
           payment_status,
           order_status,
@@ -110,7 +112,11 @@ export default async function CustomersPage() {
         .order('created_at', { ascending: false });
 
       customers = profileData.map((p: any) => {
-        const userOrders = (supaOrders || []).filter((o: any) => o.customer_id === p.id);
+        const userOrders = (supaOrders || []).filter((o: any) => 
+          (o.customer_id && o.customer_id === p.id) ||
+          (p.email && o.customer_email && o.customer_email.trim().toLowerCase() === p.email.trim().toLowerCase()) ||
+          (p.phone && o.customer_phone && o.customer_phone.trim() === p.phone.trim())
+        );
         const orderSpend = userOrders.reduce((sum: number, o: any) => sum + Number(o.total_amount || 0), 0);
         return {
           id: p.id,
@@ -125,8 +131,8 @@ export default async function CustomersPage() {
           updatedAt: p.updated_at,
           emailConfirmedAt: p.email_confirmed_at,
           lastSignInAt: p.last_sign_in_at,
-          totalOrdersCount: p.total_orders !== undefined ? Number(p.total_orders) : userOrders.length,
-          totalSpendAmount: p.total_spend !== undefined ? Number(p.total_spend) : orderSpend,
+          totalOrdersCount: Math.max(Number(p.total_orders || 0), userOrders.length),
+          totalSpendAmount: userOrders.length > 0 ? orderSpend : Number(p.total_spend || 0),
           orders: userOrders.map((o: any) => ({
             id: o.id,
             orderNumber: o.order_number,
