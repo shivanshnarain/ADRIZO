@@ -400,9 +400,9 @@ export const DEFAULT_SELLING_PRICE = 999;
 
 // Pricing Defaults
 export const DEFAULT_STANDARD_MRP = '2999';
-export const DEFAULT_STANDARD_SELLING_PRICE = '1299';
+export const DEFAULT_STANDARD_SELLING_PRICE = '1499';
 export const DEFAULT_HOODIE_MRP = '3999';
-export const DEFAULT_HOODIE_SELLING_PRICE = '1999';
+export const DEFAULT_HOODIE_SELLING_PRICE = '2499';
 
 export function getDefaultPricingForCategory(category?: { name?: string; slug?: string } | string | null): {
   mrp: string;

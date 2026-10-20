@@ -21,16 +21,16 @@ console.log('--- Testing Hoodie Pricing Defaults & Calculations ---');
 
 // 1. Check Constants
 assert(DEFAULT_HOODIE_MRP === '3999', `DEFAULT_HOODIE_MRP is '3999' (actual: ${DEFAULT_HOODIE_MRP})`);
-assert(DEFAULT_HOODIE_SELLING_PRICE === '1999', `DEFAULT_HOODIE_SELLING_PRICE is '1999' (actual: ${DEFAULT_HOODIE_SELLING_PRICE})`);
+assert(DEFAULT_HOODIE_SELLING_PRICE === '2499', `DEFAULT_HOODIE_SELLING_PRICE is '2499' (actual: ${DEFAULT_HOODIE_SELLING_PRICE})`);
 assert(DEFAULT_STANDARD_MRP === '2999', `DEFAULT_STANDARD_MRP is '2999' (actual: ${DEFAULT_STANDARD_MRP})`);
-assert(DEFAULT_STANDARD_SELLING_PRICE === '1299', `DEFAULT_STANDARD_SELLING_PRICE is '1299' (actual: ${DEFAULT_STANDARD_SELLING_PRICE})`);
+assert(DEFAULT_STANDARD_SELLING_PRICE === '1499', `DEFAULT_STANDARD_SELLING_PRICE is '1499' (actual: ${DEFAULT_STANDARD_SELLING_PRICE})`);
 
 // 2. Check Discount Percentage for Hoodie Defaults
 const hoodieDiscount = calculateDiscountPercentage(DEFAULT_HOODIE_MRP, DEFAULT_HOODIE_SELLING_PRICE);
-assert(hoodieDiscount === 50, `Hoodie default discount is exactly 50% (actual: ${hoodieDiscount}%)`);
+assert(hoodieDiscount === 38, `Hoodie default discount is exactly 38% (actual: ${hoodieDiscount}%)`);
 
 const standardDiscount = calculateDiscountPercentage(DEFAULT_STANDARD_MRP, DEFAULT_STANDARD_SELLING_PRICE);
-assert(standardDiscount === 57, `Standard default discount is 57% (actual: ${standardDiscount}%)`);
+assert(standardDiscount === 50, `Standard default discount is 50% (actual: ${standardDiscount}%)`);
 
 // 3. Category Detection & Helper
 const hoodieCategory = { id: 'cat-hoodies', name: 'Hoodies', slug: 'hoodies' };
@@ -44,13 +44,13 @@ assert(!isHoodieCategory(shirtCategory), 'isHoodieCategory returns false for Shi
 assert(!isHoodieCategory(pantsCategory), 'isHoodieCategory returns false for Pants');
 
 const hoodiePricing = getDefaultPricingForCategory(hoodieCategory);
-assert(hoodiePricing.mrp === '3999' && hoodiePricing.sellingPrice === '1999', 'getDefaultPricingForCategory returns 3999/1999 for Hoodies');
+assert(hoodiePricing.mrp === '3999' && hoodiePricing.sellingPrice === '2499', 'getDefaultPricingForCategory returns 3999/2499 for Hoodies');
 
 const tshirtPricing = getDefaultPricingForCategory(tshirtCategory);
-assert(tshirtPricing.mrp === '2999' && tshirtPricing.sellingPrice === '1299', 'getDefaultPricingForCategory returns 2999/1299 for T-Shirts');
+assert(tshirtPricing.mrp === '2999' && tshirtPricing.sellingPrice === '1499', 'getDefaultPricingForCategory returns 2999/1499 for T-Shirts');
 
 const shirtPricing = getDefaultPricingForCategory(shirtCategory);
-assert(shirtPricing.mrp === '2999' && shirtPricing.sellingPrice === '1299', 'getDefaultPricingForCategory returns 2999/1299 for Shirts');
+assert(shirtPricing.mrp === '2999' && shirtPricing.sellingPrice === '1499', 'getDefaultPricingForCategory returns 2999/1499 for Shirts');
 
 // 4. Simulate State Transition Logic (as in ProductsClient.tsx handleCategoryChange)
 interface FormState {
@@ -113,19 +113,19 @@ let state: FormState = {
 
 state = simulateCategoryChange(state, hoodieCategory.id);
 assert(state.originalPrice === '3999', 'Selecting Hoodies sets MRP to 3999');
-assert(state.price === '1999', 'Selecting Hoodies sets Selling Price to 1999');
-assert(calculateDiscountPercentage(state.originalPrice, state.price) === 50, 'Discount is 50%');
+assert(state.price === '2499', 'Selecting Hoodies sets Selling Price to 2499');
+assert(calculateDiscountPercentage(state.originalPrice, state.price) === 38, 'Discount is 38%');
 
 // Scenario B: Switch from Hoodies to T-Shirts (Must NOT carry Hoodie pricing)
 state = simulateCategoryChange(state, tshirtCategory.id);
 assert(state.originalPrice === '2999', 'Switching Hoodies -> T-Shirts resets MRP to 2999');
-assert(state.price === '1299', 'Switching Hoodies -> T-Shirts resets Selling Price to 1299');
-assert(calculateDiscountPercentage(state.originalPrice, state.price) === 57, 'Discount resets to 57%');
+assert(state.price === '1499', 'Switching Hoodies -> T-Shirts resets Selling Price to 1499');
+assert(calculateDiscountPercentage(state.originalPrice, state.price) === 50, 'Discount resets to 50%');
 
 // Scenario C: Switch from T-Shirts back to Hoodies
 state = simulateCategoryChange(state, hoodieCategory.id);
 assert(state.originalPrice === '3999', 'Switching back to Hoodies sets MRP to 3999');
-assert(state.price === '1999', 'Switching back to Hoodies sets Selling Price to 1999');
+assert(state.price === '2499', 'Switching back to Hoodies sets Selling Price to 2499');
 
 // Scenario D: Manual Price Edit on Hoodies
 state.originalPrice = '4999';
@@ -136,22 +136,22 @@ assert(calculateDiscountPercentage(state.originalPrice, state.price) === 50, 'Ma
 // Scenario E: Switch from Hoodies to Shirts after manual edit (Must NOT carry Hoodie pricing)
 state = simulateCategoryChange(state, shirtCategory.id);
 assert(state.originalPrice === '2999', 'Switching Hoodies (edited) -> Shirts resets MRP to 2999');
-assert(state.price === '1299', 'Switching Hoodies (edited) -> Shirts resets Selling Price to 1299');
+assert(state.price === '1499', 'Switching Hoodies (edited) -> Shirts resets Selling Price to 1499');
 
 // Scenario F: Switch from Shirts to Pants (both non-hoodie)
 state = simulateCategoryChange(state, pantsCategory.id);
 assert(state.originalPrice === '2999', 'Switching Shirts -> Pants keeps standard MRP 2999');
-assert(state.price === '1299', 'Switching Shirts -> Pants keeps standard Selling Price 1299');
+assert(state.price === '1499', 'Switching Shirts -> Pants keeps standard Selling Price 1499');
 
 // Scenario G: Switch from Hoodies to Empty Category (unselected)
 state = simulateCategoryChange(state, hoodieCategory.id);
 assert(state.originalPrice === '3999', 'Switched back to Hoodies (MRP 3999)');
 state = simulateCategoryChange(state, '');
 assert(state.originalPrice === '2999', 'Switching Hoodies -> empty resets MRP to 2999');
-assert(state.price === '1299', 'Switching Hoodies -> empty resets Selling Price to 1299');
+assert(state.price === '1499', 'Switching Hoodies -> empty resets Selling Price to 1499');
 
 // 5. Pricing Validation
-const hoodieValidation = validatePricing('3999', '1999');
-assert(hoodieValidation.isValid === true, 'Hoodie default pricing (3999/1999) passes validation');
+const hoodieValidation = validatePricing('3999', '2499');
+assert(hoodieValidation.isValid === true, 'Hoodie default pricing (3999/2499) passes validation');
 
 console.log('\n🎉 ALL 24 HOODIE PRICING TESTS PASSED!');

@@ -1904,7 +1904,7 @@ export default function ProductsClient({
                         setPrice(e.target.value);
                         setIsPriceManuallyEdited(true);
                       }}
-                      placeholder={isHoodieCategory(currentCategory) ? "1999.00" : "1299.00"}
+                      placeholder={isHoodieCategory(currentCategory) ? "2499.00" : "1499.00"}
                       required
                       id="field-price"
                     />
