@@ -20,8 +20,8 @@ function ensureDatabaseUrl() {
     ];
 
     for (const fullPath of candidates) {
-      if (fs.existsSync(fullPath)) {
-        const content = fs.readFileSync(fullPath, 'utf-8');
+      if (fs.existsSync(/*turbopackIgnore: true*/ fullPath)) {
+        const content = fs.readFileSync(/*turbopackIgnore: true*/ fullPath, 'utf-8');
         for (const line of content.split('\n')) {
           const trimmed = line.trim();
           if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
