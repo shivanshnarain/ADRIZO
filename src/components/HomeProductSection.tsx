@@ -7,6 +7,8 @@ import { filterProductsByCategory, getOrderedProducts } from '@/lib/productFilte
 
 interface HomeProductSectionProps {
   products: any[];
+  hasError?: boolean;
+  errorMessage?: string;
 }
 
 type TabType = 'ALL' | 'MENS' | 'WOMEN' | 'TSHIRTS' | 'HOODIES';
@@ -19,7 +21,7 @@ const TABS: { id: TabType; label: string }[] = [
   { id: 'HOODIES', label: 'HOODIES' },
 ];
 
-export default function HomeProductSection({ products }: HomeProductSectionProps) {
+export default function HomeProductSection({ products, hasError = false, errorMessage }: HomeProductSectionProps) {
   const [activeTab, setActiveTab] = useState<TabType>('ALL');
 
   const filteredProducts = useMemo(() => {
@@ -75,7 +77,53 @@ export default function HomeProductSection({ products }: HomeProductSectionProps
         </div>
       </div>
 
-      {filteredProducts.length === 0 ? (
+      {hasError ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '3.5rem 1.5rem',
+          maxWidth: '520px',
+          margin: '0 auto',
+        }}>
+          <h3 style={{
+            fontSize: '1.2rem',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: '#111111',
+            marginBottom: '0.5rem'
+          }}>
+            Unable to Load Products
+          </h3>
+          <p style={{
+            fontSize: '0.875rem',
+            color: '#666666',
+            lineHeight: 1.6,
+            marginBottom: '1.5rem'
+          }}>
+            {errorMessage || 'We are experiencing a temporary connectivity issue loading our product catalogue. Please refresh or try again in a moment.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            style={{
+              display: 'inline-block',
+              backgroundColor: '#111111',
+              color: '#FFFFFF',
+              padding: '0.7rem 1.6rem',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              border: 'none',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Retry Loading
+          </button>
+        </div>
+      ) : filteredProducts.length === 0 ? (
         <div style={{
           textAlign: 'center',
           padding: '3.5rem 1.5rem',

@@ -40,6 +40,7 @@ const DEFAULT_CATEGORY_IMAGES: Record<string, string> = {
 
 export default async function Home() {
   let allProducts: any[] = [];
+  let queryError = false;
 
   try {
     allProducts = await prisma.product.findMany({
@@ -52,7 +53,8 @@ export default async function Home() {
       orderBy: { createdAt: 'desc' },
     });
   } catch (err: any) {
-    console.warn("Prisma query failed on Home page:", err.message);
+    console.error("Prisma query failed on Home page:", err?.message || err);
+    queryError = true;
     allProducts = [];
   }
 
@@ -233,7 +235,10 @@ export default async function Home() {
       </section>
 
       {/* ===================== PRODUCTS COLLECTION ===================== */}
-      <HomeProductSection products={JSON.parse(JSON.stringify(allProducts))} />
+      <HomeProductSection 
+        products={JSON.parse(JSON.stringify(allProducts))} 
+        hasError={queryError}
+      />
 
       {/* ===================== CUSTOMER PHOTO SHOWCASE ===================== */}
       <CustomerPhotoShowcase initialRow1={row1Photos} initialRow2={row2Photos} />
